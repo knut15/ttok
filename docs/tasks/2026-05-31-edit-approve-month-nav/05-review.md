@@ -188,3 +188,98 @@ gate_mode: and 원칙에 따라 codex P1-1(diff 내 결함)을 하네스축이 �
 | P1 | seed 5/04(07:26~15:00, overtime=34)·5/24(07:00~16:00, overtime=130) 리터럴이 신규 clockOut 기준(각 0·60)과 불일치 → `updateStatus` 호출 시 seed overtime drift 발생 | 이번 diff의 의도된 G2 결과지만 데모 데이터 정합성 잠재 위험. 시드 리터럴을 새 정책 기준으로 정정하거나, 영향 범위 문서화 |
 | P2 | `POST /api/attendance/requests` route: `after.clockIn`/`after.clockOut` HH:MM 형식 검증 미비 (E-8 clockOut < clockIn 역전 케이스 — 현재 calcWorkMinutes가 0 반환으로 방어되나 명시 검증 없음) | 에러 핸들링 강화 |
 | P3 | `useEditRequests.approve`가 `res.ok` 여부만 반환 — 400/404 오류 메시지를 UI에 노출하는 에러 토스트 없음 | UX 개선 |
+
+---
+
+## 재검증 (v2)
+
+- **검증 대상 커밋**: c57e13f (v2 REWORK A — P1-1 after 페이로드 형식 검증 추가)
+- **base**: 804dd91 (v1 완료 커밋)
+- **검토일**: 2026-05-31
+
+### P1-1 수정 확인
+
+| 항목 | 확인 결과 |
+|---|---|
+| `after.status` 유효 WorkStatus 미포함 시 400 | `route.ts:36-41` `!WORK_STATUSES.includes(body.after.status as WorkStatus)` → 400 ✅ |
+| `after.clockIn`/`clockOut` 형식 불량 시 400 | `route.ts:43-50` for-loop `parseHHMM(clock)` NaN → 400 ✅ |
+| `approveRequest` 방어 가드 | `store.ts:252-257` `!WORK_STATUSES.includes(after.status)` → 레코드 미반영 보존 ✅ |
+| 신규 테스트 — after:{} → 400 | `route.test.ts:49-55` ✅ |
+| 신규 테스트 — after:{status:"이상값"} → 400 | `route.test.ts:57-67` ✅ |
+| 신규 테스트 — clockIn:"99:99" → 400 | `route.test.ts:69-79` ✅ |
+| 신규 테스트 — 정상 after → 201 | `route.test.ts:81-91` ✅ |
+
+P1-1 수정 확인: **해소 확인됨**.
+
+단, codex가 신규 P1을 1건 제기함 (아래 §"codex 재게이트" 참조).
+
+### DoD 수치 (v2 직접 실측)
+
+| 항목 | 결과 |
+|---|---|
+| `pnpm test` | **104 passed (15 files)** — 기존 100 + 신규 4, 회귀 0 ✅ |
+| `pnpm exec tsc --noEmit` | exit 0 ✅ |
+| `pnpm build` | exit 0 (Compiled successfully, 15 라우트/페이지) ✅ |
+| `pnpm lint` | exit 0 ✅ |
+
+### 교차 검증 v2 (codex review --base 804dd91)
+
+- 자체 판정 (하네스축): PASS 후보
+- codex 호출: `codex review --base 804dd91`
+- codex 모델: gpt-5.5
+- 호출 시각: 2026-05-31T07:33:44 (UTC)
+- **codex 판정: FAIL (P1 × 1, P2 × 1)**
+
+#### codex 지적 상세
+
+**[P1] clockIn/clockOut 필드 부재 시 검증 스킵 — route.ts:43-44**
+
+`after: { status: "정상" }` 전송 시 `body.after.clockIn === undefined`, `body.after.clockOut === undefined`. 루프 조건 `clock != null`은 `undefined != null`이 JavaScript에서 false이므로 검증이 스킵되고 요청이 생성된다. `approveRequest` 수락 시 `merged.clockIn = undefined` / `merged.clockOut = undefined`가 레코드에 저장되어 직렬화 시 required 필드 누락.
+
+- **실질 기능 결함 여부**: ✅ 실질 결함. `EditRequestChange.clockIn: string | null` 타입 계약에서 undefined는 허용 외이며, 수락 시 레코드 손상 경로 존재.
+- **diff 내 여부**: ✅ v2 diff 내 — route.ts:43-44는 P1-1 수정으로 신규 추가된 라인.
+- **nit 여부**: ❌ nit 아님 — 데이터 오염 경로(clockIn=undefined 저장)가 실제 존재.
+- **분류**: REWORK (A) — 품질 미흡, 에러 핸들링 보강 필요.
+
+**[P2] 방어 가드 fail-open — store.ts:254-256**
+
+유효하지 않은 status를 가진 요청에 대해, 해당 날짜 레코드가 없으면 실행이 guard를 우회하고 invalid status가 upsert됨. 레코드가 있을 때만 조기 반환. 단, 정상 흐름은 route에서 이미 차단되므로 이 경로가 발동하려면 route 우회가 전제.
+
+- **실질 결함 여부**: 부분적. route가 정상 작동하면 발동 불가. 방어 가드의 불완전성이나 기존 손상 데이터 대비 안전망 미흡. 실제 노출면은 v1 route 생성 경로(이미 차단된 요청에만 해당).
+- **분류**: 하네스축 관점 — v2 diff 내 신규 코드의 논리 결함이나, 정상 흐름(route 400 차단 후) 기준으로는 발동 경로 없음. P2 유지.
+
+#### gate_mode: and 판정
+
+- codex P1 (diff 내 실질 결함): **하네스축이 덮을 수 없음** (gate_mode: and 원칙)
+- 최종: **REWORK (A) — developer 회귀** (2회차)
+
+### 최종 판정 (v2)
+
+| 항목 | 결과 |
+|---|---|
+| **판정** | **REWORK (A)** |
+| P1-1(v1) 해소 | ✅ 해소 (status/clock 형식 검증 + 테스트 4건) |
+| DoD 수치 | 104/104 GREEN / tsc 0 / build 0 / lint 0 |
+| codex 재게이트 | FAIL — 신규 P1 (undefined clock 필드 검증 스킵) |
+| 회귀 | 0 (기존 100 GREEN + 신규 4) |
+| 분류 | A (품질 미흡 — 에러 핸들링 보강) |
+| 회귀 지점 | developer |
+
+### 수정 요청 (v3)
+
+1. **[필수] `route.ts:43-44` — clockIn/clockOut undefined 필드 차단**
+   - `clock != null` 조건이 `undefined`를 통과시킴 (`undefined == null` in JS).
+   - 수정 기준: `clock !== undefined && clock !== null && Number.isNaN(parseHHMM(clock))` — 또는 루프 전에 `body.after.clockIn === undefined || body.after.clockOut === undefined` 시 400.
+   - 단, null은 계속 허용 (결근/휴가 시 clock=null이 유효 값).
+   - 추가 테스트: `after: { status: "정상" }` (clock 필드 부재) → 400.
+
+2. **[권고] `store.ts:254-256` — 방어 가드 fail-closed 보강 (codex P2)**
+   - 레코드 미존재 시에도 early return (false approval 방지). 우선순위: route 수정 후 별도 판단 가능.
+
+### 남은 Follow-up (v2 이후)
+
+| 등급 | 항목 | 비고 |
+|---|---|---|
+| **P1** (사용자 결정 필요) | seed 5/04(overtime=34→0)·5/24(overtime=130→60) 리터럴이 신규 clockOut 기준과 불일치. `updateStatus` 호출 시 drift. | PRD 수용 trade-off이나 데모 데이터 정합성 잠재 위험. 시드 리터럴 정정 vs 현행 유지(불변식② 보존) 중 **사용자 결정 필요**. |
+| P2 | `after.clockIn`/`clockOut` 역전(clockOut < clockIn) 명시 검증 미비 | calcWorkMinutes가 0 반환으로 방어되나 명시 400 없음 |
+| P3 | `useEditRequests.approve` 400/404 에러 메시지 UI 미노출 | UX 개선 |

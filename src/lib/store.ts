@@ -249,11 +249,21 @@ export function approveRequest(id: string): ApproveResult | null {
   }
 
   const after = req.after;
-  // 방어적 가드(이중 안전, P1-1): after.status 가 유효하지 않으면 레코드 미반영.
-  // 정상 흐름은 생성 route 에서 이미 400 으로 차단되나, 손상 데이터 반영을 막는다.
-  if (!WORK_STATUSES.includes(after.status)) {
+  // 방어적 가드(이중 안전, P1-1/v3 P2): after 가 불완전하면 fail-closed — 레코드 미반영.
+  // 정상 흐름은 생성 route 에서 이미 400 으로 차단되나, 손상 데이터 upsert 를 막는다.
+  // status 무효 또는 clock 필드가 string|null 이 아니면(undefined 등) 반영하지 않는다.
+  const afterIsValid =
+    WORK_STATUSES.includes(after.status) &&
+    (after.clockIn === null || typeof after.clockIn === "string") &&
+    (after.clockOut === null || typeof after.clockOut === "string");
+  if (!afterIsValid) {
+    // 손상 after 는 절대 store 에 반영하지 않는다. 기존 레코드가 있으면 그대로,
+    // 없으면 안전한 중립 레코드(빈 출퇴근)를 반환만 한다(persist 안 함).
     const existing = store.records.get(req.date);
-    if (existing) return { request: req, record: existing };
+    return {
+      request: req,
+      record: existing ?? emptyRecord(req.date),
+    };
   }
   // Q1 upsert: 레코드 없으면 after status/clock 을 입힐 기준 레코드를 신규 생성.
   const base =
@@ -295,6 +305,20 @@ export function approveRequest(id: string): ApproveResult | null {
   store.records.set(req.date, record);
   req.status = "수락"; // 대기→수락 (AC-2)
   return { request: req, record };
+}
+
+/** 손상 after 의 fail-closed 폴백용 안전 중립 레코드(persist 안 함). */
+function emptyRecord(date: string): AttendanceRecord {
+  return {
+    date,
+    status: "정상",
+    clockIn: null,
+    clockOut: null,
+    breakMinutes: DEFAULT_BREAK_MINUTES,
+    workMinutes: 0,
+    overtimeMinutes: 0,
+    deductMinutes: 0,
+  };
 }
 
 /** after 의 status/clock 을 입힌 신규 레코드(upsert 기준값). 재계산은 호출부. */

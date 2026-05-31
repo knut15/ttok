@@ -180,3 +180,13 @@ approve(id: string): Promise<boolean>   // POST 후 reload
 - `pnpm lint` exit 0.
 - 라우트 수동/빌드 확인: `/`, `/attendance`, `/attendance/[date]`, `/pay`, `/pay/[date]`, `/mypage`, `/mypage/profile` 정상 렌더.
 - CONTEXT.md(수정요청 수락 + 연장 정의) 동일 커밋 내 갱신, ADR 0001 작성.
+
+---
+
+## 📌 사용자 지시 ADDENDUM (2026-05-31, T4 진행 중)
+
+> 사용자 추가 요구: "근무시간 수정 시 상태뿐 아니라 시간도 수정 가능해야 한다. 단, **시간 수정은 퇴근 시간만** 수정 가능하다."
+
+- **AC-13 (시간변경 = 퇴근만)**: `TimeChangeSheet`에서 **출근(clockIn)은 읽기전용**(표시만), **퇴근(clockOut)만 편집** 가능. 근거: 출근시각은 실제 출근 시 기록되는 값(사용자 기존 방침), 퇴근만 사후 보정 대상.
+- **AC-14 (시간변경 적용)**: 수정요청 `after.clockIn`은 항상 record.clockIn(불변), `after.clockOut`만 편집값. 수락 시 clockOut 반영 + 연장(calcOvertimeByClock, clockOut 기준) 재계산. 상태(status)는 기존 상태변경 흐름으로 함께 수정 가능.
+- 검증: 시간변경 시트에 출근 input이 disabled/읽기전용, 퇴근만 편집 가능. 퇴근 변경 후 수정요청→수락 시 record.clockOut·overtime 갱신.

@@ -39,9 +39,17 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  // clockIn/clockOut 은 null 허용, 존재 시 "HH:MM" 형식이어야 한다(NaN → 400).
+  // after 는 status·clockIn·clockOut 3필드 완전체 요구(v3 P1).
+  // undefined 누락 차단: undefined != null 이 JS 에서 false 라 검증 스킵되던 결함 방지.
+  // clockIn/clockOut 은 null 허용, 명시값이면 "HH:MM" 형식이어야 한다(NaN → 400).
   for (const clock of [body.after.clockIn, body.after.clockOut]) {
-    if (clock != null && Number.isNaN(parseHHMM(clock))) {
+    if (clock === undefined) {
+      return NextResponse.json(
+        { error: "출퇴근 시각 필드(clockIn/clockOut)가 필요합니다." },
+        { status: 400, headers: NO_STORE },
+      );
+    }
+    if (clock !== null && Number.isNaN(parseHHMM(clock))) {
       return NextResponse.json(
         { error: "출퇴근 시각 형식이 올바르지 않습니다." },
         { status: 400, headers: NO_STORE },

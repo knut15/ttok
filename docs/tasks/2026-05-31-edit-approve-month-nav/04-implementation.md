@@ -91,3 +91,46 @@
 - `pnpm lint`: exit 0
 
 범위 한정: P1-1 검증 + 테스트만. 다른 변경 없음(P1-2/P2/P3 follow-up 미손).
+
+---
+
+## REWORK v3 (분류 A + 사용자 지시 AC-13/14)
+
+### 수정 1 — [P1 차단] undefined clock 검증 누락 (route.ts)
+
+- **결함**: `after:{status:"정상"}`처럼 clockIn/clockOut 가 undefined 면 `clock != null` 이 false(JS: `undefined != null === false`)라 형식검사가 스킵 → 수락 시 record.clockOut=undefined 오염.
+- **수정**:
+  - `src/app/api/attendance/requests/route.ts:43-58` — POST after 검증 루프에 `clock === undefined` 명시 거부(400) 추가. null 은 계속 허용. after 는 status·clockIn·clockOut 3필드 완전체 요구.
+  - `src/lib/store.ts:251-262` — `approveRequest` 방어 가드를 fail-closed 로 강화: `afterIsValid = status 유효 && clockIn/clockOut 가 (null|string)`. 무효면 store 미반영 + 안전 중립 레코드 반환(persist 안 함, status 대기 유지).
+  - `src/lib/store.ts:308-318` — `emptyRecord(date)` 헬퍼 신규(fail-closed 폴백).
+- **AC-14 정상 흐름 영향 없음**: clockIn 은 record 값 그대로 전송하므로 항상 string|null.
+
+### 수정 2 — [사용자 지시 AC-13/14] 시간변경 = 퇴근만 수정
+
+- **AC-13 (출근 읽기전용)**: `src/features/attendance/components/AttendanceDetail.tsx` `TimeChangeSheet`(165-227행 부근) — 출근 input 을 `readOnly`+`disabled` 표시로 변경. 퇴근(clockOut)만 `<input type=time>` 편집 가능. clockIn 로컬 상태 제거, `initial.clockIn` 직접 표시.
+- **AC-14 (clockIn 불변·clockOut 만 반영)**:
+  - `TimeChangeSheet.onApply`: `clockIn: initial.clockIn`(불변), `clockOut: 편집값`.
+  - `AttendanceDetail` 출근 Row: `record.clockIn` 고정 표시(draft 미사용).
+  - `EditRequestForm.onSubmit` after: `clockIn: record.clockIn`(항상), `clockOut: effectiveDraft.clockOut`.
+- 퇴근 형식 검증(parseHHMM NaN → 적용 비활성) 유지. 연장 재계산은 수락 시 `calcOvertimeByClock(clockOut)` 로 자동 정합(기존 approveRequest 경로).
+
+### 추가 테스트 (TDD vertical slice, RED→GREEN ×2)
+
+| 사이클 | AC/결함 | 테스트 | 파일 |
+|---|---|---|---|
+| C1 | 수정1 (route undefined clock) | `after.clockOut 필드 부재(after:{status:정상}) 는 400 으로 거부하고 미생성` | `src/app/api/attendance/requests/route.test.ts` |
+| C2 | 수정1 fail-closed (store P2) | `after.clockOut 가 undefined 인 손상 요청 수락 시 레코드를 오염시키지 않는다(fail-closed)` | `src/lib/store.test.ts` |
+
+- C1 RED: 201 반환(검증 스킵) → GREEN: route 에서 undefined 차단 후 400.
+- C2: store guard 가 미반영(getRecord null + status 대기) 보장. UI(AC-13/14)는 프로젝트 vitest 환경(node, *.test.ts only, no jsdom)상 렌더 단위테스트 미지원 → 빌드/타입/lint 로 검증. AC-14 invariant(after.clockIn=record값)는 route/store 계약 테스트로 커버.
+
+### DoD (직접 실측)
+
+| 항목 | 결과 |
+|---|---|
+| `pnpm test` | **106 passed (15 files)** — 기존 104 + 신규 2, 회귀 0 |
+| `pnpm exec tsc --noEmit` | exit 0 |
+| `pnpm build` | exit 0 (Compiled successfully, 15 라우트/페이지) |
+| `pnpm lint` | exit 0 |
+
+범위 한정: 수정 1·2 + 신규 테스트 2건. P1(seed drift)/P2(역전 검증)/P3(에러 토스트) follow-up 미손.

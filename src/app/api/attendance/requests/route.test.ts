@@ -66,6 +66,15 @@ describe("/api/attendance/requests", () => {
     expect((await (await GET(getReq)).json()).length).toBe(0);
   });
 
+  // v3 P1: clockIn/clockOut 필드 부재(undefined) → 400 (undefined != null 이 false 라 검증 스킵되던 결함)
+  it("after.clockOut 필드 부재(after:{status:정상}) 는 400 으로 거부하고 미생성", async () => {
+    const res = await POST(
+      post({ date: "2026-05-04", reason: "사유", after: { status: "정상" } }),
+    );
+    expect(res.status).toBe(400);
+    expect((await (await GET(getReq)).json()).length).toBe(0);
+  });
+
   it("after.clockIn 형식이 불량(99:99)이면 400 으로 거부", async () => {
     const res = await POST(
       post({

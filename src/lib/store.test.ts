@@ -252,6 +252,27 @@ describe("approveRequest — 수락 반영", () => {
     expect(result2.record.overtimeMinutes).toBe(after1.overtimeMinutes);
   });
 
+  // v3 P1/P2: clock 필드가 undefined 인 손상 after 는 fail-closed — store 에 미반영.
+  // (route 가 400 으로 차단하나, 손상 데이터가 들어와도 record 오염을 막는 이중 안전)
+  it("after.clockOut 가 undefined 인 손상 요청 수락 시 레코드를 오염시키지 않는다(fail-closed)", () => {
+    const date = "2026-08-20"; // 시드 외
+    const req = pending(date, {
+      status: "정상",
+      // 타입 계약 위반(undefined) 을 의도적으로 주입 — 손상 데이터 시뮬레이션
+      clockIn: "08:00",
+      clockOut: undefined as unknown as string,
+    });
+    const { request, record } = approveRequest(req.id)!;
+    // 손상 after 는 store 에 persist 되지 않는다
+    expect(getRecord(date)).toBeNull();
+    // 반환 레코드도 undefined clockOut 으로 오염되지 않는다(string|null 보장)
+    expect(record.clockOut === null || typeof record.clockOut === "string").toBe(
+      true,
+    );
+    // 멱등하지 않게 status 도 전이되지 않는다(미반영)
+    expect(request.status).toBe("대기");
+  });
+
   // E-3 / Q1: 레코드 없는 날 수락 → after 로 신규 레코드 생성(upsert)
   it("레코드 없는 날(시드 외) 수락 시 after 로 신규 레코드를 생성한다(upsert)", () => {
     const date = "2026-07-15"; // 시드 외

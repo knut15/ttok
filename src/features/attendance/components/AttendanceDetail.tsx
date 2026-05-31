@@ -92,7 +92,8 @@ export function AttendanceDetail({ date }: { date: string }) {
       <div className="space-y-3 px-5">
         <Row
           label="출근"
-          value={effectiveDraft.clockIn ?? "-"}
+          // 출근은 시간변경 대상 아님 — record 값 고정 표시(AC-13).
+          value={record.clockIn ?? "-"}
           badge={
             record.status !== "정상" ? (
               <StatusBadge label={record.status} tone={statusTone(record.status)} />
@@ -123,7 +124,8 @@ export function AttendanceDetail({ date }: { date: string }) {
             reason,
             after: {
               status: record.status,
-              clockIn: effectiveDraft.clockIn,
+              // AC-14: clockIn 은 항상 record 값(불변), clockOut 만 편집값 반영.
+              clockIn: record.clockIn,
               clockOut: effectiveDraft.clockOut,
             },
           });
@@ -160,8 +162,10 @@ export function AttendanceDetail({ date }: { date: string }) {
   );
 }
 
-// 시간변경 시트(REWORK v3): clockIn/clockOut 을 HH:MM 으로 입력 → draft 갱신.
-// parseHHMM 으로 유효성 검사. NaN 이면 "적용" 비활성.
+// 시간변경 시트(AC-13/14): 시간 수정은 퇴근(clockOut)만 가능.
+// 출근(clockIn)은 읽기전용 표시(실제 출근 시 기록되는 값 — 사후 보정 대상 아님).
+// 퇴근은 HH:MM 입력 → draft 갱신. parseHHMM NaN 이면 "적용" 비활성.
+// clockIn 은 initial 값을 그대로 onApply 로 돌려보내 불변 보장.
 function TimeChangeSheet({
   open,
   initial,
@@ -173,13 +177,10 @@ function TimeChangeSheet({
   onClose: () => void;
   onApply: (next: { clockIn: string | null; clockOut: string | null }) => void;
 }) {
-  // key 로 remount 되므로 initial 로 직접 초기화(effect 불필요).
-  const [clockIn, setClockIn] = useState(initial.clockIn ?? "");
+  // key 로 remount 되므로 initial 로 직접 초기화(effect 불필요). 퇴근만 상태로 관리.
   const [clockOut, setClockOut] = useState(initial.clockOut ?? "");
 
-  const inValid = clockIn === "" || !Number.isNaN(parseHHMM(clockIn));
-  const outValid = clockOut === "" || !Number.isNaN(parseHHMM(clockOut));
-  const canApply = inValid && outValid;
+  const canApply = clockOut === "" || !Number.isNaN(parseHHMM(clockOut));
 
   return (
     <BottomSheet open={open} onClose={onClose} title="시간변경">
@@ -188,10 +189,11 @@ function TimeChangeSheet({
           <span className="text-sm text-muted">출근</span>
           <input
             type="time"
-            value={clockIn}
-            onChange={(e) => setClockIn(e.target.value)}
-            className="rounded-lg border border-black/10 px-3 py-2 text-base"
-            aria-label="출근 시각"
+            value={initial.clockIn ?? ""}
+            readOnly
+            disabled
+            className="rounded-lg border border-black/10 bg-black/[0.04] px-3 py-2 text-base text-muted"
+            aria-label="출근 시각 (수정 불가)"
           />
         </label>
         <label className="flex items-center justify-between gap-3">
@@ -204,14 +206,15 @@ function TimeChangeSheet({
             aria-label="퇴근 시각"
           />
         </label>
-        <p className="text-xs text-muted">형식: HH:MM (예 08:00)</p>
+        <p className="text-xs text-muted">퇴근 시각만 수정할 수 있어요. 형식: HH:MM (예 15:00)</p>
       </div>
       <button
         type="button"
         disabled={!canApply}
         onClick={() =>
           onApply({
-            clockIn: clockIn === "" ? null : clockIn,
+            // clockIn 은 항상 record 값 유지(AC-14), clockOut 만 편집값 반영.
+            clockIn: initial.clockIn,
             clockOut: clockOut === "" ? null : clockOut,
           })
         }
