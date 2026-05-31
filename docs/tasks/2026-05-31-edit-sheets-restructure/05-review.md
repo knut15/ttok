@@ -168,3 +168,91 @@ gate_mode=and 원칙: 하네스축(내가) PASS 확정 불가 — architect §2.
 | F-1 | `pay/[date]` `breakRange` 실제 저장 범위 반환(현재 DEFAULT_BREAK_RANGE 하드코딩) | P1 | follow-up task |
 | F-2 | `EditRequestList`에 after.breakStart~breakEnd 표시(현재 비표시 — architect §4.4 "선택") | P2 | follow-up task |
 | F-3 | API 역전 범위 거부 단위 테스트 추가(`route.test.ts` — "breakStart>=breakEnd는 400") | P1 (수정 후 함께) | 이번 REWORK 포함 권장 |
+
+---
+
+## 재검증 (v2)
+
+- **작성**: task-reviewer
+- **대상 커밋**: 725e0b9 (v2 수정 — P2-1 역전 거부 추가)
+- **base diff**: da5d91c..725e0b9
+- **날짜**: 2026-05-31
+
+### P2-1 해소 확인
+
+`route.ts:71~80` — `breakStart !== undefined && breakEnd !== undefined` 조건 하에 `parseHHMM(breakEnd) <= parseHHMM(breakStart)` 이면 400 반환 분기 추가 확인. 위치: 기존 NaN 루프(line 62~69) 직후, `addRequest` 호출(line 82) 전.
+
+| 검증 항목 | 코드 위치 | 결과 |
+|---|---|---|
+| 역전(12:00~11:30) → 400 | `route.ts:73~80` + `route.test.ts:127~143` | ✅ |
+| 동일(11:30~11:30) → 400 | `route.ts:73~80` + `route.test.ts:145~161` | ✅ |
+| 정상(11:30~12:00) → 201 | `route.ts:73~80` + `route.test.ts:163~179` | ✅ |
+| 미명시(break 키 없음) → 분기 미진입, 멱등 | `route.ts:73` (undefined 조건 미진입) | ✅ |
+| NaN 선차단 유지 | `route.ts:62~69` (기존 루프 불변) | ✅ |
+
+아키텍처 §2.7 경계면 표 "end<=start→400" 이행 완료. ADR 0004 Consequences와의 모순 — §2.7(거부 우선) 으로 해소됨.
+
+### DoD 수치 (직접 Bash)
+
+| 항목 | 결과 | 수치 |
+|---|---|---|
+| `pnpm test` | PASS | 138/138 (기존 135 + 신규 3, 회귀 0) |
+| `tsc --noEmit` | PASS | 에러 0 |
+| `pnpm lint` | PASS | 경고/에러 0 |
+| `pnpm build` | PASS | 15 라우트 컴파일 성공, 1493ms |
+
+### 회귀 확인
+
+- 기존 135 테스트 전부 GREEN. 신규 3건(역전 400, 동일 400, 정상 201) 추가 후 138/138.
+- `route.test.ts` 기존 케이스(빈 사유 400, status 불량 400, clockIn NaN 400, break NaN 400, 유효 201) 전부 회귀 없음.
+- seed 불변식(440/544/totalPay) 및 store.test 기존 케이스(clockIn 불변, 멱등 no-op, 결근·휴가 정책) GREEN 유지.
+
+### AC 매트릭스 갱신
+
+| AC# | 내용 | 충족 증거 | 일치 |
+|---|---|---|---|
+| 역전 검증 (§2.7) | breakStart/breakEnd 둘 다 명시 시 end<=start → 400 | `route.ts:71~80` + `route.test.ts:127~179` | ✅ (v2 해소) |
+
+v1 매트릭스 나머지 16개 AC — 변경 없음, 전부 ✅ 유지.
+
+### AC 정량 증거 갱신
+
+- 전체 AC: 17개 (기존 16 + 역전 검증 1)
+- 정량 증거 부재 (FAIL): 0개
+- AC 정량 증거 보유율: 17/17 = 100%
+
+### 교차 검증 — codex 재게이트 (gate_mode=and, rework_count=1)
+
+- base: da5d91c (v1), head: 725e0b9 (v2)
+- codex CLI: v0.135.0 (gpt-5.5)
+- 호출 시각: 2026-05-31T20:52
+- 호출 명령: `codex review --base da5d91c`
+
+codex 출력 (요약):
+
+> "The added boundary validation correctly rejects reversed and equal break ranges before persistence while preserving valid and omitted-range behavior. No actionable regression was found."
+
+- P1 findings: 0건
+- P2 findings: 0건
+- P3 findings: 0건 (nit 포함 없음)
+- codex 판정: **PASS** (findings 없음)
+
+gate_mode=and: 하네스축 PASS + 코드축(codex) PASS → 최종 PASS 확정.
+
+불일치 누적 로그: 합치(PASS)이므로 `cross_verify_log.jsonl` append 없음.
+
+### follow-up 잔여 항목 (차단 아님)
+
+| # | 항목 | 우선순위 | 상태 |
+|---|---|---|---|
+| F-1 | `pay/[date]` `breakRange` 실제 저장 범위 반환 (DEFAULT_BREAK_RANGE 하드코딩) | P1 | 후속 task 권장 |
+| F-2 | `EditRequestList` after.breakStart~breakEnd 표시 | P2 | 후속 task (선택) |
+
+F-3(역전 거부 테스트 추가) — v2에서 완료됨(route.test.ts:127~179).
+
+### 최종 판정 (v2)
+
+- **판정: PASS**
+- **사유**: P2-1(역전 휴게 범위 미거부) 해소 확인. architect §2.7 "end<=start→400" 이행 완료. 신규 테스트 3건(역전/동일/정상) 추가. DoD 수치 138/138, tsc/lint/build 전부 PASS. 기존 135 회귀 0. codex 재게이트(gate_mode=and) PASS — P1/P2 finding 없음.
+- **회귀 지점**: 없음 (종료, Done)
+- **수정 요청 항목**: 없음
