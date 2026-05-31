@@ -6,6 +6,7 @@ import {
   formatBirthDate,
   shiftMonth,
   shiftDay,
+  monthsBetween,
 } from "./date";
 
 describe("isValidDateString (엣지#5)", () => {
@@ -71,6 +72,27 @@ describe("shiftDay", () => {
   it("AC-5 포맷 보존(zero-pad) 및 항등: 2026-01-05 -4 → 2026-01-01, +0 항등", () => {
     expect(shiftDay("2026-01-05", -4)).toBe("2026-01-01");
     expect(shiftDay("2026-05-31", 0)).toBe("2026-05-31");
+  });
+});
+
+// 입사월~현재월 오름차순 "YYYY-MM" 목록(S3 월 picker 범위, Q1)
+describe("monthsBetween", () => {
+  it("데모 범위 2026-04~2026-05 → [2026-04, 2026-05]", () => {
+    expect(monthsBetween("2026-04", "2026-05")).toEqual(["2026-04", "2026-05"]);
+  });
+  it("단일 월(start===end) → [그 월]", () => {
+    expect(monthsBetween("2026-05", "2026-05")).toEqual(["2026-05"]);
+  });
+  it("연 경계 횡단: 2025-11~2026-02 → 4개월", () => {
+    expect(monthsBetween("2025-11", "2026-02")).toEqual([
+      "2025-11",
+      "2025-12",
+      "2026-01",
+      "2026-02",
+    ]);
+  });
+  it("start > end 면 빈 배열(역전 방어)", () => {
+    expect(monthsBetween("2026-06", "2026-05")).toEqual([]);
   });
 });
 

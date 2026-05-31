@@ -70,6 +70,20 @@ export function shiftDay(date: string, delta: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * "YYYY-MM" start~end(포함) 오름차순 목록. start>end 면 빈 배열.
+ * "YYYY-MM" 사전식 비교 = 시간순(zero-pad 보장). shiftMonth 단조증가로 종료(무한루프 없음).
+ */
+export function monthsBetween(start: string, end: string): string[] {
+  const list: string[] = [];
+  let cur = start;
+  while (cur <= end) {
+    list.push(cur);
+    cur = shiftMonth(cur, 1);
+  }
+  return list;
+}
+
 /** 월 그리드 빌드: 6주(42칸) 또는 필요한 만큼. 앞쪽 공백 + 일자. */
 export function buildMonthGrid(month: string): (string | null)[] {
   const [y, m] = month.split("-").map(Number);
