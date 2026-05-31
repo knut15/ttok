@@ -67,3 +67,29 @@ export interface PayDetail {
   overtimeMinutes: number;
   amount: number;
 }
+
+// === 마이페이지/프로필 (append below — leaf 모듈, FE↔API↔store 단일 출처) ===
+
+export interface UserProfile {
+  name: string; // "김민정" — 읽기전용
+  birthDate: string; // "1986-04-06" — 읽기전용 (UI "1986년 4월 6일")
+  phone: string; // "010-3126-7299" — 편집 가능
+  email: string; // "24joy@naver.com" — 편집 가능
+  avatarInitial: string; // "김"
+}
+
+export interface StoreInfo {
+  name: string; // "매머드커피 익스프레스 마석경춘로점" (STORE_NAME 재사용)
+  joinDate: string; // "2026-04-01" (UI "입사 2026.04.01 ~ 재직중")
+  employed: boolean; // true → "재직중"
+  workDays: string; // "월 ~ 금"
+  workTime: string; // "08:00~15:00"
+}
+
+export interface ProfileResponse {
+  profile: UserProfile;
+  store: StoreInfo;
+}
+
+/** PATCH 허용 필드 — 휴대폰/이메일만. name/birthDate는 타입상 표현 불가(컴파일 방어). */
+export type ProfilePatch = Partial<Pick<UserProfile, "phone" | "email">>;

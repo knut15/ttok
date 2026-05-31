@@ -2,8 +2,16 @@
 // client 직접 import 금지 — 반드시 Route Handler 경유.
 // 휘발성: 서버 재시작 시 seed 로 초기화(엣지#7, 명세 동작). globalThis 가드로 dev HMR 보존.
 
-import type { AttendanceRecord, EditRequest, WorkStatus } from "@/types";
-import { buildSeedRecords } from "./seed";
+import type {
+  AttendanceRecord,
+  EditRequest,
+  ProfilePatch,
+  ProfileResponse,
+  StoreInfo,
+  UserProfile,
+  WorkStatus,
+} from "@/types";
+import { buildSeedRecords, buildSeedProfile, SEED_STORE_INFO } from "./seed";
 import { calcWorkMinutes, calcOvertime } from "./time";
 import { DEFAULT_BREAK_MINUTES } from "./constants";
 
@@ -11,6 +19,8 @@ interface StoreShape {
   records: Map<string, AttendanceRecord>; // key = "YYYY-MM-DD"
   requests: EditRequest[];
   seq: number;
+  profile: UserProfile; // 신규 append — 마이페이지
+  storeInfo: StoreInfo; // 신규 append — 소속 매장
 }
 
 declare global {
@@ -20,7 +30,13 @@ declare global {
 function createStore(): StoreShape {
   const records = new Map<string, AttendanceRecord>();
   for (const r of buildSeedRecords()) records.set(r.date, r);
-  return { records, requests: [], seq: 1 };
+  return {
+    records,
+    requests: [],
+    seq: 1,
+    profile: buildSeedProfile(),
+    storeInfo: SEED_STORE_INFO,
+  };
 }
 
 function getStore(): StoreShape {
@@ -182,4 +198,26 @@ export function addRequest(req: NewEditRequest): EditRequest {
   };
   store.requests.push(created);
   return created;
+}
+
+// === 마이페이지/프로필 접근자 (append) ===
+
+/** 프로필+매장 조회. O(1). (AC-1/AC-4) */
+export function getProfile(): ProfileResponse {
+  const s = getStore();
+  return { profile: s.profile, store: s.storeInfo };
+}
+
+/**
+ * 허용 필드(phone/email)만 머지. 읽기전용 필드(name/birthDate)는 화이트리스트로 무시. O(1).
+ * 형식 검증은 호출자(Route Handler) 책임. (AC-2/AC-3)
+ */
+export function updateProfile(patch: ProfilePatch): UserProfile {
+  const s = getStore();
+  s.profile = {
+    ...s.profile,
+    ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
+    ...(patch.email !== undefined ? { email: patch.email } : {}),
+  };
+  return s.profile;
 }

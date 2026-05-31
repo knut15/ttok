@@ -2,11 +2,21 @@
 // 불변식(seed.test.ts 강제): 차감Σ=440 / 연장 6회·Σ544분 / totalPay=Σitems(주휴 67,080 포함).
 // 배지 표기값 vs summary 충돌 시 summary 제약 우선(승인 §0, architect §5).
 
-import type { AttendanceRecord, PayItem, WorkStatus } from "@/types";
+import type {
+  AttendanceRecord,
+  PayItem,
+  StoreInfo,
+  UserProfile,
+  WorkStatus,
+} from "@/types";
 import {
   DEFAULT_BREAK_MINUTES,
   HOURLY_WAGE,
   SEED_MONTH,
+  SEED_JOIN_DATE,
+  SEED_WORK_DAYS,
+  SEED_WORK_TIME,
+  STORE_NAME,
 } from "./constants";
 import { calcPaidMinutes, calcDailyPay } from "./pay";
 
@@ -57,6 +67,28 @@ export const WEEKLY_HOLIDAY = {
   paidMinutes: 390,
   amount: 67080,
 } as const;
+
+// === 마이페이지 시드 (append) ===
+
+/** 근무자 프로필 시드(김민정). 휴대폰/이메일만 편집 가능, 이름/생년월일 읽기전용. */
+export function buildSeedProfile(): UserProfile {
+  return {
+    name: "김민정",
+    birthDate: "1986-04-06",
+    phone: "010-3126-7299",
+    email: "24joy@naver.com",
+    avatarInitial: "김",
+  };
+}
+
+/** 소속 매장 시드(매머드커피). STORE_NAME 재사용. */
+export const SEED_STORE_INFO: StoreInfo = {
+  name: STORE_NAME,
+  joinDate: SEED_JOIN_DATE,
+  employed: true,
+  workDays: SEED_WORK_DAYS,
+  workTime: SEED_WORK_TIME,
+};
 
 export function buildSeedRecords(): AttendanceRecord[] {
   return SEED_ROWS.map((r) => ({

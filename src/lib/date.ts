@@ -35,6 +35,12 @@ export function formatPayRowDate(date: string): string {
   return `${m}월 ${d}일(${weekdayKo(date)})`;
 }
 
+/** "1986-04-06" → "1986년 4월 6일" (요일 없음 — 생년월일 표기, AC-12). */
+export function formatBirthDate(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return `${y}년 ${m}월 ${d}일`;
+}
+
 /** "2026-05" → "2026년 5월". */
 export function formatMonthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);

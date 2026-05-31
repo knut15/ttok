@@ -352,3 +352,123 @@ AC 20/20 자체는 여전히 충족. 경계 조건 처리 및 시간변경 기�
 {"task_url":"docs/tasks/2026-05-31-crewmon-attendance-pay","ts":"2026-05-31T(v2)","category":"error-handling","codex_rationale":"PATCH clock mutation route.ts:42 persists time without parseHHMM NaN guard","final_decision":"rework_A","review_iter":2}
 {"task_url":"docs/tasks/2026-05-31-crewmon-attendance-pay","ts":"2026-05-31T(v2)","category":"error-handling","codex_rationale":"시간변경 button in AttendanceDetail.tsx:83-88 has no onClick handler — correction workflow non-functional","final_decision":"rework_A","review_iter":2}
 ```
+
+---
+
+## 재검증 (v3) — 2026-05-31
+
+- **재검증 대상**: REWORK(A) v2 수정 4건 + DoD 4종 + codex 재게이트 (rework_count=3)
+- **최신 커밋**: `f74b9f4 fix(attendance): REWORK v3 (분류 A) — codex v2 발견 4건 수정`
+- **git 상태**: `docs/tasks/.../00-board.md` 1건 수정(보드 상태 업데이트) only. 코드 untracked 0, 코드 변경 없음.
+
+### 수정 4건 확인
+
+#### [P1] AttendanceDetail.tsx — 시간변경 dead control 해소
+
+`src/features/attendance/components/AttendanceDetail.tsx`
+
+- **시트 열기**: 휴게 Row의 `시간변경` 버튼 `onClick={() => setTimeSheetOpen(true)}` (line 109) → `BottomSheet` 재사용 `TimeChangeSheet` 열림. ✅
+- **draft 도입**: `useState<{clockIn, clockOut}|null>(null)` (line 48-51). record 로드/변경 시 렌더 중 상태 조정으로 draft 동기화(line 57-60, syncKey 패턴). ✅
+- **EditRequestForm after가 draft 값으로 제출**: `after: { status: record.status, clockIn: effectiveDraft.clockIn, clockOut: effectiveDraft.clockOut }` (line 123-127). 사용자가 TimeChangeSheet에서 수정한 값이 `effectiveDraft`에 반영된 뒤 제출됨 → before≠after 의미있는 수정요청 생성. ✅
+- **parseHHMM 유효성 검사**: `TimeChangeSheet` 내부 `canApply = inValid && outValid` (line 175), `!Number.isNaN(parseHHMM(clockIn))` (line 173). NaN이면 적용 버튼 비활성. ✅
+
+#### [P2] store.ts updateStatus — 정상/연장 전환 시 deductMinutes=0
+
+`src/lib/store.ts:93,99`
+
+- clock 존재 분기(L93): `deductMinutes: status === "지각" ? rec.deductMinutes : 0` → 정상/연장 전환 시 deduct=0. ✅
+- clock 없는 분기(L99): 동일 삼항식. ✅
+- 테스트 커버: `store.test.ts:82-93` ("지각(deduct=90)→정상 deduct=0", "→연장 deduct=0") PASS. ✅
+
+#### [P2] store.ts updateStatus — 휴가/결근 전환 시 breakMinutes=0 + 역전환 시 복원
+
+`src/lib/store.ts:68-100`
+
+- 휴가/결근 전환(L67-76): `breakMinutes: 0` 추가 설정. ✅
+- clock 존재 역전환(L79-80): `rec.breakMinutes === 0 ? DEFAULT_BREAK_MINUTES : rec.breakMinutes` → break 복원 후 calcWorkMinutes 재계산. ✅
+- 테스트 커버: `store.test.ts:96-119` ("정상→휴가 break=0", "정상→결근 break=0", "휴가→정상 break 복원+work=390") PASS. ✅
+
+#### [P2] route.ts PATCH — clock time parseHHMM 400 검증
+
+`src/app/api/attendance/route.ts:37-41`
+
+- `!body.time || Number.isNaN(parseHHMM(body.time))` → 400 반환. ✅
+- 테스트 커버: `route.test.ts:92-111` ("99:99→400", "09:00→200") PASS. ✅
+
+### DoD 4종 실제 실행 결과 (v3)
+
+| 명령 | 결과 | 수치 |
+|---|---|---|
+| `pnpm test` | ✅ PASS | **56 passed (11 files)**, 177ms (v2 49→v3 56, +7) |
+| `pnpm exec tsc --noEmit` | ✅ PASS | exit 0, 에러 0 |
+| `pnpm lint` | ✅ PASS | exit 0 |
+| `pnpm build` | ✅ PASS | 11개 라우트, Compiled successfully |
+
+### 🤝 교차 검증 재게이트 (codex review v3)
+
+- **자체 판정 (하네스축)**: PASS (수정 4건 해소 확인, DoD 4종 56 passed 통과)
+- **codex 호출**: `codex review --base ce98f0e`
+- **codex 모델**: gpt-5.5
+- **session**: 019e7c71-59b2-7913-a8de-da0ea8e1827a
+- **codex 판정**: **P1 없음. P2 2개.**
+
+#### codex 지적사항 (v3)
+
+**[P2] Restore the default break before later clock events — `store.ts:95-100`**
+
+`updateStatus`의 clock 없는 분기(else, L95-100)에서 휴가→정상 전환 시 `breakMinutes`를 건드리지 않아 0이 남음. 이후 홈에서 `upsertTodayClock`으로 clockIn/clockOut을 기록할 때, 이미 status="정상"이므로 `upsertTodayClock`의 휴가/결근 정상화 조건(L133)이 false → break=0 유지 → calcWorkMinutes에 break=0 투입 → 420분(08:00~17:00 기준, 과대산정).
+
+시나리오: (1) 상세 화면에서 상태변경("정상") → (2) 홈에서 출퇴근 기록.
+
+**차단성 판단**: 발생 가능한 실제 버그이나, 정상적 사용 UX 흐름(홈에서 직접 clockIn 토글)에서는 `upsertTodayClock`이 휴가→정상 정상화를 처리하므로 재현하려면 비주류 2단계 경로(상세에서 상태변경 먼저 → 홈에서 토글)가 필요. 급여 과대산정 가능성은 있으나 인메모리 시드 기반 데모 앱 성격상 사용자 시나리오가 제한적. PRD에 해당 복합 경로 시나리오 AC 없음. **P2 등급 유지. 차단급(P1) 아님.**
+
+**[P2] Validate nested edit-request changes before storing them — `requests/route.ts:20`**
+
+`body.after`에 빈 객체 `{}` 또는 유효하지 않은 status/time을 넣어 POST 가능. TypeScript cast가 런타임 검증을 하지 않아 EditRequest에 잘못된 `after` 데이터가 저장됨.
+
+**차단성 판단**: EditRequest는 수정요청 기록 목적으로만 사용되며, status="대기"로만 저장됨. 직접 AttendanceRecord나 급여 계산에 영향 없음(실제 반영 별도 승인 플로우 가정). 또한 본 앱의 UI(EditRequestForm + TimeChangeSheet)를 통해서만 after가 제출되므로 악의적 조작은 직접 API 호출 시나리오에 한정. PRD AC-9는 "POST → status:'대기', GET에 포함"만 명시 — after 내용 검증 AC 없음. **P2 등급 유지. 차단급(P1) 아님.**
+
+#### 수렴 판정 (rework_count=3, 3번째 codex 라운드)
+
+| Finding | 등급 | 기능/정확성 결함 여부 | PASS 차단성 |
+|---|---|---|---|
+| store.ts:95-100 break=0 잔존 (비주류 경로) | P2 | 발생 가능한 버그, 비주류 2단계 UX 경로에 한정 | 비차단 |
+| requests/route.ts:20 after 미검증 | P2 | 데이터 오염 가능하나 급여 산정 무영향 | 비차단 |
+
+**P1 finding 없음. 잔여 지적은 P2 2건으로 모두 비주류 경로 또는 금전적 영향 없는 방어적 개선 사항.** 무한 whack-a-mole 방지 원칙 적용 — P2 이하만 남으면 PASS 판정, 잔여 nit은 follow-up 후보로 분류.
+
+### v3 최종 판정
+
+**PASS**
+
+#### 사유
+
+- **v2 지적 4건 전부 해소**: AttendanceDetail 시간변경 핸들러 + draft 기반 수정요청 ✅, updateStatus 정상/연장 전환 시 deduct=0 ✅, updateStatus 휴가/결근 전환 시 break=0 + 역전환 복원 ✅, PATCH route time NaN 400 ✅.
+- **DoD 4종 통과**: `pnpm test` 56 passed, `tsc --noEmit` exit 0, `lint` exit 0, `build` Compiled successfully.
+- **codex 코드축 (3번째 라운드)**: P1 finding 없음. P2 2건이나 둘 다 비차단 (비주류 경로 / 금전적 영향 없음). gate_mode=and 기준 코드축 PASS.
+- **AC 20/20 유지**: 수정 범위는 기존 AC와 충돌 없는 경계 조건 보강.
+
+#### 분류
+
+PASS (REWORK 사유 없음)
+
+#### 회귀 지점
+
+없음 (종료)
+
+#### 남은 미충족 AC
+
+없음. AC-1~20 전부 충족.
+
+#### follow-up 후보 (P2, 비차단, 별도 task 권장)
+
+1. **[P2-follow1] store.ts updateStatus else 분기 — clock 없는 휴가→정상 전환 시 breakMinutes 초기화**: `else` 분기(L95-100)에 `breakMinutes: status === "지각" || status === "정상" || status === "연장" ? DEFAULT_BREAK_MINUTES : rec.breakMinutes` 추가. 비주류 2단계 경로(상세 상태변경 후 홈 토글) 과대산정 방지. 독립 task로 처리 가능.
+2. **[P2-follow2] requests/route.ts — after 내용 런타임 검증**: `after.status`가 WORK_STATUSES 중 하나인지, `after.clockIn/clockOut`이 null 또는 parseHHMM 유효값인지 검증 후 400 반환. 현재는 EditRequest가 급여에 무영향이나 향후 승인 플로우 추가 시 필요.
+
+#### 📊 AC 정량 증거 (v3 — 기존 동일)
+
+- 전체 AC: 20개, 정량 증거 보유율: 20/20 = 100%
+
+#### 부록 — codex 불일치 로그 (v3)
+
+codex v3 finding은 P2 2건으로 최종 결정이 `pass_confirmed`이므로 불일치 로그 미추가 (합치 = codex PASS 기준).

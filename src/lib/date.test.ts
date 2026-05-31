@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isValidDateString, formatDotDate, buildMonthGrid } from "./date";
+import {
+  isValidDateString,
+  formatDotDate,
+  buildMonthGrid,
+  formatBirthDate,
+} from "./date";
 
 describe("isValidDateString (엣지#5)", () => {
   it("유효한 날짜는 true", () => {
@@ -15,6 +20,12 @@ describe("isValidDateString (엣지#5)", () => {
 describe("formatDotDate (AC-11)", () => {
   it("2026-05-29 → 2026.05.29 금", () => {
     expect(formatDotDate("2026-05-29")).toBe("2026.05.29 금");
+  });
+});
+
+describe("formatBirthDate (AC-12 — 요일 없음)", () => {
+  it("1986-04-06 → 1986년 4월 6일", () => {
+    expect(formatBirthDate("1986-04-06")).toBe("1986년 4월 6일");
   });
 });
 

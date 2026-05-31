@@ -20,6 +20,14 @@ export const STORE_NAME = "매머드커피 익스프레스 마석경춘로점";
 
 export const SEED_MONTH = "2026-05";
 
+// === 마이페이지 매장 부가정보 (append) ===
+/** 시드 입사일. UI "입사 2026.04.01 ~ 재직중". */
+export const SEED_JOIN_DATE = "2026-04-01";
+/** 근무요일 라벨. */
+export const SEED_WORK_DAYS = "월 ~ 금";
+/** 근무시간 라벨. */
+export const SEED_WORK_TIME = "08:00~15:00";
+
 /** 출근상태 5종 enum (라디오 옵션 순서). */
 export const WORK_STATUSES: readonly WorkStatus[] = [
   "정상",

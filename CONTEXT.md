@@ -1,7 +1,7 @@
 # CONTEXT — Crewmon 출퇴근·급여 앱 도메인 용어집
 
 > 이 문서는 프로젝트의 도메인 캐논(canonical) 정의다. 코드/PRD/리뷰가 같은 의미로 용어를 쓰도록 단일 출처 역할을 한다.
-> 참조 디자인: `public/sample/IMG_3606~3619.png` (Crewmon 앱). 범위: 홈 / 출퇴근 / 급여.
+> 참조 디자인: `public/sample/IMG_3606~3619.png` (Crewmon 앱). 범위: 홈 / 출퇴근 / 급여 / 마이페이지 / 프로필.
 
 ## 핵심 용어
 
@@ -18,6 +18,9 @@
 | **출근상태** (WorkStatus) | `정상 / 지각 / 결근 / 휴가 / 연장` 5종 enum. |
 | **근무기록 수정요청** (EditRequest) | 출퇴근/상태 정정 요청. 사유(0~100자) 입력 후 생성. 상태 `대기 → 수락` 추적. |
 | **월 급여 요약** (PaySummary) | `{ totalPay, deductMinutes, overtimeCount, overtimeMinutes }`. 불변식: `totalPay = Σ items.amount`(주휴 포함). |
+| **사용자 프로필** (UserProfile) | 근무자 개인정보 `{ name, birthDate, phone, email, avatarInitial }`. 이름·생년월일은 본인인증 전 **읽기전용**, 휴대폰·이메일만 편집 가능. |
+| **매장 정보** (StoreInfo) | 소속 매장 `{ name, joinDate, employed, workDays, workTime }`. UI 표기 "입사 YYYY.MM.DD ~ 재직중 / 근무 월~금 HH:MM~HH:MM". |
+| **읽기전용 필드 정책** | 이름·생년월일 변경은 본인인증(미구현)을 전제로 하며, `PATCH /api/profile`이 화이트리스트(phone/email)로 해당 필드를 무시(200)하여 계약 단일 출처(store)에서 강제한다. 형식 오류(이메일/전화)는 400. |
 
 ## 데이터 표기 규칙 (UI)
 

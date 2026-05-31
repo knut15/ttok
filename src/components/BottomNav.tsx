@@ -15,7 +15,7 @@ const TABS: Tab[] = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/attendance", label: "출퇴근", icon: "clock" },
   { href: "/pay", label: "급여", icon: "won" },
-  { href: "/mypage", label: "마이페이지", icon: "user", disabled: true },
+  { href: "/mypage", label: "마이페이지", icon: "user" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
