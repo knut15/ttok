@@ -273,6 +273,74 @@ describe("approveRequest — 수락 반영", () => {
     expect(request.status).toBe("대기");
   });
 
+  // === T7: 휴게 범위 편집 / 퇴근시각 편집 수락 반영 ===
+
+  // AC-3: 휴게 범위 변경 수락 → breakMinutes 파생 + work 재계산. clockIn 불변(AC-8).
+  it("휴게 범위(11:30~13:00) 변경 수락 시 breakMinutes=90 파생 + work 재계산, clockIn 불변", () => {
+    const date = "2026-05-26"; // 시드 정상 08:00~15:00, work 390, break 30
+    const before = getRecord(date)!;
+    const req = pending(date, {
+      status: "정상",
+      clockIn: before.clockIn, // 불변
+      clockOut: before.clockOut, // 불변
+      breakStart: "11:30",
+      breakEnd: "13:00", // 90분
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.breakStart).toBe("11:30");
+    expect(record.breakEnd).toBe("13:00");
+    expect(record.breakMinutes).toBe(90);
+    // 08:00~15:00 = 420 − 90 = 330
+    expect(record.workMinutes).toBe(330);
+    expect(record.clockIn).toBe(before.clockIn); // AC-8 불변
+  });
+
+  // R1 case①: 범위 명시이고 동일시각(파생 0) → 0 존중(DEFAULT 복원 우회)
+  it("휴게 범위 동일시각(12:00~12:00, 파생 0) 명시 수락 시 breakMinutes=0 존중(복원 안 함)", () => {
+    const date = "2026-05-26";
+    const req = pending(date, {
+      status: "정상",
+      clockIn: "08:00",
+      clockOut: "15:00",
+      breakStart: "12:00",
+      breakEnd: "12:00", // 파생 0
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.breakMinutes).toBe(0); // DEFAULT(30) 복원 안 됨
+    expect(record.workMinutes).toBe(420); // 420 − 0
+  });
+
+  // AC-6: 퇴근시각 변경 수락 → clockOut + overtime + work 재계산. clockIn 불변(AC-8).
+  it("퇴근시각 변경(16:30) 수락 시 clockOut/overtime/work 재계산, clockIn 불변(범위 미명시=기존 휴게)", () => {
+    const date = "2026-05-26"; // 08:00~15:00, break 30
+    const before = getRecord(date)!;
+    const req = pending(date, {
+      status: "연장",
+      clockIn: before.clockIn, // 불변
+      clockOut: "16:30",
+      // break 범위 미명시 → 기존 휴게 유지
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.clockIn).toBe(before.clockIn); // AC-8 불변
+    expect(record.clockOut).toBe("16:30");
+    expect(record.workMinutes).toBe(480); // 08:00~16:30 − 30
+    expect(record.overtimeMinutes).toBe(90); // 990 − 900
+  });
+
+  // AC-7: 범위 미명시 수락 = 기존 동작(회귀). break===30 보존, 복원 분기 영향 없음.
+  it("휴게 범위 미명시 요청 수락은 기존 동작과 동일(멱등·회귀 0)", () => {
+    const date = "2026-05-04";
+    const req = pending(date, {
+      status: "연장",
+      clockIn: "07:26",
+      clockOut: "15:34",
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
+    expect(record.workMinutes).toBe(458); // 07:26~15:34 − 30
+    expect(record.overtimeMinutes).toBe(34);
+  });
+
   // E-3 / Q1: 레코드 없는 날 수락 → after 로 신규 레코드 생성(upsert)
   it("레코드 없는 날(시드 외) 수락 시 after 로 신규 레코드를 생성한다(upsert)", () => {
     const date = "2026-07-15"; // 시드 외

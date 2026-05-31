@@ -13,7 +13,7 @@ import type {
   WorkStatus,
 } from "@/types";
 import { buildSeedRecords, buildSeedProfile, SEED_STORE_INFO } from "./seed";
-import { calcWorkMinutes, calcOvertimeByClock } from "./time";
+import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes } from "./time";
 import {
   DEFAULT_BREAK_MINUTES,
   REGULAR_MINUTES,
@@ -27,8 +27,20 @@ import {
  */
 function recalcClockFields(rec: AttendanceRecord): AttendanceRecord {
   if (rec.clockIn && rec.clockOut) {
-    const breakMinutes =
-      rec.breakMinutes === 0 ? DEFAULT_BREAK_MINUTES : rec.breakMinutes;
+    // R1 3-case 우선순위 (architect §2.6, T7):
+    // ① 범위 둘 다 명시 → calcBreakMinutes 파생값 절대 존중(0이어도 복원 안 함).
+    // ② 범위 없음 + breakMinutes>0 → 기존값.
+    // ③ 범위 없음 + breakMinutes===0 → DEFAULT 복원(레거시·휴가역전환 호환).
+    const hasRange = Boolean(rec.breakStart && rec.breakEnd);
+    const breakMinutes = hasRange
+      ? calcBreakMinutes({
+          breakStart: rec.breakStart,
+          breakEnd: rec.breakEnd,
+          fallback: 0, // 범위 명시일 때 동일/역전은 0 으로 존중(복원 우회)
+        })
+      : rec.breakMinutes === 0
+        ? DEFAULT_BREAK_MINUTES
+        : rec.breakMinutes;
     const workMinutes = calcWorkMinutes({
       clockIn: rec.clockIn,
       clockOut: rec.clockOut,
@@ -213,6 +225,10 @@ export function addRequest(req: NewEditRequest): EditRequest {
         status: existing.status,
         clockIn: existing.clockIn,
         clockOut: existing.clockOut,
+        // T7: before 스냅샷에 휴게 범위 포함(있으면). optional 이라 미부여 시 키 없음.
+        ...(existing.breakStart && existing.breakEnd
+          ? { breakStart: existing.breakStart, breakEnd: existing.breakEnd }
+          : {}),
       }
     : { status: "정상", clockIn: null, clockOut: null };
 
@@ -268,11 +284,16 @@ export function approveRequest(id: string): ApproveResult | null {
   // Q1 upsert: 레코드 없으면 after status/clock 을 입힐 기준 레코드를 신규 생성.
   const base =
     store.records.get(req.date) ?? newRecordFrom(req.date, after);
+  // after 에 휴게 범위가 명시되면 그것을 진실원으로 반영(없으면 base 의 기존 범위 유지).
+  const hasAfterRange = Boolean(after.breakStart && after.breakEnd);
   const merged: AttendanceRecord = {
     ...base,
     status: after.status,
     clockIn: after.clockIn,
     clockOut: after.clockOut,
+    ...(hasAfterRange
+      ? { breakStart: after.breakStart, breakEnd: after.breakEnd }
+      : {}),
   };
 
   let record: AttendanceRecord;
