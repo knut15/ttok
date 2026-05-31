@@ -13,7 +13,7 @@ import type {
 } from "@/types";
 import { buildSeedRecords, buildSeedProfile, SEED_STORE_INFO } from "./seed";
 import { calcWorkMinutes, calcOvertime } from "./time";
-import { DEFAULT_BREAK_MINUTES } from "./constants";
+import { DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";
 
 interface StoreShape {
   records: Map<string, AttendanceRecord>; // key = "YYYY-MM-DD"
@@ -66,7 +66,8 @@ export function getRecord(date: string): AttendanceRecord | null {
 /**
  * 출근상태 변경(AC-8, 버그2). 없으면 null.
  * status 의존 연산 필드를 일관되게 재계산(CONTEXT.md 급여인정시간 정의):
- * - 휴가/결근 → 인정시간 0 (work/overtime/deduct=0), 휴게도 0 (clock 은 보존).
+ * - 결근 → 정규 전액 차감(deduct=REGULAR_MINUTES), work/overtime/break=0 (clock 은 보존).
+ * - 휴가 → 무급(deduct=0), work/overtime/break=0 (clock 은 보존, 단순 0원).
  *   (역전환 시 break=0로 인한 근무시간 과대산정 방지 — 휴게는 아래 분기에서 복원)
  * - 정상/연장 → deduct=0 (지각 차감 해소). clock 존재 시 휴게 복원 후 work/overtime 재계산.
  * - 지각 → deduct 는 보존(지각 산식 본 범위 미정의 — 임의 추정 금지). clock 존재 시 재계산.
@@ -80,8 +81,18 @@ export function updateStatus(
   if (!rec) return null;
 
   let updated: AttendanceRecord;
-  if (status === "휴가" || status === "결근") {
-    // 휴가=무급 / 결근=근무없음 → 인정시간 0 + 휴게 0 (clock 보존).
+  if (status === "결근") {
+    // 결근 = 정규 전액 차감(급여 과다지급 방지). work/overtime/break=0, clock 보존.
+    updated = {
+      ...rec,
+      status,
+      workMinutes: 0,
+      overtimeMinutes: 0,
+      deductMinutes: REGULAR_MINUTES,
+      breakMinutes: 0,
+    };
+  } else if (status === "휴가") {
+    // 휴가 = 무급(차감 아님). 인정시간 0 + 휴게 0 (clock 보존).
     updated = {
       ...rec,
       status,

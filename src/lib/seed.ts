@@ -56,7 +56,8 @@ const SEED_ROWS: SeedRow[] = [
   { day: "25", status: "연장", clockIn: "08:00", clockOut: "17:00", workMinutes: 510, overtimeMinutes: 120, deductMinutes: 0 },
   { day: "26", status: "정상", clockIn: "08:00", clockOut: "15:00", workMinutes: 390, overtimeMinutes: 0, deductMinutes: 0 },
   { day: "27", status: "정상", clockIn: "08:00", clockOut: "15:00", workMinutes: 390, overtimeMinutes: 0, deductMinutes: 0 },
-  { day: "28", status: "정상", clockIn: "07:58", clockOut: "15:00", workMinutes: 390, overtimeMinutes: 0, deductMinutes: 0 },
+  // 5/28 실근무 인정: 07:58~15:00 = 422분, 휴게30 차감 → 392분(조기출근분 정규 인정). 정시 퇴근이라 연장 0.
+  { day: "28", status: "정상", clockIn: "07:58", clockOut: "15:00", workMinutes: 392, overtimeMinutes: 0, deductMinutes: 0 },
   // 휴가일
   { day: "29", status: "휴가", clockIn: null, clockOut: null, workMinutes: 0, overtimeMinutes: 0, deductMinutes: 0 },
 ];

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { __resetStore, getRecord, updateStatus, upsertTodayClock } from "./store";
 import { calcPaidMinutes, calcDailyPay } from "./pay";
-import { HOURLY_WAGE, DEFAULT_BREAK_MINUTES } from "./constants";
+import { HOURLY_WAGE, DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";
 
 const VACATION_DATE = "2026-05-29"; // 시드상 휴가
 
@@ -46,13 +46,17 @@ describe("updateStatus — 상태 전환 시 연산 필드 재계산(버그2)", 
     expect(rec!.deductMinutes).toBe(0);
   });
 
-  it("'결근'으로 전환 시에도 인정시간 0 (clock은 보존)", () => {
-    const target = "2026-05-26";
+  // AC-T3-1: 결근 = 정규 전액 차감. deduct=REGULAR_MINUTES(390), work/overtime/break=0, clock 보존.
+  it("'결근'으로 전환 시 정규 전액 차감(deduct=390)·work/overtime/break=0·clock 보존", () => {
+    const target = "2026-05-26"; // 시드 정상 08:00~15:00
     const rec = updateStatus(target, "결근");
+    expect(rec!.status).toBe("결근");
+    expect(rec!.deductMinutes).toBe(REGULAR_MINUTES); // 390 전액 차감
     expect(rec!.workMinutes).toBe(0);
     expect(rec!.overtimeMinutes).toBe(0);
-    expect(rec!.deductMinutes).toBe(0);
+    expect(rec!.breakMinutes).toBe(0);
     expect(rec!.clockIn).toBe("08:00"); // 보존
+    expect(rec!.clockOut).toBe("15:00"); // 보존
   });
 
   it("'휴가'→'정상'(clock 존재) 전환 시 workMinutes/overtime 재계산", () => {

@@ -11,6 +11,9 @@
 | **휴게시간** (breakMinutes) | 근무 중 무급 휴게(예 11:30~12:00 = 30분). 근무시간에서 차감. |
 | **급여인정시간** (paidMinutes) | 근무시간에서 급여차감시간을 뺀, 급여 산정 기준 시간. `max(0, workMinutes − deductMinutes)`. 휴가일은 0. |
 | **급여차감시간** (deductMinutes) | 지각·결근 등으로 근무로 인정되지 않아 급여인정시간에서 제외되는 시간(분). |
+| **결근 차감 정책** | 결근 = 정규 전액 차감. `updateStatus(date,"결근")` 시 `deductMinutes = REGULAR_MINUTES(390)`, `workMinutes/overtimeMinutes/breakMinutes = 0`(clockIn/clockOut 보존) → 급여인정시간 0원. 결근과 휴가는 의미가 다르다(차감 vs 단순 0원). |
+| **휴가 차감 정책** | 휴가 = 무급(차감 아님). `deductMinutes = 0`, work/overtime/break = 0. 일급 0원이되 급여차감시간 합산에 포함되지 않는다. |
+| **실근무 인정** | `workMinutes`는 실제 clock(출/퇴근 시각) 기준으로 산정한다. 조기 출근분도 정규 인정시간에 포함되며(예 5/28 07:58 출근 → 392분), 연장(overtimeMinutes)은 **정시 퇴근(15:00) 초과분만** 인정한다. 정시에 퇴근하면 조기출근으로 근무가 392분이어도 연장은 0이다. |
 | **연장근무** (overtimeMinutes) | 정규 근무시간(기준선) 초과분. 급여·캘린더에서 별도 집계·표기. `max(0, workMinutes − 정규근무분)`. |
 | **정규 근무시간** | 기준선 08:00~15:00, 휴게 30분 → 390분(6시간30분). `src/lib/constants.ts`. |
 | **일급** (dailyPay/amount) | `round(급여인정시간/60 × 시급)`. 휴가일은 0원. 검산: 390분 × 10,320원 = 67,080원. |

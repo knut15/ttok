@@ -31,4 +31,16 @@ describe("seed 불변식", () => {
     expect(records.some((r) => r.date === "2026-05-28" && r.status === "정상")).toBe(true);
     expect(records.some((r) => r.status === "휴가")).toBe(true);
   });
+
+  // AC-T3-4: 5/28 실근무 인정 — clock 07:58~15:00, 휴게30 → 422-30=392분.
+  // 정시 퇴근이라 연장 아님(overtime 0), 정상 유지. 일급=round(392/60×10320)=67424.
+  it("④ 5/28 실근무 392분 인정 / overtime 0 / status 정상 / pay amount 67424", () => {
+    const rec = records.find((r) => r.date === "2026-05-28");
+    expect(rec!.status).toBe("정상");
+    expect(rec!.clockIn).toBe("07:58"); // 실제 입력값 보존
+    expect(rec!.workMinutes).toBe(392);
+    expect(rec!.overtimeMinutes).toBe(0); // 정시 퇴근 → 연장 아님
+    const item = items.find((it) => it.date === "2026-05-28");
+    expect(item!.amount).toBe(67424); // 실근무 392분 기준 (정규 캡 없음)
+  });
 });
