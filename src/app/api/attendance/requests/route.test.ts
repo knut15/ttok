@@ -44,4 +44,49 @@ describe("/api/attendance/requests", () => {
     expect(res.status).toBe(400);
     expect((await (await GET(getReq)).json()).length).toBe(0);
   });
+
+  // P1-1 / E-8: after 형식 검증 (status 누락/불량, clock 형식 불량)
+  it("after.status 누락(after:{}) 은 400 으로 거부하고 미생성", async () => {
+    const res = await POST(
+      post({ date: "2026-05-04", reason: "사유", after: {} }),
+    );
+    expect(res.status).toBe(400);
+    expect((await (await GET(getReq)).json()).length).toBe(0);
+  });
+
+  it("after.status 가 유효 WorkStatus 가 아니면 400 으로 거부", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "사유",
+        after: { status: "이상값", clockIn: null, clockOut: null },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await (await GET(getReq)).json()).length).toBe(0);
+  });
+
+  it("after.clockIn 형식이 불량(99:99)이면 400 으로 거부", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "사유",
+        after: { status: "연장", clockIn: "99:99", clockOut: null },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await (await GET(getReq)).json()).length).toBe(0);
+  });
+
+  it("정상 after({status:연장, clockIn:08:00, clockOut:16:30}) 는 201 로 생성", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "연장 정정",
+        after: { status: "연장", clockIn: "08:00", clockOut: "16:30" },
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect((await (await GET(getReq)).json()).length).toBe(1);
+  });
 });

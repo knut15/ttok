@@ -63,3 +63,31 @@
 
 신규: `src/app/api/attendance/requests/approve/route.ts`(+`.test.ts`), `src/features/attendance/components/AttendanceCalendarView.tsx`, `docs/adr/0003-overtime-by-clockout.md`, 본 노트.
 수정(append/호출부): `constants.ts`, `time.ts`(+test), `store.ts`(+test), `date.ts`(+test), `types/index.ts`, `useAttendance.ts`, `EditRequestList.tsx`, `AttendanceDetail.tsx`, `AppHeader.tsx`, `app/attendance/page.tsx`, `CONTEXT.md`.
+
+---
+
+## REWORK v2 (분류 A) — P1-1 after 페이로드 검증
+
+**결함(codex P1-1)**: `POST /api/attendance/requests`(addRequest)가 `after.status`/`clockIn`/`clockOut`를 검증하지 않아 `after:{}`·불량 status 요청이 생성 → `approveRequest` 수락 시 `record.status=undefined` 오염. PRD E-8(형식 검증 400) 미충족.
+
+### 수정 (파일:라인)
+- `src/app/api/attendance/requests/route.ts:33-50` — POST 진입부에 after 형식 검증 추가:
+  - `after.status`가 `WORK_STATUSES` 미포함 → 400 (`{error}` + no-store, 기존 패턴).
+  - `after.clockIn`/`after.clockOut`가 null 아니고 `parseHHMM` NaN → 400 (null은 허용, 형식 불량 문자열만 차단).
+- `src/lib/store.ts:248-253` — `approveRequest` 방어 가드(이중 안전): `after.status`가 유효 WorkStatus 아니면 기존 레코드 미반영 보존. 정상 흐름은 route에서 이미 차단되므로 주 수정은 route.
+
+### 추가 테스트 (vertical slice, RED→GREEN)
+`src/app/api/attendance/requests/route.test.ts` +4:
+- `after:{}`(status 없음) → 400, 미생성
+- `after:{status:"이상값"}` → 400, 미생성
+- `after:{status:"연장", clockIn:"99:99"}` → 400, 미생성
+- 정상 `after:{status:"연장", clockIn:"08:00", clockOut:"16:30"}` → 201, 1건 생성
+- approve 회귀: 기존 store.test.ts 9케이스 GREEN 유지(유효 요청 생성→수락 정상).
+
+### DoD (직접 Bash)
+- `pnpm test`: **104 passed (15 files)** — 기존 100 + 신규 4, 회귀 0
+- `tsc --noEmit`: exit 0
+- `pnpm build`: exit 0
+- `pnpm lint`: exit 0
+
+범위 한정: P1-1 검증 + 테스트만. 다른 변경 없음(P1-2/P2/P3 follow-up 미손).

@@ -13,8 +13,8 @@
 | 1 기획 | planner | ✅ 완료 | `01-prd.md` (AC 12, sub-task 4) |
 | 2 승인 | (user gate) | ✅ APPROVE | `02-approval.md` (Q1/Q2/Q4 결정) |
 | 2.5 아키텍처 | architect | ✅ 완료 | `03-architecture.md` (연장정합+DRY, 4/4) |
-| 3 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 4 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 3 구현 | developer | 🔄 rework v2 | `04-implementation.md` (REWORK A: after 검증) |
+| 4 리뷰 | reviewer+codex | ⏸ REWORK A | `05-review.md` (AC 12/12, codex P1-1) |
 
 ## 진행 로그
 - 2026-05-31 — T4 시작. 결정: 시간수정=수락반영, 달력=자유이동+빈달허용. T3 연장정합 겸사 해소.

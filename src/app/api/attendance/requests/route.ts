@@ -1,7 +1,9 @@
 // GET 수정요청 내역 / POST 수정요청 생성(AC-9). 빈 사유 400(엣지#6).
 import { NextResponse } from "next/server";
 import { addRequest, listRequests } from "@/lib/store";
-import type { EditRequestChange } from "@/types";
+import { WORK_STATUSES } from "@/lib/constants";
+import { parseHHMM } from "@/lib/time";
+import type { EditRequestChange, WorkStatus } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -28,6 +30,23 @@ export async function POST(request: Request): Promise<Response> {
       { error: "사유를 입력해 주세요." },
       { status: 400, headers: NO_STORE },
     );
+  }
+
+  // E-8: after 형식 검증. status 가 유효 WorkStatus 가 아니면 400.
+  if (!WORK_STATUSES.includes(body.after.status as WorkStatus)) {
+    return NextResponse.json(
+      { error: "유효한 출근상태가 아닙니다." },
+      { status: 400, headers: NO_STORE },
+    );
+  }
+  // clockIn/clockOut 은 null 허용, 존재 시 "HH:MM" 형식이어야 한다(NaN → 400).
+  for (const clock of [body.after.clockIn, body.after.clockOut]) {
+    if (clock != null && Number.isNaN(parseHHMM(clock))) {
+      return NextResponse.json(
+        { error: "출퇴근 시각 형식이 올바르지 않습니다." },
+        { status: 400, headers: NO_STORE },
+      );
+    }
   }
 
   const created = addRequest({

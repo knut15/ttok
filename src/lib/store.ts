@@ -14,7 +14,11 @@ import type {
 } from "@/types";
 import { buildSeedRecords, buildSeedProfile, SEED_STORE_INFO } from "./seed";
 import { calcWorkMinutes, calcOvertimeByClock } from "./time";
-import { DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";
+import {
+  DEFAULT_BREAK_MINUTES,
+  REGULAR_MINUTES,
+  WORK_STATUSES,
+} from "./constants";
 
 /**
  * clock 기반 정상/연장 재계산(휴게 복원 포함) — 내부 private 헬퍼(architect §3.2, DRY).
@@ -245,6 +249,12 @@ export function approveRequest(id: string): ApproveResult | null {
   }
 
   const after = req.after;
+  // 방어적 가드(이중 안전, P1-1): after.status 가 유효하지 않으면 레코드 미반영.
+  // 정상 흐름은 생성 route 에서 이미 400 으로 차단되나, 손상 데이터 반영을 막는다.
+  if (!WORK_STATUSES.includes(after.status)) {
+    const existing = store.records.get(req.date);
+    if (existing) return { request: req, record: existing };
+  }
   // Q1 upsert: 레코드 없으면 after status/clock 을 입힐 기준 레코드를 신규 생성.
   const base =
     store.records.get(req.date) ?? newRecordFrom(req.date, after);
