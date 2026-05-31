@@ -123,6 +123,61 @@ describe("/api/attendance/requests", () => {
     expect(res.status).toBe(400);
   });
 
+  // P2-1 / architect §2.7: 둘 다 명시된 휴게 범위가 역전(end<start)이면 400, 미생성
+  it("after.breakStart>breakEnd(12:00~11:30) 역전 범위는 400 으로 거부하고 미생성", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "휴게 정정",
+        after: {
+          status: "정상",
+          clockIn: "08:00",
+          clockOut: "15:00",
+          breakStart: "12:00",
+          breakEnd: "11:30",
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await (await GET(getReq)).json()).length).toBe(0);
+  });
+
+  // P2-1 / architect §2.7: 동일(end===start)도 end<=start 라 400
+  it("after.breakStart===breakEnd(11:30~11:30) 동일 범위는 400 으로 거부", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "휴게 정정",
+        after: {
+          status: "정상",
+          clockIn: "08:00",
+          clockOut: "15:00",
+          breakStart: "11:30",
+          breakEnd: "11:30",
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  // P2-1: 정상 범위(11:30~12:00, end>start)는 그대로 201 (기존 동작 유지)
+  it("정상 휴게 범위(11:30~12:00) after 는 201 로 생성", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "휴게 정정",
+        after: {
+          status: "정상",
+          clockIn: "08:00",
+          clockOut: "15:00",
+          breakStart: "11:30",
+          breakEnd: "12:00",
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+  });
+
   // T7: 유효 휴게 범위(11:30~13:00) 는 201 로 생성
   it("유효 휴게 범위(11:30~13:00) after 는 201 로 생성", async () => {
     const res = await POST(

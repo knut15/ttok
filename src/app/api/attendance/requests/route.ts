@@ -68,6 +68,17 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
+  // P2-1(architect §2.7): breakStart/breakEnd 가 둘 다 명시된 경우 역전·동일(end<=start) 거부.
+  // 한쪽만 명시/미명시는 분기 진입 안 함 → 기존 동작 보존(R2 멱등). NaN 은 위 루프에서 선차단.
+  if (body.after.breakStart !== undefined && body.after.breakEnd !== undefined) {
+    if (parseHHMM(body.after.breakEnd) <= parseHHMM(body.after.breakStart)) {
+      return NextResponse.json(
+        { error: "휴게 종료가 시작보다 빠르거나 같습니다." },
+        { status: 400, headers: NO_STORE },
+      );
+    }
+  }
+
   const created = addRequest({
     date: body.date,
     reason: body.reason.trim().slice(0, 100),

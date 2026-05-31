@@ -62,3 +62,29 @@
 ## 미충족 AC
 
 없음. AC-1~AC-8 전부 충족(UI는 코드 일치 + 빌드/타입/lint로 검증).
+
+---
+
+## REWORK v2 (분류 B — 아키텍처 계약 미이행, 범위 한정)
+
+- **회차**: rework v2, 분류 B(스펙 불일치). 회귀 0(기존 135 테스트 그대로 GREEN).
+- **대상 결함**: P2-1 (`05-review.md`) — `POST /api/attendance/requests` 가 `after.breakStart`/`after.breakEnd` 의 형식(NaN)만 검증하고 역전(end<=start) 거부 누락. 아키텍처 §2.7 경계면 표("end<=start→400") 및 §1("역전 검증") 미이행.
+
+### 수정 (TDD: RED→GREEN, refactor 불요)
+
+- **RED**: `src/app/api/attendance/requests/route.test.ts` 에 실패 테스트 3건 추가 — 역전(12:00~11:30)→400+미생성, 동일(11:30~11:30)→400, 정상(11:30~12:00)→201. 실행 결과 역전/동일 2건이 `201` 반환(기대 `400`)으로 RED 확인.
+- **GREEN**: `src/app/api/attendance/requests/route.ts:71~80` — NaN 검증 루프 직후, `addRequest` 호출 전에 분기 추가. `breakStart`/`breakEnd` 가 **둘 다 명시(!== undefined)** 인 경우에만 `parseHHMM(breakEnd) <= parseHHMM(breakStart)` → 400(`{error:"휴게 종료가 시작보다 빠르거나 같습니다."}` + `no-store`). 한쪽만/미명시는 분기 미진입 → 기존 멱등 동작 보존. NaN 은 기존 루프가 선차단.
+
+### 자가 검증 (DoD, 직접 Bash)
+
+| 항목 | 결과 | 수치 |
+|---|---|---|
+| `pnpm test` | ✅ | 138/138 (기존 135 + 신규 3, 회귀 0) |
+| `tsc --noEmit` | ✅ | 에러 0 |
+| `pnpm build` | ✅ | 컴파일 성공 |
+| `pnpm lint` | ✅ | 경고/에러 0 |
+
+### 경계면 재일치 (architect §2.7)
+
+- `break 범위 | API 검증: 존재 시 parseHHMM NaN→400, end<=start→400` — NaN(기존) + **end<=start(신규)** 모두 구현됨 → 경계면 표와 일치.
+- ADR 0004 Consequences "fallback(0) 처리" 와 §2.7 간 모순은 **§2.7(거부) 우선**으로 해소(승인 스펙=아키텍처 우선).

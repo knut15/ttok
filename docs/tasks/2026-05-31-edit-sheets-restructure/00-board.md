@@ -13,8 +13,8 @@
 | 1 기획 | planner | ✅ 완료 | `01-prd.md` (AC 8, sub-task 5) |
 | 2 승인 | (user gate) | ✅ APPROVE | `02-approval.md` (Q1 범위형/Q2 현행/Q3 요청) |
 | 2.5 아키텍처 | architect | ✅ 완료 | `03-architecture.md` (break범위저장, R1해소, 회귀0증명) |
-| 3 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 4 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 3 구현 | developer | 🔄 rework v2 | `04-implementation.md` (REWORK B: 역전 휴게범위 400) |
+| 4 리뷰 | reviewer+codex | ⏸ REWORK B | `05-review.md` (codex P2-1 역전 미거부) |
 
 ## 진행 로그
 - 2026-05-31 — T7 시작. 결정: 휴게=휴게시간수정, 퇴근=상태+시각(수정요청 반영).
