@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { RoleSwitcher } from "@/features/accounts/components/RoleSwitcher";
+import { InvitePanel } from "@/features/accounts/components/InvitePanel";
 import { ProfileSummary } from "./ProfileSummary";
 import { StoreCard } from "./StoreCard";
 import { DocumentBox } from "./DocumentBox";
@@ -56,6 +57,8 @@ export function MyPageView() {
               </Link>
             </section>
           )}
+          {/* T8-6: role 별 초대 섹션(마스터=생성 / 크루=합류). */}
+          <InvitePanel />
           <RoleSwitcher />
         </>
       )}

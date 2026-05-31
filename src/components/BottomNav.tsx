@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
+import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 
-// 하단 고정 바텀탭 4개(AC-19b, AC-20). 마이페이지는 비활성 플레이스홀더.
+// 하단 고정 바텀탭(AC-19b, AC-20). T8-5: role 별 분기.
+// 크루 = 기존 4탭. 마스터 = 집계(/master) 진입 중심 탭.
 interface Tab {
   href: string;
   label: string;
@@ -11,12 +14,22 @@ interface Tab {
   disabled?: boolean;
 }
 
-const TABS: Tab[] = [
+// 크루 기본 4탭(회귀: 기존 구성 불변 — role 미확정 시에도 이 셋이 SSR/첫CSR 기본).
+const CREW_TABS: Tab[] = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/attendance", label: "출퇴근", icon: "clock" },
   { href: "/pay", label: "급여", icon: "won" },
   { href: "/mypage", label: "마이페이지", icon: "user" },
 ];
+
+// 마스터 탭: 집계 진입(/master) 중심 + 마이페이지. 본인 출퇴근/급여 기록 없음(E-4) → 미노출.
+const MASTER_TABS: Tab[] = [
+  { href: "/master", label: "집계", icon: "won" },
+  { href: "/mypage", label: "마이페이지", icon: "user" },
+];
+
+// 마운트 여부 구독(하이드레이션 안전). 서버/첫CSR false → 기본 크루 4탭으로 1차 렌더.
+const emptySubscribe = () => () => {};
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
@@ -70,11 +83,19 @@ function Icon({ name, active }: { name: string; active: boolean }) {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { user } = useCurrentUser();
+  // mount 전(localStorage 역할 복원 전)은 항상 크루 4탭 → SSR/첫CSR 마크업 동일(mismatch 0).
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+  const tabs = mounted && user.role === "master" ? MASTER_TABS : CREW_TABS;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md border-t border-black/5 bg-surface">
       <ul className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active = isActive(pathname, tab.href);
           const content = (
             <span className="flex flex-col items-center gap-1 py-1.5">

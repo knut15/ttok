@@ -138,3 +138,86 @@ T8-4 route/hook 스코프 배선과 T8-3 UI(Provider/RoleSwitcher/canApprove)는
 - 권한 게이트: approve API 403(role≠master) + `EditRequestList.canApprove` UI 숨김 이중. `AttendanceDetail`이 `role==="master"` 전달.
 - 전환 무효화: 데이터 훅 effect 의존성에 `crewId` 추가 → 역할전환 시 재fetch, 기존 `active` cleanup 으로 stale 응답 차단.
 - T8-5/6/8 인계: scope/헤더/Provider/authHeaders 준비 완료. `/master` 화면·`api/master/crews`·`api/invites`·InvitePanel·BottomNav role 분기·ADR 0005 는 다음 청크.
+
+## 청크3 (T8-6, T8-5, T8-8) — 마지막 청크
+
+작성: 2026-06-01 / 범위: 초대 플로우(T8-6) + 마스터 집계뷰(T8-5) + 통합·DoD(T8-8). **T8 전체 완료.**
+
+### AC 충족 매핑
+
+| AC | 구현 위치 | 요약 |
+|---|---|---|
+| AC-13 (초대 생성) | `src/app/api/invites/route.ts` POST | 마스터 게이트 통과 시 `createInvite(crewId)` → 201 Invite(대기 코드) |
+| AC-15 (초대 게이트) | `invites/route.ts` `role!=="master" → 403` | 크루/헤더 부재 → 403 (store 불변) |
+| AC-14 (코드 합류) | `src/app/api/invites/join/route.ts` POST | `joinByInvite(code, crewId)` → 200 JoinResult(크루 active=true) |
+| E-2/E-2b (합류 실패) | `invites/join/route.ts` | 없는 코드 → 400, 이미 사용 → 409, body 누락 → 400 |
+| AC-10/AC-11 (집계) | `src/app/api/master/crews/route.ts` GET | `?month=` → `getCrewSummaries(month)` → MasterSummaryResponse(크루3, 마스터 제외) |
+| AC-12 (집계 게이트) | `master/crews/route.ts` `role!=="master" → 403` | 크루/헤더 부재 → 403 |
+| T8-6 (초대 UI) | `InvitePanel.tsx` + `useInvites.ts` | role 분기: 마스터=생성 버튼+코드 표시 / 크루=코드 입력+합류. authHeaders 전달. MyPageView 섹션 |
+| T8-5 (집계 UI) | `MasterView.tsx` + `CrewSummaryList.tsx` + `useMasterSummary.ts` + `app/master/page.tsx` | RSC 셸 → client 가드(mount 후 role≠master→replace("/"), 미확정 로딩 가드) → 월선택 + 집계행 |
+| E-5 (빈 크루) | `CrewSummaryList` / `getCrewSummaries` | 0 graceful 표기(NaN/crash 방어), 크루 0건 빈 상태 |
+| E-4 (마스터 빈 기록) | `BottomNav` MASTER_TABS | 마스터 출퇴근/급여 탭 미노출(본인 기록 없음 정상) |
+| T8-5 (role 탭) | `BottomNav.tsx` | 크루 4탭 / 마스터 집계+마이페이지 2탭, 하이드레이션 안전(mount 게이트) |
+| T8-8 (통합·문서) | `CONTEXT.md` + `docs/adr/0005-accounts-roles-mock.md` | 용어 5개 보강 + ADR 0005(결정 2건) |
+
+### 산출물
+
+| 파일 | 변경 | 내용 |
+|---|---|---|
+| `src/app/api/invites/route.ts` | 신규 | POST 초대 생성(마스터 게이트 403, 통과 시 createInvite → 201) |
+| `src/app/api/invites/join/route.ts` | 신규 | POST 합류(없는코드 400 / 사용됨 409 / body누락 400 / 성공 200) |
+| `src/app/api/master/crews/route.ts` | 신규 | GET 집계(마스터 게이트 403, MasterSummaryResponse) |
+| `src/features/accounts/hooks/useInvites.ts` | 신규 | 초대 생성/합류 훅(authHeaders, route 경유) |
+| `src/features/accounts/hooks/useMasterSummary.ts` | 신규 | 집계 fetch 훅(month/role effect 의존성, active cleanup) |
+| `src/features/accounts/components/InvitePanel.tsx` | 신규 | `"use client"` role 분기 초대 패널 |
+| `src/features/accounts/components/CrewSummaryList.tsx` | 신규 | presentational 집계 행(빈 상태 graceful) |
+| `src/features/accounts/components/MasterView.tsx` | 신규 | `"use client"` 마스터 가드 + 월선택 + 집계뷰 조립 |
+| `src/app/master/page.tsx` | 신규 | `/master` RSC 셸 |
+| `src/features/mypage/components/MyPageView.tsx` | 수정 | `<InvitePanel/>` 섹션 추가(role별) |
+| `src/components/BottomNav.tsx` | 수정 | role별 탭(CREW_TABS/MASTER_TABS), `useSyncExternalStore` mount 게이트 |
+| `src/app/api/invites/route.test.ts` | 신규 | 3 테스트(마스터 201 / 크루 403 / 헤더부재 403) |
+| `src/app/api/invites/join/route.test.ts` | 신규 | 4 테스트(성공 200 / 없는코드 400 / 사용됨 409 / 누락 400) |
+| `src/app/api/master/crews/route.test.ts` | 신규 | 3 테스트(마스터 200 집계 / 크루 403 / 헤더부재 403) |
+| `CONTEXT.md` | append | 용어 5개 보강(마스터 집계뷰/크루 집계 행/초대 플로우 API/role별 바텀탭) |
+| `docs/adr/0005-accounts-roles-mock.md` | 신규 | ADR 0005: ① crewId 스코프 전략 A+헤더 전달 ② mock 역할전환 신뢰모델(클라 선언+서버 게이트 이중 방어) |
+
+- 컨벤션 적용: leaf 단일출처(`@/types`), client store 직접 import 금지(route 경유), no-store fetch, RSC 셸 + client 가드 경계, append-only.
+- 프로젝트 자원: `package.json` scripts(test/lint/build) 직접 호출. 슬래시 commands/skills 등록분 없음(글로벌 default).
+- Repository Artifacts: CONTEXT.md 용어 5개 추가(누적 T8 20개), ADR 0005 신규 생성.
+- 신규 파일 배치: 계정/역할 도메인은 `src/features/accounts/` (architect §1.1), 라우트는 app-router 규약 경로.
+
+### TDD 사이클 (vertical slice)
+
+| 사이클 | 대상 AC | RED | GREEN |
+|---|---|---|---|
+| 1 | 초대 생성/합류 API(AC-13/14/15/E-2/E-2b) | `Cannot find module './route'`(invites·join 부재) | invites·join route 작성 → 7/7 |
+| 2 | 마스터 집계 API(AC-10/11/12) | `Cannot find module './route'`(master/crews 부재) | master/crews route 작성 → 3/3 |
+
+store 도메인 함수(`getCrewSummaries`/`createInvite`/`joinByInvite`)는 청크1 `store.crews.test.ts`(15건)에서 집계 정확·400/409 흐름 RED→GREEN 완료 → 본 청크는 라우트 통합층 테스트로 게이트(403)·HTTP 상태(400/409/200/201) 검증. UI(MasterView/InvitePanel/CrewSummaryList/BottomNav)는 vitest node 환경 미지원 → 빌드/타입/lint + 코드 일치 검증. Horizontal slicing 미사용(사이클별 RED→GREEN 분리). 내부 협력자 mock 0(route 는 실제 store 경유, 시스템 경계만).
+
+### 회귀 게이트 결과
+
+- **기존 165 테스트: 전부 GREEN. 보정 0줄.** 신규 라우트는 신규 경로/헤더만 추가 → 기존 read/approve 테스트 무영향. BottomNav role 분기는 mount 전 기본 크루 4탭 유지(하이드레이션·기존 UI 회귀 0).
+- 전체: **175 passed** (165 + 신규 10: invites 3 + invites/join 4 + master/crews 3).
+
+### 자가 검증 (DoD 4종, 직접 Bash)
+
+- 단위 테스트: ✅ `pnpm test` → 21 files / **175 passed** (165 + 10 신규, 회귀 0)
+- 타입체크: ✅ `npx tsc --noEmit` → exit 0
+- Lint: ✅ `pnpm lint` → 0 error / 0 warning (useMasterSummary 는 set-state-in-effect 회피 위해 effect 내 동기 setLoading 제거, usePay 패턴 정렬)
+- 빌드: ✅ `pnpm build` → 성공. 신규 라우트 생성 확인: `ƒ /api/invites`·`ƒ /api/invites/join`·`ƒ /api/master/crews`(dynamic), `○ /master`(static 셸). 기존 라우트 전부 유지.
+
+### 경계면 일치 확인
+
+- API ↔ Frontend: `useInvites` POST `/api/invites`·`/api/invites/join`(authHeaders) ↔ route `readScope`/`joinByInvite` 계약 일치. `useMasterSummary` GET `/api/master/crews?month=` ↔ route `MasterSummaryResponse{month, crews}` shape 일치.
+- 권한 게이트(3중 일관): approve(청크2) + invites + master/crews 모두 `readScope(req).role!=="master" → 403` 동일 패턴. UI(InvitePanel role 분기 / BottomNav MASTER_TABS / MasterView 가드) + API 403 이중 방어.
+- 하이드레이션: MasterView·BottomNav 모두 `useSyncExternalStore` mount 게이트 → SSR/첫CSR 은 크루 기본(role 미확정) 마크업, mount 후 역할 복원 시점에만 마스터 분기. mismatch 0, 섣부른 리다이렉트 0.
+- 전환 무효화: useMasterSummary effect 의존성에 `crewId`/`user.role` 추가 → 전환 시 재fetch, active cleanup 으로 stale 차단.
+
+## 전체 T8 완료 요약 (청크1+2+3)
+
+- **범위 완료**: T8-1(타입+멀티크루 시드) · T8-2(store recordsByCrew) · T8-3(CurrentUserProvider+scope+역할전환) · T8-4(기존 API/hooks 스코프) · T8-7(수락 마스터 게이트) · T8-6(초대 플로우) · T8-5(마스터 집계뷰) · T8-8(통합·문서). 8개 sub-task 전부 구현.
+- **테스트**: 최종 **175 passed** (기존 138 + T8 신규 37: seed.crews 6 + store.crews 15 + scope 4 + approve 신규 2 + invites 3 + invites/join 4 + master/crews 3). 기존 138 테스트 무수정 GREEN(회귀 0) — approve.test.ts 만 수락=마스터 액션 계약 반영해 헤더 부여(테스트 코드 한정).
+- **DoD 전부 GREEN**: `pnpm test`(175) / `tsc --noEmit`(exit 0) / `pnpm lint`(0/0) / `pnpm build`(신규 라우트 `/api/invites`·`/api/invites/join`·`/api/master/crews`·`/master`·`/api/crews` 생성).
+- **전체 흐름**: 역할전환(RoleSwitcher) → 크루 본인 스코프 강제(enforceReadScope) → 마스터 집계(/master) → 초대 발급(POST /api/invites) → 수락 게이트(role≠master 403) 일관 동작. 회귀 0 = 헤더 전달(URL 불변) + trailing crewId fallback(김민정) + buildSeedRecords() 불변.
+- **Repository Artifacts**: CONTEXT.md 누적 20개 T8 용어, ADR 0005 신규(crewId 스코프 전략 A+헤더 / mock 역할전환 신뢰모델).
