@@ -57,6 +57,17 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
+  // T7: after 에 휴게 범위가 있으면(optional) HH:MM 형식 검증(NaN → 400).
+  // 미명시면 분기 진입 안 함 → 기존 동작·멱등 보존(R2).
+  for (const bound of [body.after.breakStart, body.after.breakEnd]) {
+    if (bound !== undefined && Number.isNaN(parseHHMM(bound))) {
+      return NextResponse.json(
+        { error: "휴게 시각 형식이 올바르지 않습니다." },
+        { status: 400, headers: NO_STORE },
+      );
+    }
+  }
+
   const created = addRequest({
     date: body.date,
     reason: body.reason.trim().slice(0, 100),

@@ -87,6 +87,60 @@ describe("/api/attendance/requests", () => {
     expect((await (await GET(getReq)).json()).length).toBe(0);
   });
 
+  // T7 E-2: after.breakStart/breakEnd 형식 불량(NaN) → 400, 미생성
+  it("after.breakStart 형식이 불량(99:99)이면 400 으로 거부하고 미생성", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "휴게 정정",
+        after: {
+          status: "정상",
+          clockIn: "08:00",
+          clockOut: "15:00",
+          breakStart: "99:99",
+          breakEnd: "12:00",
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await (await GET(getReq)).json()).length).toBe(0);
+  });
+
+  it("after.breakEnd 형식이 불량(bad)이면 400 으로 거부", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "휴게 정정",
+        after: {
+          status: "정상",
+          clockIn: "08:00",
+          clockOut: "15:00",
+          breakStart: "11:30",
+          breakEnd: "bad",
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  // T7: 유효 휴게 범위(11:30~13:00) 는 201 로 생성
+  it("유효 휴게 범위(11:30~13:00) after 는 201 로 생성", async () => {
+    const res = await POST(
+      post({
+        date: "2026-05-04",
+        reason: "휴게 정정",
+        after: {
+          status: "정상",
+          clockIn: "08:00",
+          clockOut: "15:00",
+          breakStart: "11:30",
+          breakEnd: "13:00",
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+  });
+
   it("정상 after({status:연장, clockIn:08:00, clockOut:16:30}) 는 201 로 생성", async () => {
     const res = await POST(
       post({
