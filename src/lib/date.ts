@@ -59,6 +59,17 @@ export function shiftMonth(month: string, delta: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/**
+ * "YYYY-MM-DD" 를 delta 일 이동. 월/연/윤년 경계 자동 정규화.
+ * 입출력 모두 zero-pad "YYYY-MM-DD". shiftMonth 미러(로컬 Date(y, m-1, d) 컨벤션 — UTC 파싱 회피).
+ * 순수 — Date.now 비의존(AC-5).
+ */
+export function shiftDay(date: string, delta: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + delta);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 /** 월 그리드 빌드: 6주(42칸) 또는 필요한 만큼. 앞쪽 공백 + 일자. */
 export function buildMonthGrid(month: string): (string | null)[] {
   const [y, m] = month.split("-").map(Number);
