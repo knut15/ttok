@@ -42,3 +42,23 @@ export const WORK_STATUSES: readonly WorkStatus[] = [
 
 /** 표현 톤 토큰 — components 가 도메인을 모른 채 받는 색 키. */
 export type Tone = "coral" | "green" | "blue" | "gray" | "neutral";
+
+// === T8 계정/권한 분리 상수 (append-only, architect §1.2) ===
+
+/** 기본 크루(김민정). store/API 인자·헤더 생략 시 fallback → 단일사용자 흐름 보존. */
+export const DEFAULT_CREW_ID = "crew-minjung";
+
+/** 마스터(점주) 계정 id. 본인 근무기록 없음(E-4). */
+export const MASTER_ID = "master-1";
+
+/** 시드 크루 id 목록(마스터 제외). 김민정 + 크루2/3. */
+export const CREW_IDS: readonly string[] = ["crew-minjung", "crew-2", "crew-3"] as const;
+
+/** 현재 사용자 전달 헤더 키(Q-D=헤더 방식, URL 불변 → 회귀 0). */
+export const HEADER_CREW_ID = "x-crew-id";
+export const HEADER_ROLE = "x-role";
+
+/** 초대코드 생성 알파벳(혼동 문자 I/O/0/1 제외). */
+export const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+/** 초대코드 길이. */
+export const INVITE_CODE_LENGTH = 6;

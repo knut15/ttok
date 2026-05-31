@@ -5,17 +5,30 @@
 import type {
   ApproveResult,
   AttendanceRecord,
+  Crew,
+  CrewSummary,
   EditRequest,
+  Invite,
+  JoinResult,
   ProfilePatch,
   ProfileResponse,
   StoreInfo,
   UserProfile,
   WorkStatus,
 } from "@/types";
-import { buildSeedRecords, buildSeedProfile, SEED_STORE_INFO } from "./seed";
+import {
+  buildSeedRecordsByCrew,
+  buildSeedCrews,
+  buildSeedInvites,
+  buildSeedProfile,
+  SEED_STORE_INFO,
+} from "./seed";
 import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes } from "./time";
 import {
   DEFAULT_BREAK_MINUTES,
+  DEFAULT_CREW_ID,
+  INVITE_CODE_ALPHABET,
+  INVITE_CODE_LENGTH,
   REGULAR_MINUTES,
   WORK_STATUSES,
 } from "./constants";
@@ -56,12 +69,15 @@ function recalcClockFields(rec: AttendanceRecord): AttendanceRecord {
   return { ...rec, workMinutes: 0, overtimeMinutes: 0 };
 }
 
+// T8: 멀티크루 내부 표현(architect §2.2). 계약은 trailing crewId fallback 으로 단일사용자 흐름 보존.
 interface StoreShape {
-  records: Map<string, AttendanceRecord>; // key = "YYYY-MM-DD"
-  requests: EditRequest[];
+  crews: Crew[]; // 마스터1 + 크루3
+  recordsByCrew: Map<string, Map<string, AttendanceRecord>>; // crewId → date → rec
+  requests: EditRequest[]; // crewId 태그(append)
+  invites: Invite[];
+  profilesByCrew: Map<string, UserProfile>; // crewId → profile
+  storeInfo: StoreInfo; // 단일 매장 유지
   seq: number;
-  profile: UserProfile; // 신규 append — 마이페이지
-  storeInfo: StoreInfo; // 신규 append — 소속 매장
 }
 
 declare global {
@@ -69,15 +85,32 @@ declare global {
 }
 
 function createStore(): StoreShape {
-  const records = new Map<string, AttendanceRecord>();
-  for (const r of buildSeedRecords()) records.set(r.date, r);
+  // 김민정(DEFAULT_CREW_ID) Map 은 buildSeedRecords() 로 채운다(바이트 동일, 회귀 0).
+  const recordsByCrew = buildSeedRecordsByCrew();
+  const profilesByCrew = new Map<string, UserProfile>();
+  profilesByCrew.set(DEFAULT_CREW_ID, buildSeedProfile());
   return {
-    records,
+    crews: buildSeedCrews(),
+    recordsByCrew,
     requests: [],
-    seq: 1,
-    profile: buildSeedProfile(),
+    invites: buildSeedInvites(),
+    profilesByCrew,
     storeInfo: SEED_STORE_INFO,
+    seq: 1,
   };
+}
+
+/** joinByInvite 반환형: 성공 JoinResult / 없는코드 null / 사용됨 "used"(409 의미). */
+export type JoinResultOrError = JoinResult | null | "used";
+
+/** crewId 의 records Map 을 반환(없으면 빈 Map 생성·등록). 내부 헬퍼. */
+function crewRecords(store: StoreShape, crewId: string): Map<string, AttendanceRecord> {
+  let m = store.recordsByCrew.get(crewId);
+  if (!m) {
+    m = new Map<string, AttendanceRecord>();
+    store.recordsByCrew.set(crewId, m);
+  }
+  return m;
 }
 
 function getStore(): StoreShape {
@@ -92,16 +125,24 @@ export function __resetStore(): void {
   globalThis.__crewmonStore = createStore();
 }
 
-/** 해당 월("YYYY-MM") 레코드 배열. 날짜 오름차순. 빈 달 → []. */
-export function getMonthRecords(month: string): AttendanceRecord[] {
+/** 해당 월("YYYY-MM") 레코드 배열. 날짜 오름차순. 빈 달/없는 크루 → []. crewId 생략 → 김민정(회귀). */
+export function getMonthRecords(
+  month: string,
+  crewId: string = DEFAULT_CREW_ID,
+): AttendanceRecord[] {
   const store = getStore();
-  return [...store.records.values()]
+  const map = store.recordsByCrew.get(crewId);
+  if (!map) return [];
+  return [...map.values()]
     .filter((r) => r.date.startsWith(month))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function getRecord(date: string): AttendanceRecord | null {
-  return getStore().records.get(date) ?? null;
+export function getRecord(
+  date: string,
+  crewId: string = DEFAULT_CREW_ID,
+): AttendanceRecord | null {
+  return getStore().recordsByCrew.get(crewId)?.get(date) ?? null;
 }
 
 /**
@@ -116,9 +157,11 @@ export function getRecord(date: string): AttendanceRecord | null {
 export function updateStatus(
   date: string,
   status: WorkStatus,
+  crewId: string = DEFAULT_CREW_ID,
 ): AttendanceRecord | null {
   const store = getStore();
-  const rec = store.records.get(date);
+  const records = crewRecords(store, crewId);
+  const rec = records.get(date);
   if (!rec) return null;
 
   let updated: AttendanceRecord;
@@ -157,7 +200,7 @@ export function updateStatus(
     };
   }
 
-  store.records.set(date, updated);
+  records.set(date, updated);
   return updated;
 }
 
@@ -169,10 +212,12 @@ export function upsertTodayClock(
   date: string,
   field: "clockIn" | "clockOut",
   time: string,
+  crewId: string = DEFAULT_CREW_ID,
 ): AttendanceRecord {
   const store = getStore();
+  const records = crewRecords(store, crewId);
   const prev =
-    store.records.get(date) ??
+    records.get(date) ??
     ({
       date,
       status: "정상" as WorkStatus,
@@ -200,26 +245,32 @@ export function upsertTodayClock(
     });
     next.overtimeMinutes = calcOvertimeByClock({ clockOut: next.clockOut });
   }
-  store.records.set(date, next);
+  records.set(date, next);
   return next;
 }
 
-export function listRequests(): EditRequest[] {
-  return [...getStore().requests].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+/** 수정요청 목록(최신순). crewId 지정 → 해당 크루 태그만, 생략 → 전체(마스터/기존 테스트). */
+export function listRequests(crewId?: string): EditRequest[] {
+  const all = getStore().requests;
+  const scoped =
+    crewId === undefined
+      ? all
+      : all.filter((r) => (r.crewId ?? DEFAULT_CREW_ID) === crewId);
+  return [...scoped].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export interface NewEditRequest {
   date: string;
   reason: string;
   after: EditRequest["after"];
+  crewId?: string; // T8: 미지정 → DEFAULT_CREW_ID 태그(회귀).
 }
 
-/** 수정요청 생성(AC-9). 생성 시 status "대기". */
+/** 수정요청 생성(AC-9). 생성 시 status "대기". crewId 미지정 → 김민정 태그. */
 export function addRequest(req: NewEditRequest): EditRequest {
   const store = getStore();
-  const existing = store.records.get(req.date);
+  const crewId = req.crewId ?? DEFAULT_CREW_ID;
+  const existing = crewRecords(store, crewId).get(req.date);
   const before: EditRequest["before"] = existing
     ? {
         status: existing.status,
@@ -240,6 +291,7 @@ export function addRequest(req: NewEditRequest): EditRequest {
     after: req.after,
     status: "대기",
     createdAt: new Date().toISOString(),
+    crewId,
   };
   store.requests.push(created);
   return created;
@@ -257,9 +309,12 @@ export function approveRequest(id: string): ApproveResult | null {
   const req = store.requests.find((r) => r.id === id);
   if (!req) return null; // E-1 → 404
 
+  // T8: 요청에 태그된 크루의 records Map 에 반영(미지정 → 김민정, 회귀). 게이트는 route 책임.
+  const records = crewRecords(store, req.crewId ?? DEFAULT_CREW_ID);
+
   // Q2 멱등 no-op: 이미 수락이면 레코드 재반영 없이 현재 상태 반환.
   if (req.status === "수락") {
-    const existing = store.records.get(req.date);
+    const existing = records.get(req.date);
     const record = existing ?? newRecordFrom(req.date, req.after);
     return { request: req, record };
   }
@@ -275,15 +330,14 @@ export function approveRequest(id: string): ApproveResult | null {
   if (!afterIsValid) {
     // 손상 after 는 절대 store 에 반영하지 않는다. 기존 레코드가 있으면 그대로,
     // 없으면 안전한 중립 레코드(빈 출퇴근)를 반환만 한다(persist 안 함).
-    const existing = store.records.get(req.date);
+    const existing = records.get(req.date);
     return {
       request: req,
       record: existing ?? emptyRecord(req.date),
     };
   }
   // Q1 upsert: 레코드 없으면 after status/clock 을 입힐 기준 레코드를 신규 생성.
-  const base =
-    store.records.get(req.date) ?? newRecordFrom(req.date, after);
+  const base = records.get(req.date) ?? newRecordFrom(req.date, after);
   // after 에 휴게 범위가 명시되면 그것을 진실원으로 반영(없으면 base 의 기존 범위 유지).
   const hasAfterRange = Boolean(after.breakStart && after.breakEnd);
   const merged: AttendanceRecord = {
@@ -323,7 +377,7 @@ export function approveRequest(id: string): ApproveResult | null {
     };
   }
 
-  store.records.set(req.date, record);
+  records.set(req.date, record);
   req.status = "수락"; // 대기→수락 (AC-2)
   return { request: req, record };
 }
@@ -361,22 +415,142 @@ function newRecordFrom(
 
 // === 마이페이지/프로필 접근자 (append) ===
 
-/** 프로필+매장 조회. O(1). (AC-1/AC-4) */
-export function getProfile(): ProfileResponse {
+/** crewId 의 프로필 반환(없으면 해당 크루 정보로 파생 + 등록). 내부 헬퍼. */
+function crewProfile(store: StoreShape, crewId: string): UserProfile {
+  let p = store.profilesByCrew.get(crewId);
+  if (!p) {
+    const crew = store.crews.find((c) => c.id === crewId);
+    p = {
+      name: crew?.name ?? crewId,
+      birthDate: "",
+      phone: "",
+      email: "",
+      avatarInitial: crew?.avatarInitial ?? "?",
+    };
+    store.profilesByCrew.set(crewId, p);
+  }
+  return p;
+}
+
+/** 프로필+매장 조회. O(1). crewId 생략 → 김민정(회귀, AC-1/AC-4/AC-R2). */
+export function getProfile(crewId: string = DEFAULT_CREW_ID): ProfileResponse {
   const s = getStore();
-  return { profile: s.profile, store: s.storeInfo };
+  return { profile: crewProfile(s, crewId), store: s.storeInfo };
 }
 
 /**
  * 허용 필드(phone/email)만 머지. 읽기전용 필드(name/birthDate)는 화이트리스트로 무시. O(1).
- * 형식 검증은 호출자(Route Handler) 책임. (AC-2/AC-3)
+ * 형식 검증은 호출자(Route Handler) 책임. crewId 생략 → 김민정(회귀). (AC-2/AC-3)
  */
-export function updateProfile(patch: ProfilePatch): UserProfile {
+export function updateProfile(
+  patch: ProfilePatch,
+  crewId: string = DEFAULT_CREW_ID,
+): UserProfile {
   const s = getStore();
-  s.profile = {
-    ...s.profile,
+  const current = crewProfile(s, crewId);
+  const next: UserProfile = {
+    ...current,
     ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
     ...(patch.email !== undefined ? { email: patch.email } : {}),
   };
-  return s.profile;
+  s.profilesByCrew.set(crewId, next);
+  return next;
+}
+
+// === T8 신규 store 함수: 크루 목록 / 집계 / 초대 / 역할 (architect §2.3, §3) ===
+
+/** mock 계정 목록(마스터 포함). 역할전환 UI용. (AC-1) */
+export function listCrews(): Crew[] {
+  return [...getStore().crews];
+}
+
+/** id 가 마스터 역할인가. (권한 게이트 보조) */
+export function isMaster(id: string): boolean {
+  return getStore().crews.some((c) => c.id === id && c.role === "master");
+}
+
+/**
+ * 마스터 집계: 크루(role=crew)별 month 근무/연장/휴가 요약. 마스터 제외.
+ * 빈 크루/없는 월 → 0(NaN 방어, E-5/E-6). O(C·d). (AC-10/AC-11)
+ */
+export function getCrewSummaries(month: string): CrewSummary[] {
+  const store = getStore();
+  return store.crews
+    .filter((c) => c.role === "crew")
+    .map((c) => {
+      const map = store.recordsByCrew.get(c.id);
+      const recs = map
+        ? [...map.values()].filter((r) => r.date.startsWith(month))
+        : [];
+      const workMinutes = recs.reduce((s, r) => s + r.workMinutes, 0);
+      const overtimeMinutes = recs.reduce((s, r) => s + r.overtimeMinutes, 0);
+      const vacationDays = recs.filter((r) => r.status === "휴가").length;
+      return {
+        crewId: c.id,
+        name: c.name,
+        avatarInitial: c.avatarInitial,
+        workMinutes,
+        overtimeMinutes,
+        vacationDays,
+      };
+    });
+}
+
+/** 고유 초대코드 생성(혼동문자 제외 알파벳). 충돌 시 최대 5회 재시도. */
+function generateInviteCode(existing: Set<string>): string {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let code = "";
+    for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
+      const idx = Math.floor(Math.random() * INVITE_CODE_ALPHABET.length);
+      code += INVITE_CODE_ALPHABET[idx];
+    }
+    if (!existing.has(code)) return code;
+  }
+  // 충돌 가드 소진 시 타임스탬프 suffix 로 보장.
+  return `INV${Date.now().toString(36).toUpperCase()}`;
+}
+
+/** 마스터 초대 생성(status="대기"). 게이트(마스터만)는 route 책임. (AC-13) */
+export function createInvite(masterId: string): Invite {
+  const store = getStore();
+  const existing = new Set(store.invites.map((i) => i.code));
+  const invite: Invite = {
+    code: generateInviteCode(existing),
+    createdBy: masterId,
+    status: "대기",
+    createdAt: new Date().toISOString(),
+  };
+  store.invites.push(invite);
+  return invite;
+}
+
+/**
+ * 코드 합류(mock). 유효 미사용 코드 → 크루 active=true + 코드 사용됨, JoinResult 반환.
+ * 없는 코드 → null(400 의미, E-2). 이미 사용된 코드 → "used"(409 의미, E-2b).
+ * (AC-14)
+ */
+export function joinByInvite(
+  code: string,
+  crewId: string,
+): JoinResultOrError {
+  const store = getStore();
+  const invite = store.invites.find((i) => i.code === code);
+  if (!invite) return null; // E-2: 없는 코드
+  if (invite.status !== "대기") return "used"; // E-2b: 이미 사용됨
+
+  invite.status = "사용";
+  invite.targetCrewId = crewId;
+  const crew = store.crews.find((c) => c.id === crewId);
+  if (crew) crew.active = true;
+  // crew 가 없어도 합류 결과는 명시적으로 만들어 반환(mock 신뢰 모델).
+  const resolved: Crew =
+    crew ?? {
+      id: crewId,
+      name: crewId,
+      role: "crew",
+      avatarInitial: "?",
+      joinDate: new Date().toISOString().slice(0, 10),
+      active: true,
+    };
+  return { crew: resolved, ok: true };
 }

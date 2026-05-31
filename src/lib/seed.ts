@@ -4,6 +4,8 @@
 
 import type {
   AttendanceRecord,
+  Crew,
+  Invite,
   PayItem,
   StoreInfo,
   UserProfile,
@@ -12,7 +14,9 @@ import type {
 import {
   DEFAULT_BREAK_MINUTES,
   DEFAULT_BREAK_RANGE,
+  DEFAULT_CREW_ID,
   HOURLY_WAGE,
+  MASTER_ID,
   SEED_MONTH,
   SEED_JOIN_DATE,
   SEED_WORK_DAYS,
@@ -110,6 +114,74 @@ export function buildSeedRecords(): AttendanceRecord[] {
     overtimeMinutes: r.overtimeMinutes,
     deductMinutes: r.deductMinutes,
   }));
+}
+
+// === T8 멀티크루 시드 (append-only). 김민정 외 크루는 불변식 강제 없음(AC-3: 0건 이상 + 본인 격리). ===
+
+/** mock 계정 시드: 마스터 1 + 크루 3(김민정=DEFAULT_CREW_ID 포함). architect §2.1. */
+export function buildSeedCrews(): Crew[] {
+  return [
+    { id: MASTER_ID, name: "박점주", role: "master", avatarInitial: "박", joinDate: "2026-03-01", active: true },
+    { id: DEFAULT_CREW_ID, name: "김민정", role: "crew", avatarInitial: "김", joinDate: SEED_JOIN_DATE, active: true },
+    { id: "crew-2", name: "이서연", role: "crew", avatarInitial: "이", joinDate: "2026-04-15", active: true },
+    { id: "crew-3", name: "박지훈", role: "crew", avatarInitial: "박", joinDate: "2026-05-02", active: true },
+  ];
+}
+
+// 크루2/3 간단 mock 근무기록(각자 다른 데이터, 불변식 강제 없음).
+const CREW_2_ROWS: SeedRow[] = [
+  { day: "07", status: "정상", clockIn: "09:00", clockOut: "18:00", workMinutes: 510, overtimeMinutes: 0, deductMinutes: 0 },
+  { day: "08", status: "정상", clockIn: "09:00", clockOut: "18:00", workMinutes: 510, overtimeMinutes: 0, deductMinutes: 0 },
+  { day: "09", status: "지각", clockIn: "09:40", clockOut: "18:00", workMinutes: 470, overtimeMinutes: 0, deductMinutes: 40 },
+  { day: "14", status: "휴가", clockIn: null, clockOut: null, workMinutes: 0, overtimeMinutes: 0, deductMinutes: 0 },
+  { day: "15", status: "정상", clockIn: "09:00", clockOut: "18:00", workMinutes: 510, overtimeMinutes: 0, deductMinutes: 0 },
+];
+
+const CREW_3_ROWS: SeedRow[] = [
+  { day: "02", status: "정상", clockIn: "10:00", clockOut: "16:00", workMinutes: 330, overtimeMinutes: 0, deductMinutes: 0 },
+  { day: "03", status: "연장", clockIn: "10:00", clockOut: "19:00", workMinutes: 510, overtimeMinutes: 240, deductMinutes: 0 },
+  { day: "10", status: "결근", clockIn: null, clockOut: null, workMinutes: 0, overtimeMinutes: 0, deductMinutes: 360 },
+];
+
+/** SeedRow[] → records Map. 휴가일 휴게 0(범위 미부여), 그 외 기본 휴게 30 + 범위. crewId 태그. */
+function rowsToMap(rows: SeedRow[], crewId: string): Map<string, AttendanceRecord> {
+  const map = new Map<string, AttendanceRecord>();
+  for (const r of rows) {
+    map.set(`${SEED_MONTH}-${r.day}`, {
+      date: `${SEED_MONTH}-${r.day}`,
+      status: r.status,
+      clockIn: r.clockIn,
+      clockOut: r.clockOut,
+      breakMinutes: r.status === "휴가" ? 0 : DEFAULT_BREAK_MINUTES,
+      ...(r.status === "휴가"
+        ? {}
+        : { breakStart: SEED_BREAK_START, breakEnd: SEED_BREAK_END }),
+      workMinutes: r.workMinutes,
+      overtimeMinutes: r.overtimeMinutes,
+      deductMinutes: r.deductMinutes,
+      crewId,
+    });
+  }
+  return map;
+}
+
+/**
+ * 크루별 records Map. 김민정은 기존 buildSeedRecords() 재사용(바이트 동일, 회귀 0 — AC-2).
+ * 크루2/3 는 간단 mock(다른 데이터, AC-3). architect §2.2.
+ */
+export function buildSeedRecordsByCrew(): Map<string, Map<string, AttendanceRecord>> {
+  const byCrew = new Map<string, Map<string, AttendanceRecord>>();
+  const minjung = new Map<string, AttendanceRecord>();
+  for (const r of buildSeedRecords()) minjung.set(r.date, r);
+  byCrew.set(DEFAULT_CREW_ID, minjung);
+  byCrew.set("crew-2", rowsToMap(CREW_2_ROWS, "crew-2"));
+  byCrew.set("crew-3", rowsToMap(CREW_3_ROWS, "crew-3"));
+  return byCrew;
+}
+
+/** 초대 시드(mock). 초기 빈 배열 — 마스터가 런타임에 생성. */
+export function buildSeedInvites(): Invite[] {
+  return [];
 }
 
 /** 분 → "N시간 M분" 한글 라벨. */

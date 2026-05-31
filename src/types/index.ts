@@ -14,6 +14,7 @@ export interface AttendanceRecord {
   workMinutes: number; // = clockOut - clockIn - break (휴가 0)
   overtimeMinutes: number; // 정규(390) 초과분, 없으면 0
   deductMinutes: number; // 급여차감(지각·결근분), 기본 0
+  crewId?: string; // T8: 멀티크루 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
 }
 
 export type EditRequestStatus = "대기" | "수락";
@@ -34,6 +35,7 @@ export interface EditRequest {
   after: EditRequestChange;
   status: EditRequestStatus; // 생성 시 "대기"
   createdAt: string; // ISO
+  crewId?: string; // T8: 멀티크루 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
 }
 
 /** 수락 API 응답 결합형(architect §2.2). status "수락" 전이 요청 + 재계산된 레코드. */
@@ -103,3 +105,60 @@ export interface ProfileResponse {
 
 /** PATCH 허용 필드 — 휴대폰/이메일만. name/birthDate는 타입상 표현 불가(컴파일 방어). */
 export type ProfilePatch = Partial<Pick<UserProfile, "phone" | "email">>;
+
+// === T8 계정/권한 분리 (마스터·크루) — append-only, leaf 단일출처 (architect §2.1) ===
+
+/** 역할 2종. master=점주(전체 조회+수락), crew=근무자(본인 스코프). */
+export type Role = "master" | "crew";
+
+/** mock 계정 1건(서버 시드). 역할전환 목록·집계의 단위. */
+export interface Crew {
+  id: string;
+  name: string;
+  role: Role;
+  avatarInitial: string;
+  joinDate: string; // "YYYY-MM-DD"
+  active: boolean; // 초대 합류 여부(false=미합류)
+}
+
+/** 클라이언트가 보유하는 현재 사용자(mock 신뢰 모델). crewId는 crew일 때 본인 식별. */
+export interface User {
+  id: string;
+  name: string;
+  role: Role;
+  avatarInitial: string;
+  crewId?: string;
+}
+
+export type InviteStatus = "대기" | "사용";
+
+/** 마스터가 발급하는 합류 코드. 만료/회수 미구현(mock). */
+export interface Invite {
+  code: string;
+  createdBy: string; // masterId
+  targetCrewId?: string;
+  status: InviteStatus; // 대기 → 사용
+  createdAt: string; // ISO
+}
+
+/** 마스터 집계 행 — 크루별 근무/연장/휴가 요약. */
+export interface CrewSummary {
+  crewId: string;
+  name: string;
+  avatarInitial: string;
+  workMinutes: number;
+  overtimeMinutes: number;
+  vacationDays: number;
+}
+
+/** GET /api/master/crews 응답. */
+export interface MasterSummaryResponse {
+  month: string; // "YYYY-MM"
+  crews: CrewSummary[];
+}
+
+/** POST /api/invites/join 성공 응답. */
+export interface JoinResult {
+  crew: Crew;
+  ok: true;
+}

@@ -25,6 +25,11 @@
 | **사용자 프로필** (UserProfile) | 근무자 개인정보 `{ name, birthDate, phone, email, avatarInitial }`. 이름·생년월일은 본인인증 전 **읽기전용**, 휴대폰·이메일만 편집 가능. |
 | **매장 정보** (StoreInfo) | 소속 매장 `{ name, joinDate, employed, workDays, workTime }`. UI 표기 "입사 YYYY.MM.DD ~ 재직중 / 근무 월~금 HH:MM~HH:MM". |
 | **읽기전용 필드 정책** | 이름·생년월일 변경은 본인인증(미구현)을 전제로 하며, `PATCH /api/profile`이 화이트리스트(phone/email)로 해당 필드를 무시(200)하여 계약 단일 출처(store)에서 강제한다. 형식 오류(이메일/전화)는 400. |
+| **마스터** (master) | 매장 점주 역할. 전체 크루의 근무/휴일을 집계 조회하고 수정요청을 수락할 수 있는 유일한 역할. 본인 근무기록은 없을 수 있음(`MASTER_ID="master-1"`). 집계(`getCrewSummaries`) 대상에서 제외된다. |
+| **크루** (crew) | 근무자 역할. 본인 `crewId` 데이터만 조회·생성. 수정요청 생성은 가능하나 수락은 불가. 초대로만 합류(`active=true`). 시드 3명: 김민정(`crew-minjung`) + `crew-2` + `crew-3`. |
+| **crewId 스코프** | store/API가 데이터를 사용자별로 격리하는 키. store 내부는 `recordsByCrew: Map<crewId, Map<date, AttendanceRecord>>` / `profilesByCrew`로 분리. 9개 store 함수는 trailing `crewId=DEFAULT_CREW_ID` optional 인자로 받으며, **미지정 시 김민정(`crew-minjung`)으로 fallback**하여 단일사용자 흐름을 보존한다(ADR 0004 append-only 회귀 0 전략 계승). |
+| **초대** (Invite) | 마스터가 발급하는 합류 코드 `{ code, createdBy, targetCrewId?, status, createdAt }`. `status: 대기 → 사용`. `createInvite(masterId)`가 혼동문자 제외 6자 코드 발급. `joinByInvite(code, crewId)`: 유효 미사용 → 크루 `active=true`+코드 `사용`(JoinResult); 없는 코드 → `null`(400 의미); 이미 사용된 코드 → `"used"`(409 의미). 만료/회수 미구현(mock). |
+| **크루 집계** (CrewSummary) | 마스터 집계 행 `{ crewId, name, avatarInitial, workMinutes, overtimeMinutes, vacationDays }`. `getCrewSummaries(month)`가 크루(role=crew)별 월 합산. 빈 크루/없는 월은 0(NaN 방어). |
 
 ## 데이터 표기 규칙 (UI)
 
