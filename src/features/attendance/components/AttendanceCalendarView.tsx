@@ -4,12 +4,16 @@
 // page(RSC) 셸은 보존하고 월 상태를 이 경계로 지역화(architect §2.3).
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { MonthSelector } from "@/components/MonthSelector";
 import { MonthlyCalendar } from "./MonthlyCalendar";
-import { STORE_NAME, SEED_MONTH } from "@/lib/constants";
+import { MonthPickerSheet } from "./MonthPickerSheet";
+import { STORE_NAME, SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth } from "@/lib/date";
 
 export function AttendanceCalendarView() {
   const [month, setMonth] = useState<string>(SEED_MONTH);
+  // 월 picker open state(AC-12/15). month 단일 소유 유지(setMonth 그대로).
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <div>
@@ -24,7 +28,10 @@ export function AttendanceCalendarView() {
             >
               ‹
             </button>
-            <span>{formatMonthLabel(month)}</span>
+            <MonthSelector
+              label={formatMonthLabel(month)}
+              onClick={() => setPickerOpen(true)}
+            />
             <button
               type="button"
               aria-label="다음 달"
@@ -42,6 +49,17 @@ export function AttendanceCalendarView() {
         <span className="truncate">{STORE_NAME}</span>
       </div>
       <MonthlyCalendar month={month} />
+      <MonthPickerSheet
+        open={pickerOpen}
+        current={month}
+        joinMonth={SEED_JOIN_DATE.slice(0, 7)}
+        currentMonth={SEED_MONTH}
+        onSelect={(m) => {
+          setMonth(m);
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </div>
   );
 }

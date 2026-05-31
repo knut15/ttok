@@ -283,3 +283,110 @@ P1-1 수정 확인: **해소 확인됨**.
 | **P1** (사용자 결정 필요) | seed 5/04(overtime=34→0)·5/24(overtime=130→60) 리터럴이 신규 clockOut 기준과 불일치. `updateStatus` 호출 시 drift. | PRD 수용 trade-off이나 데모 데이터 정합성 잠재 위험. 시드 리터럴 정정 vs 현행 유지(불변식② 보존) 중 **사용자 결정 필요**. |
 | P2 | `after.clockIn`/`clockOut` 역전(clockOut < clockIn) 명시 검증 미비 | calcWorkMinutes가 0 반환으로 방어되나 명시 400 없음 |
 | P3 | `useEditRequests.approve` 400/404 에러 메시지 UI 미노출 | UX 개선 |
+
+---
+
+## 재검증 (v3)
+
+- **검증 대상 커밋**: 3e152e0 (v3 REWORK A + 사용자 지시 AC-13/14)
+- **base (codex)**: c57e13f (v2 완료 커밋)
+- **검토일**: 2026-05-31
+
+### 1. P1 해소 확인 (v2 지적: undefined clock 검증 스킵)
+
+| 항목 | 파일:라인 | 확인 결과 |
+|---|---|---|
+| `clock === undefined` 명시 거부 (400) | `route.ts:46-51` | `if (clock === undefined) return 400` — undefined 명시 체크로 JS `undefined != null === false` 결함 봉쇄 ✅ |
+| null은 계속 허용 (결근/휴가 clock=null 유효) | `route.ts:52-57` | `if (clock !== null && Number.isNaN(parseHHMM(clock)))` — null 통과, 형식 불량만 차단 ✅ |
+| after 3필드 완전체 요구 주석 | `route.ts:42-44` | 의도 명문화 ✅ |
+| `approveRequest` fail-closed 가드 강화 | `store.ts:255-258` | `afterIsValid = status 유효 && (clockIn === null || typeof string) && (clockOut === null || typeof string)` — undefined 차단 ✅ |
+| 레코드 미존재 시 emptyRecord 폴백 (fail-closed) | `store.ts:262-267`, `store.ts:311-322` | `emptyRecord()` 신규 헬퍼, persist 안 함 + 기존 guard의 fail-open 해소 ✅ (v2 codex P2도 해소) |
+| 신규 테스트: `after:{status:"정상"}` (clock 필드 부재) → 400 | `route.test.ts:68-75` | RED→GREEN 확인, `미생성` 검증 ✅ |
+| 신규 테스트: undefined clockOut 손상 요청 fail-closed | `store.test.ts:254-277` | `getRecord(date)===null` + `request.status==="대기"` 보장 ✅ |
+
+**v2 P1 해소: 완전 해소됨.**
+
+추가: v2 codex P2(방어 가드 fail-open)도 v3에서 `afterIsValid` 확장 + `emptyRecord()` 도입으로 함께 해소. 기존 레코드 미존재 시에도 fail-closed.
+
+### 2. AC-13/14 확인 (사용자 지시: 시간변경 = 퇴근만)
+
+| 항목 | 파일:라인 | 확인 결과 |
+|---|---|---|
+| AC-13: 출근 input `readOnly` + `disabled` | `AttendanceDetail.tsx:193-196` | `readOnly`, `disabled`, `bg-black/[0.04]`, `text-muted`, `aria-label="출근 시각 (수정 불가)"` — 편집 불가 ✅ |
+| AC-13: 출근 input value = `initial.clockIn` (state 아님) | `AttendanceDetail.tsx:192` | `value={initial.clockIn ?? ""}` — 로컬 state 제거, initial 직접 표시 ✅ |
+| AC-13: TimeChangeSheet 퇴근만 state 관리 | `AttendanceDetail.tsx:181` | `const [clockOut, setClockOut]` — clockIn state 제거됨 ✅ |
+| AC-13: canApply 퇴근만 검증 | `AttendanceDetail.tsx:183` | `clockOut === "" || !Number.isNaN(parseHHMM(clockOut))` — clockIn 검증 제거 ✅ |
+| AC-14: onApply `clockIn: initial.clockIn` 불변 | `AttendanceDetail.tsx:216` | `clockIn: initial.clockIn` (편집 불가 initial 값 그대로 전달) ✅ |
+| AC-14: AttendanceDetail 출근 Row `record.clockIn` 고정 | `AttendanceDetail.tsx:96` | `value={record.clockIn ?? "-"}` (이전: `effectiveDraft.clockIn`) ✅ |
+| AC-14: EditRequestForm after.clockIn = `record.clockIn` | `AttendanceDetail.tsx:127-128` | `clockIn: record.clockIn` (이전: `effectiveDraft.clockIn`) ✅ |
+| AC-14: after.clockOut = 편집값(`effectiveDraft.clockOut`) | `AttendanceDetail.tsx:129` | `clockOut: effectiveDraft.clockOut` ✅ |
+
+**AC-13 (출근 읽기전용): 충족.** input에 `readOnly`+`disabled`+시각 스타일 적용, clockIn 로컬 state 완전 제거.
+
+**AC-14 (clockIn 불변·clockOut만 반영): 충족.** `onApply`, 출근 Row 표시, EditRequestForm after 생성 세 지점 모두 `record.clockIn`을 불변으로 전달. clockOut만 편집값 반영 경로.
+
+UI 단위테스트: vitest 환경(node, jsdom 미지원)으로 렌더 테스트 불가 — 빌드/타입/lint로 검증(AC-13/14는 코드 Read + 빌드 PASS로 확인, 수용 기준은 04-implementation.md §"REWORK v3"에 명시).
+
+### 3. DoD 수치 (v3 직접 실측)
+
+| 항목 | 결과 |
+|---|---|
+| `pnpm test` | **106 passed (15 files)** — 기존 104 + 신규 2 (route C1 + store C2), 회귀 0 ✅ |
+| `pnpm exec tsc --noEmit` | exit 0 ✅ |
+| `pnpm build` | exit 0 (Compiled successfully, 15 라우트/페이지) ✅ |
+| `pnpm lint` | exit 0 ✅ |
+
+신규 테스트 상세:
+- `route.test.ts:68-75` — `after.clockOut 필드 부재(after:{status:정상}) 는 400 으로 거부하고 미생성` (C1, route v3 P1)
+- `store.test.ts:254-277` — `after.clockOut 가 undefined 인 손상 요청 수락 시 레코드를 오염시키지 않는다(fail-closed)` (C2, store v3 P2)
+
+### 4. 교차 검증 v3 (codex review --base c57e13f)
+
+- 자체 판정 (하네스축): PASS 후보
+- codex 호출: `codex review --base c57e13f`
+- codex 모델: gpt-5.5
+- 호출 시각: 2026-05-31T07:44:33 (UTC)
+- **codex 판정: PASS**
+
+codex 원문 (1줄 요약):
+> "The changes correctly reject missing clock fields, fail closed on corrupted request data, and restrict edits to clockOut while preserving clockIn. Type checking passed; Vitest could not run because the read-only sandbox blocks its temporary directory creation."
+
+codex P1/P2 지적: 없음 ("No actionable regressions were found in the diff").
+P3 이하 지적: 없음.
+
+Vitest sandbox 제약은 codex read-only 샌드박스 환경의 한계이며 실제 코드 결함 아님 — 실측은 하네스축(pnpm test 106 passed) 확인.
+
+**gate_mode: and — 하네스축 PASS AND 코드축(codex) PASS → 최종 PASS 확정.**
+
+### AC 매트릭스 (v3 신규 추가분)
+
+| AC# | 내용 | 충족 증거 | 정량 증거 | 일치 |
+|---|---|---|---|---|
+| AC-13 | TimeChangeSheet 출근 readOnly+disabled, clockIn 로컬 state 제거 | `AttendanceDetail.tsx:192-196` `readOnly disabled value={initial.clockIn}` | AttendanceDetail.tsx:192-196 | ✅ |
+| AC-14 | after.clockIn 불변(record.clockIn), clockOut만 편집값 | `AttendanceDetail.tsx:127-129, 216` `clockIn: record.clockIn` / `clockIn: initial.clockIn` | AttendanceDetail.tsx:127-129, 216 | ✅ |
+
+누계 AC 충족: 14/14 (AC-1~12 v1, AC-13/14 v3 신규)
+
+### 최종 판정 (v3)
+
+| 항목 | 결과 |
+|---|---|
+| **판정** | **PASS** |
+| v2 P1 해소 | ✅ 완전 해소 (route undefined clock 차단 + store fail-closed 강화 + 테스트 2건) |
+| v2 P2(방어 가드 fail-open) | ✅ 함께 해소 (emptyRecord 도입, afterIsValid 확장) |
+| AC-13 (출근 읽기전용) | ✅ 충족 (readOnly+disabled, state 제거) |
+| AC-14 (clockIn 불변, clockOut만) | ✅ 충족 (3지점 모두 record.clockIn 고정) |
+| DoD 수치 | 106/106 GREEN / tsc 0 / build 0 / lint 0 |
+| codex 재게이트 (3라운드) | PASS — 신규 P1 없음, 차단 결함 없음 |
+| 회귀 | 0 (기존 104 GREEN + 신규 2) |
+| AC 충족 | 14/14 (AC-1~12 + AC-13/14) |
+| 분류 | — |
+| 회귀 지점 | 종료 (Done) |
+
+### 남은 Follow-up (v3 이후, 차단 결함 없음)
+
+| 등급 | 항목 | 비고 |
+|---|---|---|
+| **P1** (사용자 결정 필요) | seed 5/04(overtime=34→0)·5/24(overtime=130→60) 리터럴이 신규 clockOut 기준과 불일치. `updateStatus` 호출 시 drift. | PRD 수용 trade-off. 시드 리터럴 정정 vs 현행 유지(불변식② 보존) 중 사용자 결정 필요. |
+| P2 | `after.clockIn`/`clockOut` 역전(clockOut < clockIn) 명시 400 검증 미비 | calcWorkMinutes가 0 반환으로 방어되나 명시 검증 없음. 별도 task 권고. |
+| P3 | `useEditRequests.approve` 400/404 에러 메시지 UI 미노출 | UX 개선. 별도 task 권고. |
