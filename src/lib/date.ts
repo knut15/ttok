@@ -52,6 +52,17 @@ export function nowHHMM(now: Date = new Date()): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+/**
+ * 로컬 기준 오늘 "YYYY-MM-DD" (AC-T6-1). UTC 변환 금지(toISOString 회피 — 날짜 밀림 방지).
+ * now 주입 가능 → 결정적 테스트. month 0-index → +1 1-index 변환, zero-pad.
+ */
+export function todayDate(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /** "YYYY-MM" 을 delta 개월 이동. 연도 경계 자동 보정(2026-12 +1 → 2027-01). */
 export function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);

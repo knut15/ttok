@@ -3,10 +3,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ClockToggle } from "@/features/attendance/components/ClockToggle";
-import { formatDotDate } from "@/lib/date";
-
-const TODAY = "2026-05-29"; // 데모 기준일(시드 월). AC-11 헤더 날짜.
+import { HomeToday } from "@/features/attendance/components/HomeToday";
 
 export default function HomePage() {
   return (
@@ -21,15 +18,7 @@ export default function HomePage() {
       />
 
       <div className="space-y-3 px-5 pt-1">
-        <Link
-          href="/attendance"
-          className="flex items-center justify-between text-base font-bold text-foreground"
-        >
-          <span>{formatDotDate(TODAY)}</span>
-          <span className="text-muted">›</span>
-        </Link>
-
-        <ClockToggle date={TODAY} />
+        <HomeToday />
 
         <Link href="#" className="block">
           <Card className="flex items-center justify-between">
