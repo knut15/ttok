@@ -13,8 +13,10 @@
 | 1 기획 | planner | ✅ 완료 | `01-prd.md` (AC 16, sub-task 4) |
 | 2 승인 | (user gate) | ✅ APPROVE | `02-approval.md` (Q1 입사월~현재월 / Q3 무제한) |
 | 2.5 아키텍처 | architect | ✅ 완료 | `03-architecture.md` (append-only, 4/4) |
-| 3 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 4 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 3 구현 | developer | ✅ 완료 | `04-implementation.md` (116 test, 회귀 0) |
+| 4 리뷰 | reviewer+codex | ✅ PASS | `05-review.md` (AC 16/16, codex PASS) |
+
+> 🎉 T5 Done (rework 0). shiftDay·AttendanceDetailNav·MonthPickerSheet. 116 test GREEN. follow-up: joinDate 동적화, 월범위밖 버튼 UX, picker 정렬.
 
 ## 진행 로그
 - 2026-05-31 — T5 시작 (T4 종결 직후). 내비게이션 3종.

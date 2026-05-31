@@ -11,8 +11,11 @@
 | Phase | 역할 | 상태 | 산출물 |
 |---|---|---|---|
 | 스펙 | orchestrator | ✅ | `01-prd.md` |
-| 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 구현 | developer | ✅ 완료 (v2) | `04-implementation.md` (122 test, 커밋 4615c87) |
+| 리뷰 | reviewer+codex | ✅ PASS | `05-review.md` (AC 10/10, codex PASS) |
+
+> 🎉 T6 Done (rework 1). 홈/캘린더/급여 실제월 추종. 122 test GREEN.
+> follow-up: /pay 월네비 + PaySummaryCard "5월 급여" 동적레이블(6월부터 필요), HomeToday 자정 갱신.
 
 ## 진행 로그
 - 2026-05-31 — T6 시작. 원인=page.tsx 하드코딩 TODAY. 수정=실제 현재날짜(client).
