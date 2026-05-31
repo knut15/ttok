@@ -306,3 +306,141 @@ PRD §E-7 및 ADR 0005: mock 신뢰 모델 — 클라이언트 헤더 선언 신
 | P1 | crew-2/3 급여 주휴수당 분리 (`buildPayItems` 크루별 주휴수당 스코프) | `pay/route.ts:19-20` — 현재 김민정 고정 `WEEKLY_HOLIDAY`를 크루별로 분리하지 않음. 5월 레코드가 있는 crew-2/3에도 67,080원 블루행이 잘못 표시됨. 이번 PRD §2.2에서 "주휴수당 = 시드 고정값(67,080원 1건)"이나 멀티크루 확장에서 재정의 필요 |
 | P2 | 초대 코드 소진 + 미등록 crewId 방어 (`joinByInvite` 검증 순서) | `store.ts:541-545` — 코드 validate 전 invite 소진. mock 범위에선 무해하나 실제 배포 전 수정 권장 |
 | P2 | active=false 크루 RoleSwitcher 표시 정책 명확화 | 현재 시드가 모두 `active=true` → 초대 플로우 시연을 위해 일부 크루를 `active=false`로 시드하고 RoleSwitcher에서 분리 표시(예: "초대 대기") 또는 숨김 처리 |
+
+---
+
+## 재검증 (v2)
+
+> task-reviewer / 2026-06-01 / 대상 커밋: d35e6a0 / v2 diff base: 1e295a1
+
+### 검증 대상 파일 (git diff 1e295a1 d35e6a0 --name-only)
+
+- `src/app/master/[crewId]/page.tsx` (신규)
+- `src/features/accounts/components/MasterCrewDetail.tsx` (신규)
+- `src/features/accounts/components/CrewSummaryList.tsx` (수정)
+- `src/features/attendance/hooks/useAttendance.ts` (수정)
+- `src/features/pay/hooks/usePay.ts` (수정)
+- `src/features/mypage/hooks/useProfile.ts` (수정)
+- `src/app/api/attendance/route.test.ts` (수정 — 신규 2건 추가)
+- `docs/tasks/2026-05-31-accounts-roles/04-implementation.md` (REWORK v2 절 append)
+
+---
+
+### P1-2 해소 검증 (AC-11 드릴다운)
+
+| 검증 항목 | 증거 | 결과 |
+|---|---|---|
+| `CrewSummaryList` 각 행 → `/master/[crewId]` Link | `CrewSummaryList.tsx:30-48` `<Link href="/master/${c.crewId}">` | ✅ |
+| `/master/[crewId]` RSC 셸 신규 라우트 | `src/app/master/[crewId]/page.tsx:6-13` `MasterCrewDetail crewId={crewId}` | ✅ |
+| `MasterCrewDetail` 마스터 mount-gate 가드 | `MasterCrewDetail.tsx:52-56` `mounted && user.role !== "master" → router.replace("/")` | ✅ |
+| `MasterCrewDetail` 대상 크루 월간 근무/휴일 표시 | `MasterCrewDetail.tsx:49` `useMonthAttendance(month, crewId)` + `MasterCrewDetail.tsx:109-139` 일자목록 렌더 | ✅ |
+| `useMonthAttendance` targetCrewId 파라미터 확장 | `useAttendance.ts:18` `(month: string, targetCrewId?: string)` + `:25-27` `?crewId=targetCrewId` 쿼리 조건부 부착 | ✅ |
+| 마스터 `requested` 허용 (enforceReadScope) | `scope.ts:26-28` 기존 로직 — 마스터면 requested 허용. API 무변경 | ✅ |
+| 크루 격리 — 크루는 `?crewId` 무시 | `route.test.ts:56-64` 크루 헤더 + `?crewId=crew-2` → crew-2 데이터 없음(김민정 강제) PASS | ✅ |
+| 마스터 드릴다운 API 테스트 신규 | `route.test.ts:40-53` 마스터 헤더 + `?crewId=crew-2` → crew-2 데이터 반환 + 김민정 격리 확인 PASS | ✅ |
+| 빌드 라우트 생성 확인 | `pnpm build` → `ƒ /master/[crewId]` dynamic 라우트 생성 | ✅ |
+
+**AC-11 판정: 충족.** 마스터가 집계 목록 행을 선택 → `/master/[crewId]` → `MasterCrewDetail`(마스터 가드 + 대상 크루 월간 근무/휴일 일자목록). 서버 `enforceReadScope`가 크루 직접 접근 시 본인 강제(격리 유지). API 테스트 2건 추가로 정량 증거 확보.
+
+---
+
+### P1-3 해소 검증 (E-3 전환 stale)
+
+| 훅 | 리셋 위치 | 증거 | 결과 |
+|---|---|---|---|
+| `useMonthAttendance` | `useAttendance.ts:43-44` | `setRecords([])` + `setLoading(true)` — effect 시작부 동기 호출 | ✅ |
+| `useDayAttendance` | `useAttendance.ts:84-85` | `setRecord(null)` + `setLoading(true)` | ✅ |
+| `useEditRequests` | `useAttendance.ts:135` | `setRequests([])` | ✅ |
+| `useMonthPay` | `usePay.ts:23-24` | `setData(null)` + `setLoading(true)` | ✅ |
+| `useDayPay` | `usePay.ts:50-51` | `setDetail(null)` + `setLoading(true)` | ✅ |
+| `useProfile` | `useProfile.ts:27-29` | `setData(null)` + `setLoading(true)` | ✅ |
+
+6개 훅 모두 effect 의존성 재실행(crewId 변경) 직후 동기 리셋 + `active` cleanup 이중 방어. PRD §E-3 "이전 사용자 데이터 잔존 금지 + 전환 중 로딩 가드" 충족.
+
+**E-3 판정: 충족.**
+
+---
+
+### 회귀 검증
+
+| 항목 | 결과 |
+|---|---|
+| `pnpm test` 총 통과 | ✅ 177 passed / 21 files (기존 175 + 신규 2) |
+| 기존 175 무수정 GREEN | ✅ 회귀 0 |
+| seed 불변식 (①~⑤) | ✅ `seed.test.ts` 전부 PASS |
+| `useMonthAttendance(month)` — targetCrewId 미제공 시 URL 불변 | ✅ `useAttendance.ts:25-27` `targetCrewId` 미제공 → 쿼리에 `crewId=` 미부착, 기존 경로 동일 |
+| append-only 시그니처 | ✅ `useMonthAttendance(month, targetCrewId?)` trailing optional — 기존 호출 무영향 |
+| 타입체크 | ✅ `npx tsc --noEmit` → exit 0 |
+| Lint | ✅ `pnpm lint` → 0 error / 0 warning |
+| 빌드 | ✅ `pnpm build` 성공 |
+
+---
+
+### 권한 경계 재검증 (드릴다운 격리 — 핵심)
+
+1. **마스터 가드** (`MasterCrewDetail.tsx:52-64`): mount 후 `user.role !== "master"` → `router.replace("/")`. mount 전(SSR) 로딩 가드 표시. `MasterView`와 동일 패턴.
+2. **서버 enforceReadScope** (`scope.ts:26-28`): 크루 헤더(`x-role: crew`)로 `/api/attendance?crewId=crew-X` 요청해도 서버가 본인 crewId 강제 → 타 크루 데이터 노출 0. 클라 가드 우회해도 API 레벨 차단.
+3. **테스트 정량 증거**: `attendance/route.test.ts:56-64` — 크루 헤더 + `?crewId=crew-2` → crew-2 데이터 없음 (김민정 강제) PASS.
+
+마스터 게이트 3곳(approve / master/crews / invites) 및 `enforceReadScope` 전체 적용 v1 확인 사항 유지.
+
+---
+
+### 📊 v2 AC 정량 증거 검증
+
+- 추가된 AC 증거: AC-11 드릴다운 — `attendance/route.test.ts:40-64` (2건), `CrewSummaryList.tsx:30`, `MasterCrewDetail.tsx:49,52-56`
+- E-3 stale 리셋: `useAttendance.ts:43-44,84-85,135`, `usePay.ts:23-24,50-51`, `useProfile.ts:27-29`
+- 정량 증거 부재: 0건 (v1 24/24 → v2 동일 기준 유지)
+
+**v2 AC 정량 증거 보유율: 24/24 = 100%**
+
+---
+
+### 🤝 교차 검증 — codex 재게이트 (v2, rework_count=1)
+
+- 호출: `codex review --base 1e295a1` (v2 diff 한정)
+- codex 판정: **findings 2건** — P2 1건, P3 1건. **P1 없음.**
+- 2축 게이트 결과:
+
+**[P2] useEffect 리셋 패턴 — `useAttendance.ts:43-44`**
+
+codex 지적: "useEffect 내 setRecords([]) + setLoading(true) 리셋이 React 페인트 이후 실행되어 한 프레임의 stale 노출 가능."
+
+하네스축 판단: `useEffect` 내 동기 setState는 React 18 automatic batching에서 즉시 리렌더를 예약한다. 이론상 effect 예약 시점~실행 시점 사이 1프레임이 존재하나, PRD §E-3의 "잔존 금지"는 최종 표시 기준이며 v1에서도 "타인 데이터가 최종 표시되지는 않는다"로 인정한 수준이다. 현재 구현은 v1 지적("리셋 없음")을 해소했고, active cleanup과 이중 방어로 타 크루 데이터 최종 노출 0. **P2 비차단 — codex 동의 수렴.** follow-up 수렴(동기 key-based 리셋으로 완전 제거 가능, 별도 task).
+
+**[P3] 중복 요일 레이블 — `MasterCrewDetail.tsx:117`**
+
+codex 지적: `formatDotDate(r.date)` 반환값이 `"2026.05.09 토"` (요일 내장)인데 `({weekdayKo(r.date)})` 추가로 `"2026.05.09 토 (토)"` 렌더.
+
+하네스축 확인: `date.ts:21-24` `formatDotDate`가 `weekdayKo(date)` 내장 확인. **실제 UI 표시 버그.** 그러나 기능·AC·권한 경계에 영향 없는 nit. P3 비차단 — PASS 기준(P2 이하 비차단) 내. follow-up 수렴.
+
+- 최종 codex 코드축: **PASS** (P1 없음, P2/P3 비차단)
+- 최종 2축 게이트(`gate_mode: and`): 하네스축 PASS + codex 코드축 PASS → **PASS 확정**
+
+---
+
+## 최종 판정 (v2)
+
+**판정: PASS**
+
+**사유**:
+- AC 24/24 충족 (AC-11 드릴다운 + E-3 stale 리셋 해소)
+- 권한 경계: 마스터 가드(`MasterCrewDetail` mount-gate) + 서버 `enforceReadScope` 이중 — 크루의 `/master/[crewId]` 직접 접근 차단 확인
+- 회귀: 177 passed (기존 175 + 신규 2), 회귀 0
+- 빌드/타입/Lint 전부 GREEN
+- codex 코드축 PASS (P1 없음, P2/P3 비차단)
+- `gate_mode: and` 2축 모두 PASS
+
+**DoD 수치**: 테스트 177/177 (100%), AC 24/24 (100%), 정량 증거 보유율 100%, codex P1 0건.
+
+---
+
+### follow-up 수렴 (v2 — PASS 이후, 별도 task 후보)
+
+| 우선순위 | 항목 | 근거 |
+|---|---|---|
+| P1 | crew-2/3 급여 주휴수당 분리 | v1 carry-over — `pay/route.ts:19-20` 크루별 주휴수당 스코프 미분리 |
+| P2 | `MasterCrewDetail.tsx:117` 중복 요일 제거 | codex P3 지적 — `{formatDotDate(r.date)} ({weekdayKo(r.date)})` → `{formatDotDate(r.date)}`만 (1줄 수정) |
+| P2 | useEffect stale 1-frame 제거 (key 기반 동기 리셋) | codex P2 지적 — 완전 동기 리셋 원할 시 scope key 기반 컴포넌트 unmount 패턴 적용 |
+| P2 | 초대 코드 소진 + 미등록 crewId 방어 | v1 carry-over |
+| P2 | active=false 크루 RoleSwitcher 정책 명확화 | v1 carry-over |
