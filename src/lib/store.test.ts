@@ -67,16 +67,54 @@ describe("updateStatus — 상태 전환 시 연산 필드 재계산(버그2)", 
     expect(rec!.overtimeMinutes).toBe(120);
   });
 
-  it("'정상'→'지각' 전환 시 deductMinutes는 기존값 보존(임의추정 금지)", () => {
+  it("'지각'→'지각'(상태 유지 재계산) 시 deductMinutes는 기존값 보존(임의추정 금지)", () => {
     const target = "2026-05-13"; // 시드 지각, deduct 50
-    // 먼저 정상으로 만든 뒤 다시 지각으로
-    updateStatus(target, "정상");
+    // 지각 상태를 유지한 채 재계산해도 기존 deduct(50) 보존.
     const rec = updateStatus(target, "지각");
-    // 기존 deduct(50) 보존
     expect(rec!.deductMinutes).toBe(50);
   });
 
   it("없는 날짜는 null", () => {
     expect(updateStatus("2099-01-01", "정상")).toBeNull();
+  });
+
+  // REWORK v3 #2: 지각(deduct>0)→정상 전환 시 차감 해소
+  it("'지각'(deduct=90)→'정상' 전환 시 deductMinutes가 0으로 해소된다", () => {
+    const target = "2026-05-05"; // 시드 지각, deduct 90
+    expect(getRecord(target)!.deductMinutes).toBe(90);
+    const rec = updateStatus(target, "정상");
+    expect(rec!.status).toBe("정상");
+    expect(rec!.deductMinutes).toBe(0);
+  });
+
+  it("'지각'(deduct=90)→'연장' 전환 시에도 deductMinutes가 0", () => {
+    const rec = updateStatus("2026-05-05", "연장");
+    expect(rec!.deductMinutes).toBe(0);
+  });
+
+  // REWORK v3 #3: 휴가/결근 전환 시 breakMinutes 초기화
+  it("'정상'→'휴가' 전환 시 breakMinutes가 0으로 초기화된다", () => {
+    const target = "2026-05-26"; // 시드 정상, break 30
+    expect(getRecord(target)!.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
+    const rec = updateStatus(target, "휴가");
+    expect(rec!.breakMinutes).toBe(0);
+  });
+
+  it("'정상'→'결근' 전환 시에도 breakMinutes가 0", () => {
+    const rec = updateStatus("2026-05-26", "결근");
+    expect(rec!.breakMinutes).toBe(0);
+  });
+
+  // REWORK v3 #3: 휴가→정상 역전환 시 break 복원 + work 재계산(과대산정 방지)
+  it("'휴가'→'정상'(clock 존재) 역전환 시 breakMinutes가 복원되고 work가 과대산정되지 않는다", () => {
+    const target = "2026-05-26"; // 08:00~15:00, work 390, break 30
+    updateStatus(target, "휴가"); // break=0, work=0
+    expect(getRecord(target)!.breakMinutes).toBe(0);
+
+    const rec = updateStatus(target, "정상");
+    // break 가 복원되지 않으면 work=420(과대), 복원되면 390.
+    expect(rec!.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
+    expect(rec!.workMinutes).toBe(390);
+    expect(rec!.overtimeMinutes).toBe(0);
   });
 });

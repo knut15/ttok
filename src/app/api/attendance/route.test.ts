@@ -87,4 +87,26 @@ describe("PATCH /api/attendance", () => {
     expect(body.clockOut).toBe("15:00");
     expect(body.workMinutes).toBe(390); // 동일 time.ts 계산 경로
   });
+
+  // REWORK v3 #4: clock time 유효성 검증 (parseHHMM)
+  it("clockIn 의 time 이 잘못된 형식('99:99')이면 400", async () => {
+    const res = await PATCH(
+      req("/api/attendance?date=2026-06-02", {
+        method: "PATCH",
+        body: JSON.stringify({ field: "clockIn", time: "99:99" }),
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("clockIn 의 time 이 유효('09:00')하면 200", async () => {
+    const res = await PATCH(
+      req("/api/attendance?date=2026-06-02", {
+        method: "PATCH",
+        body: JSON.stringify({ field: "clockIn", time: "09:00" }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect((await res.json()).clockIn).toBe("09:00");
+  });
 });

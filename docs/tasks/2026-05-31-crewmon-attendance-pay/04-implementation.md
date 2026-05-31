@@ -90,3 +90,29 @@ codex 교차검증이 발견한 실제 버그 3건 수정. 범위 한정(신규 
 
 ### 버그4 (untracked 해소)
 신규 repo 초기 산출물 + 본 수정을 main에 커밋(별도 브랜치 지시 없음).
+
+## REWORK v3 (분류 A) — codex 교차검증 v2 발견 4건
+
+회차: rework v3, 분류 A. 범위 한정 수정(4건 + 테스트 + 커밋). 회귀 0.
+
+### 수정 4건
+1. [P1] `src/features/attendance/components/AttendanceDetail.tsx`
+   - 시간변경 버튼 dead control 해소: `시간변경` 클릭 → `TimeChangeSheet`(공용 `BottomSheet` 재사용) 열림. `<input type="time">` 2개(출근/퇴근) + "적용".
+   - 로컬 `draft` 상태 도입(초기값=record 현재값, 렌더 중 상태 조정으로 동기화 — effect 미사용). 적용 시 draft 갱신 + 시트 닫기.
+   - `EditRequestForm` `onSubmit`의 `after`를 draft 값으로 제출(status는 record.status 유지) → before≠after 의미있는 요청 생성.
+   - 입력 시각 `parseHHMM` 유효성 검사, NaN이면 "적용" 비활성.
+   - 상태변경(즉시 PATCH, AC-15)과 시간변경(요청용 draft) 흐름 분리.
+2. [P2] `src/lib/store.ts` `updateStatus` (L56~) — 정상/연장 전환 시 `deductMinutes=0`(지각 차감 해소), 지각 전환 시 기존 deduct 보존.
+3. [P2] `src/lib/store.ts` `updateStatus` (L56~) — 휴가/결근 전환 시 `breakMinutes=0` 추가 초기화; 정상/연장/지각 역전환 & clock 존재 시 break가 0이면 `DEFAULT_BREAK_MINUTES` 복원 후 `calcWorkMinutes`/`calcOvertime` 재계산(역전환 과대산정 방지).
+4. [P2] `src/app/api/attendance/route.ts` PATCH (L35~) — clockIn/clockOut 분기에서 `body.time`을 `parseHHMM`로 검사, `Number.isNaN`이면 400("유효한 time(HH:MM)이 필요합니다").
+
+### 추가 테스트
+- `src/lib/store.test.ts`: 지각(deduct=90)→정상 deduct=0 / →연장 deduct=0; 정상→휴가 break=0 / →결근 break=0; 휴가→정상(clock 존재) break=DEFAULT_BREAK_MINUTES 복원 + work=390 재계산. 기존 "정상→지각 보존" 케이스는 신 동작에 맞춰 "지각→지각 유지 재계산 시 deduct=50 보존"으로 정정.
+- `src/app/api/attendance/route.test.ts`: PATCH `{field:"clockIn", time:"99:99"}` → 400; `"09:00"` → 200.
+- UI(TimeChangeSheet): 빌드/타입/lint 통과, 렌더 깨짐 없음.
+
+### DoD (실측)
+- `pnpm test`: 56 passed (49 → 56, +7). exit 0.
+- `pnpm exec tsc --noEmit`: exit 0.
+- `pnpm build`: "Compiled successfully", exit 0.
+- `pnpm lint`: clean, exit 0.

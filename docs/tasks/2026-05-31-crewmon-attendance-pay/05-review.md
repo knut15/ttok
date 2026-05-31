@@ -234,3 +234,121 @@ AC 정량 증거 보유율: 20/20 = 100%
 ```
 
 로그 파일: `~/.claude/state/task-orchestrator/cross_verify_log.jsonl`
+
+---
+
+## 재검증 (v2) — 2026-05-31
+
+- **재검증 대상**: REWORK(A) v1 수정 3건 + DoD 4종 + codex 재게이트
+- **git 상태**: branch `feat/crewmon-attendance-pay`, working tree 1건 수정(00-board.md 보드 상태 업데이트 only). untracked 0 — P1-1 해소 확인. 최신 커밋 `89ae5b9 feat(crewmon): 출퇴근·급여 앱 구현 + 견고성 버그 3건 수정`.
+
+### 수정 3건 확인
+
+| 버그 | 위치 | 수정 내용 | 확인 |
+|---|---|---|---|
+| P1-2 휴가일 clockIn 상태 미리셋 | `src/lib/store.ts:121-125` | `prev.status === "휴가" \|\| "결근"` 이면 `next.status = "정상"`, `next.breakMinutes = DEFAULT_BREAK_MINUTES`, `next.deductMinutes = 0` 강제 | ✅ |
+| P2-1 updateStatus payroll 미갱신 | `src/lib/store.ts:65-89` | 휴가/결근 → work/overtime/deduct=0; clock 존재 + 비휴가 → work/overtime 재계산 | ✅ |
+| P2-2 parseHHMM 범위 미검증 | `src/lib/time.ts:11` | `if (h > 23 \|\| min > 59) return NaN` 추가 | ✅ |
+
+**테스트 커버리지 추가 확인**:
+- `src/lib/store.test.ts` (신규): 7케이스 — 휴가일 clockIn/clockOut 토글 후 status="정상"·급여>0·work=390·deduct=0(line 13-29), clockIn만 정상화(31-35), 정상→휴가 work/overtime/deduct=0(39-47), 결근 clock보존(49-56), 휴가→정상(clock) work=510·overtime=120(58-68), 지각→전환 deduct 보존(70-77), 없는 날짜 null(79-81)
+- `src/lib/time.test.ts` +6케이스 (line 4-24): 23:59→1439, 00:00→0, 99:99→NaN, 24:00→NaN, 12:60→NaN, "bad"→NaN
+
+### DoD 4종 실제 실행 결과 (v2)
+
+| 명령 | 결과 | 수치 |
+|---|---|---|
+| `pnpm test` | ✅ PASS | **49 passed (11 files)**, 168ms (기존 36→+13) |
+| `pnpm exec tsc --noEmit` | ✅ PASS | exit 0, 에러 0 |
+| `pnpm lint` | ✅ PASS | exit 0, 에러 0 |
+| `pnpm build` | ✅ PASS | 11개 라우트 컴파일 성공 (/, /attendance, /pay 정적; api·[date] 동적) |
+
+### 🤝 교차 검증 재게이트 (codex review v2)
+
+- **자체 판정 (하네스축)**: PASS (수정 3건 해소 확인, DoD 4종 통과)
+- **codex 호출**: `codex review --base ce98f0e` (이번엔 커밋 89ae5b9 포함)
+- **codex 모델**: gpt-5.5
+- **codex 판정**: **FAIL** (P1 1개, P2 3개 finding)
+- **session**: 019e7c65-549a-73c1-ac9d-b8696a53ae60
+
+#### codex 지적사항 (v2)
+
+**[P1] Wire the time-correction action — `AttendanceDetail.tsx:83-88`**
+
+`시간변경` 버튼(휴게 Row의 action)에 onClick 핸들러가 없어 클릭해도 아무 동작 없음. 또한 `EditRequestForm.onSubmit`이 `after: { status: record.status, clockIn: record.clockIn, clockOut: record.clockOut }`를 항상 현재 record 값으로 제출 — 사용자가 수정하려는 새 시간을 입력할 수단이 없어 수정요청이 before/after 동일한 내용으로 생성됨.
+
+**[P2] Clear stale deductions when normalizing status — `store.ts:80-86`**
+
+v2 수정에서 비휴가 전환 시 deductMinutes를 "보존(지각 산식 미정의)"으로 처리. 이에 따라 `2026-05-05` 지각(deduct=90)을 "정상"으로 전환해도 deduct=90이 남아 급여 summary에 차감 90분이 지속됨. "정상/연장" status에는 deduct=0이 합리적이나 구현이 이를 처리하지 않음.
+
+**[P2] Normalize break time across vacation transitions — `store.ts:65-73`**
+
+updateStatus에서 휴가/결근 전환 시 workMinutes/overtimeMinutes/deductMinutes는 0으로 초기화하지만 `breakMinutes`는 그대로 유지. 결과적으로 휴가일에도 break=30분으로 표시될 수 있음. 역으로 휴가에서 정상 전환 시(clock 존재 케이스) breakMinutes가 0인 채로 calcWorkMinutes에 투입될 수 있어 근무시간 과대산정.
+
+**[P2] Validate clock mutation inputs before persisting — `route.ts:35-43`**
+
+PATCH에서 `body.time`의 존재만 체크하고 실제 값 검증 없음. parseHHMM은 time.ts에서 NaN을 반환하지만 route.ts가 이를 호출하지 않아 `time:"99:99"`로 PATCH 시 upsertTodayClock이 그대로 store에 저장. upsertTodayClock 내부의 calcWorkMinutes는 NaN 전파를 0으로 막지만, store에 `clockIn:"99:99"` 문자열 자체가 기록되어 이후 표시/재계산 시 오용 가능.
+
+#### PRD AC 대조 (v2 codex finding)
+
+| Finding | 해당 PRD 항목 | AC 명시 여부 | 분류 근거 |
+|---|---|---|---|
+| P1 시간변경 무핸들러 | ST-5 "시간변경" 기능 명시, AC-16 수정요청 after 내용 | AC-16 명시적 after 값 검증 없음. ST-5에 시간변경 언급이나 전용 AC 없음 | 분류 A — 기능 완성도 미흡 |
+| P2 지각→정상 deduct 잔존 | AC-8 상태변경 후 GET 일치 보장 | AC-8은 "GET에서 동일 조회"만 명시. deduct 재계산 AC 없음 | 분류 A — 에러 핸들링 누락 |
+| P2 breakMinutes 미정규화 | AC-3 휴가→0원, 관련 계산 일관성 | 명시적 AC 없음 | 분류 A — 에러 핸들링 누락 |
+| P2 route PATCH 입력 미검증 | 엣지#4 방어(역전 방지), 엣지#5 잘못된 파라미터 | 엣지#4는 시각 역전, #5는 date 파라미터. time 범위 검증 AC 명시 없음 | 분류 A — 에러 핸들링 누락 |
+
+**gate_mode: and** 적용 — codex 코드축 FAIL(P1 1개 포함)이므로 하네스축 PASS여도 최종 PASS 불가.
+
+#### 동일 실패 반복 여부 (rework_count=2 판단)
+
+- P1-2/P2-2는 v2에서 해소됨 (버그 수정 확인). 동일 finding 재발 없음.
+- P2-1 관련: v1 지적은 "updateStatus가 status만 교체하고 deduct 등 미갱신". v2에서 휴가/결근 전환 시 deduct=0 처리가 추가됐으나, **비휴가 전환 시 deduct 보존 정책이 여전히 지적**됨. 동일 §(updateStatus deduct 처리)에서 2회 연속 지적 발생 — 안전장치 기준 충족 가능성 있으나, 이는 v1 수정이 부분적이었던 것이지 동일 실패 반복이 아님(v1은 휴가 전환만 지적, v2는 비휴가 전환 시 보존 정책 지적).
+- 신규 P1 finding(시간변경 무핸들러): v1에서 없던 새 지적 — 회귀 아님, 기존 미발견 결함.
+
+### v2 최종 판정
+
+**REWORK (A)**
+
+#### 사유
+
+버그 3건(P1-2/P2-1-일부/P2-2) 수정 확인. DoD 4종 49 passed 통과. P1-1(untracked) 해소. 하네스축 PASS.
+
+그러나 codex 재게이트에서 P1 1개 + P2 3개 신규/잔여 finding 발견. gate_mode=and 원칙에 따라 코드축 FAIL — PASS 판정 불가.
+
+#### 분류: A (품질/완성도 — 에러 핸들링 및 기능 완성도 보강)
+
+AC 20/20 자체는 여전히 충족. 경계 조건 처리 및 시간변경 기능 완성도 미흡.
+
+#### 회귀 지점: developer
+
+#### 수정 요청 항목 (v2)
+
+1. **[P1] `AttendanceDetail.tsx` 시간변경 버튼 핸들러**: `시간변경` 버튼에 useState로 관리되는 편집 가능 시간 상태 추가. EditRequestForm 제출 시 수정된 clockIn/clockOut 값을 `after`에 담아 POST. PRD §AC-16 수정요청 after 내용이 사용자 수정값을 반영해야 함.
+   - 근거: `src/features/attendance/components/AttendanceDetail.tsx:83-88` — onClick 핸들러 없음. line 94-103 `after` 항상 현재 record 값.
+
+2. **[P2] `store.ts:updateStatus` 비휴가 전환 시 deductMinutes 처리**: 정상/연장 전환 시 `deductMinutes = 0`으로 초기화(지각이 아닌 status에는 차감 없음). 현재 구현은 deduct를 "보존"으로 처리하여 이전 지각 페널티가 정상화 후에도 급여 summary에 잔존.
+   - 근거: `src/lib/store.ts:80-86` — 비휴가 전환 branch에서 `deductMinutes` 미변경.
+
+3. **[P2] `store.ts:updateStatus` 휴가/결근 전환 시 breakMinutes 정규화**: 휴가/결근 전환 시 `breakMinutes = 0` 설정. 비휴가 전환 시(clock 존재) `breakMinutes = DEFAULT_BREAK_MINUTES` 복원.
+   - 근거: `src/lib/store.ts:65-73` — 휴가/결근 전환 시 breakMinutes 미포함.
+
+4. **[P2] `route.ts:35-43` PATCH clock time 서버 검증**: `body.time` 수신 후 `parseHHMM(body.time)`이 NaN을 반환하면 400 응답. store에 유효하지 않은 시각 문자열 저장 방지.
+   - 근거: `src/app/api/attendance/route.ts:42` — `upsertTodayClock` 직접 호출 전 time 유효성 미검증.
+
+#### 미충족 AC 목록 (v2)
+
+없음 (AC-1~20 전부 충족). 수정 요청은 AC 충족 여부가 아닌 경계 조건 품질 및 기능 완성도 문제임.
+
+#### 📊 AC 정량 증거 (v2 — 기존 동일)
+
+- 전체 AC: 20개, 정량 증거 보유율: 20/20 = 100% (v1 동일 — 코드 추가 후 기존 증거 유효)
+
+#### 부록 — codex 불일치 로그 (v2 추가분)
+
+```jsonl
+{"task_url":"docs/tasks/2026-05-31-crewmon-attendance-pay","ts":"2026-05-31T(v2)","category":"error-handling","codex_rationale":"updateStatus preserves deductMinutes when normalizing from 지각 to 정상 — stale penalty remains in pay summary","final_decision":"rework_A","review_iter":2}
+{"task_url":"docs/tasks/2026-05-31-crewmon-attendance-pay","ts":"2026-05-31T(v2)","category":"error-handling","codex_rationale":"휴가 transition leaves breakMinutes=30 intact; inverse may leave 0 break for working record","final_decision":"rework_A","review_iter":2}
+{"task_url":"docs/tasks/2026-05-31-crewmon-attendance-pay","ts":"2026-05-31T(v2)","category":"error-handling","codex_rationale":"PATCH clock mutation route.ts:42 persists time without parseHHMM NaN guard","final_decision":"rework_A","review_iter":2}
+{"task_url":"docs/tasks/2026-05-31-crewmon-attendance-pay","ts":"2026-05-31T(v2)","category":"error-handling","codex_rationale":"시간변경 button in AttendanceDetail.tsx:83-88 has no onClick handler — correction workflow non-functional","final_decision":"rework_A","review_iter":2}
+```

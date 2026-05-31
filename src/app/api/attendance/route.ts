@@ -7,6 +7,7 @@ import {
 } from "@/lib/store";
 import type { WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
+import { parseHHMM } from "@/lib/time";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -33,9 +34,9 @@ export async function PATCH(request: Request): Promise<Response> {
 
   // 쟁점 C: 출/퇴근 토글 — 현재 시각(client new Date()) 기록.
   if (body.field === "clockIn" || body.field === "clockOut") {
-    if (!body.time) {
+    if (!body.time || Number.isNaN(parseHHMM(body.time))) {
       return NextResponse.json(
-        { error: "time 이 필요합니다." },
+        { error: "유효한 time(HH:MM)이 필요합니다." },
         { status: 400, headers: NO_STORE },
       );
     }

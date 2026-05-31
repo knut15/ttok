@@ -21,8 +21,8 @@
 | 1 | 기획 | planner | ✅ 완료 | 2026-05-31 | 2026-05-31 | `01-prd.md` (AC 20개, sub-task 7개) |
 | 2 | 승인 | approver | ✅ APPROVE | 2026-05-31 | 2026-05-31 | `02-approval.md` (AI 7/8 + 쟁점 A/B/C 결정) |
 | 2.5 | 아키텍처 | architect | ✅ 완료 | 2026-05-31 | 2026-05-31 | `03-architecture.md` (4섹션, 체크 6/6) |
-| 3 | 구현 | developer | 🔄 rework v2 | 2026-05-31 | — | `04-implementation.md` (REWORK A: 버그 3건 수정) |
-| 4 | 리뷰 | reviewer | ⏸ REWORK A 반환 | 2026-05-31 | — | `05-review.md` (AC 20/20, codex FAIL) |
+| 3 | 구현 | developer | 🔄 rework v3 | 2026-05-31 | — | `04-implementation.md` (REWORK A v2: 신규 4건) |
+| 4 | 리뷰 | reviewer | ⏸ REWORK A(v2) | 2026-05-31 | — | `05-review.md` (AC 20/20, codex 신규 4건) |
 
 상태 범례: `미시작` → `진행중` → `완료` / `차단` / `건너뜀`
 

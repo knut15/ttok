@@ -50,8 +50,10 @@ export function getRecord(date: string): AttendanceRecord | null {
 /**
  * 출근상태 변경(AC-8, 버그2). 없으면 null.
  * status 의존 연산 필드를 일관되게 재계산(CONTEXT.md 급여인정시간 정의):
- * - 휴가/결근 → 인정시간 0 (work/overtime/deduct=0), clock 은 보존.
- * - 정상/연장/지각 & clock 존재 → work/overtime 재계산. deduct 는 보존(지각 산식 미정의).
+ * - 휴가/결근 → 인정시간 0 (work/overtime/deduct=0), 휴게도 0 (clock 은 보존).
+ *   (역전환 시 break=0로 인한 근무시간 과대산정 방지 — 휴게는 아래 분기에서 복원)
+ * - 정상/연장 → deduct=0 (지각 차감 해소). clock 존재 시 휴게 복원 후 work/overtime 재계산.
+ * - 지각 → deduct 는 보존(지각 산식 본 범위 미정의 — 임의 추정 금지). clock 존재 시 재계산.
  */
 export function updateStatus(
   date: string,
@@ -63,29 +65,39 @@ export function updateStatus(
 
   let updated: AttendanceRecord;
   if (status === "휴가" || status === "결근") {
-    // 휴가=무급 / 결근=근무없음 → 인정시간 0 (clock 보존).
+    // 휴가=무급 / 결근=근무없음 → 인정시간 0 + 휴게 0 (clock 보존).
     updated = {
       ...rec,
       status,
       workMinutes: 0,
       overtimeMinutes: 0,
       deductMinutes: 0,
+      breakMinutes: 0,
     };
   } else if (rec.clockIn && rec.clockOut) {
+    // 휴가/결근에서 역전환 시 break=0 이면 기본값으로 복원 후 재계산.
+    const breakMinutes =
+      rec.breakMinutes === 0 ? DEFAULT_BREAK_MINUTES : rec.breakMinutes;
     const workMinutes = calcWorkMinutes({
       clockIn: rec.clockIn,
       clockOut: rec.clockOut,
-      breakMinutes: rec.breakMinutes,
+      breakMinutes,
     });
     updated = {
       ...rec,
       status,
+      breakMinutes,
       workMinutes,
       overtimeMinutes: calcOvertime(workMinutes),
-      // deduct 는 보존(지각 산식 본 범위 미정의 — 임의 추정 금지).
+      // 정상/연장 → 지각 차감 해소(deduct=0). 지각 → 기존 deduct 보존.
+      deductMinutes: status === "지각" ? rec.deductMinutes : 0,
     };
   } else {
-    updated = { ...rec, status };
+    updated = {
+      ...rec,
+      status,
+      deductMinutes: status === "지각" ? rec.deductMinutes : 0,
+    };
   }
 
   store.records.set(date, updated);
