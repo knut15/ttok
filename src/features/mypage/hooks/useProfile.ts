@@ -23,6 +23,10 @@ export function useProfile() {
 
   useEffect(() => {
     let active = true;
+    // E-3(REWORK v2 P1-3): 전환 시 이전 사용자 프로필 즉시 리셋 후 fetch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData(null);
+    setLoading(true);
     fetch("/api/profile", { ...NO_STORE, headers: authHeaders(user) })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: ProfileResponse | null) => {

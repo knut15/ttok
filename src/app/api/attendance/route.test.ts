@@ -34,6 +34,34 @@ describe("GET /api/attendance", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([]);
   });
+
+  // REWORK v2 / P1-2 / AC-11: 마스터 드릴다운 — ?crewId=대상 + master 헤더 →
+  // 대상 크루(crew-2)의 본인 근무기록을 반환한다(김민정 격리, enforceReadScope 마스터 허용).
+  it("마스터는 ?crewId 로 대상 크루(crew-2)의 근무기록을 조회한다", async () => {
+    const res = await GET(
+      req("/api/attendance?month=2026-05&crewId=crew-2", {
+        headers: { "x-role": "master", "x-crew-id": "master-1" },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { date: string }[];
+    // crew-2 시드는 2026-05-09(지각)를 가지나 김민정(기본 스코프)에는 없다 → 격리 확인.
+    expect(body.some((r) => r.date === "2026-05-09")).toBe(true);
+    const minjung = await GET(req("/api/attendance?month=2026-05"));
+    const minjungBody = (await minjung.json()) as { date: string }[];
+    expect(minjungBody.some((r) => r.date === "2026-05-09")).toBe(false);
+  });
+
+  // P1-2 권한 경계: 크루는 ?crewId 를 무시하고 본인 데이터만(enforceReadScope) → 드릴다운 불가.
+  it("크루는 ?crewId 를 무시하고 본인(김민정) 데이터만 조회한다", async () => {
+    const res = await GET(
+      req("/api/attendance?month=2026-05&crewId=crew-2", {
+        headers: { "x-role": "crew", "x-crew-id": "crew-minjung" },
+      }),
+    );
+    const body = (await res.json()) as { date: string }[];
+    expect(body.some((r) => r.date === "2026-05-09")).toBe(false);
+  });
 });
 
 describe("PATCH /api/attendance", () => {

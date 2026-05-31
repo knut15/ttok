@@ -18,6 +18,10 @@ export function useMonthPay(month: string) {
 
   useEffect(() => {
     let active = true;
+    // E-3(REWORK v2 P1-3): 전환·월변경 시 이전 사용자 급여 즉시 리셋 후 fetch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData(null);
+    setLoading(true);
     fetch(`/api/pay?month=${month}`, { ...NO_STORE, headers: authHeaders(user) })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: PayResponse | null) => {
@@ -42,6 +46,10 @@ export function useDayPay(date: string) {
 
   useEffect(() => {
     let active = true;
+    // E-3(REWORK v2 P1-3): 전환·날짜변경 시 이전 사용자 급여상세 즉시 리셋 후 fetch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDetail(null);
+    setLoading(true);
     fetch(`/api/pay/${date}`, { ...NO_STORE, headers: authHeaders(user) })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: PayDetail | null) => {

@@ -221,3 +221,48 @@ store 도메인 함수(`getCrewSummaries`/`createInvite`/`joinByInvite`)는 청�
 - **DoD 전부 GREEN**: `pnpm test`(175) / `tsc --noEmit`(exit 0) / `pnpm lint`(0/0) / `pnpm build`(신규 라우트 `/api/invites`·`/api/invites/join`·`/api/master/crews`·`/master`·`/api/crews` 생성).
 - **전체 흐름**: 역할전환(RoleSwitcher) → 크루 본인 스코프 강제(enforceReadScope) → 마스터 집계(/master) → 초대 발급(POST /api/invites) → 수락 게이트(role≠master 403) 일관 동작. 회귀 0 = 헤더 전달(URL 불변) + trailing crewId fallback(김민정) + buildSeedRecords() 불변.
 - **Repository Artifacts**: CONTEXT.md 누적 20개 T8 용어, ADR 0005 신규(crewId 스코프 전략 A+헤더 / mock 역할전환 신뢰모델).
+
+## REWORK v2 (분류 A — 차단 P1 2건)
+
+> task-developer / 2026-06-01 / mode: teammate. 리뷰 05-review.md P1-2·P1-3 한정 수정(범위 한정, 회귀 금지). 회차: rework v2.
+
+### AC 충족 매핑
+
+- **AC-11 (P1-2) 마스터 드릴다운 경로** → `CrewSummaryList.tsx:24-50`(각 집계행을 `/master/[crewId]` Link 로) + `src/app/master/[crewId]/page.tsx`(신규 RSC 셸) + `MasterCrewDetail.tsx`(신규 client: 마스터 mount-gate 가드 + 월선택 + 대상 크루 월간 근무/휴일 일자목록) + `useAttendance.ts:16-67`(`useMonthAttendance(month, targetCrewId?)` 최소 확장 — targetCrewId 제공 시 `?crewId=` 부착). 백엔드 무변경: 기존 `/api/attendance` GET 이 `enforceReadScope`(scope.ts) 로 마스터의 requested crewId 를 이미 허용.
+- **E-3 (P1-3) 전환 시 stale 즉시 초기화** → `useAttendance.ts`(useMonthAttendance:41 `setRecords([])`+`setLoading(true)` / useDayAttendance:82 `setRecord(null)`+`setLoading(true)` / useEditRequests:133 `setRequests([])`) + `usePay.ts`(useMonthPay:22 / useDayPay:50 `setData|setDetail(null)`+`setLoading(true)`) + `useProfile.ts:27`(`setData(null)`+`setLoading(true)`). 전환(crewId effect 재실행) 직후 이전 사용자 데이터 즉시 리셋 후 fetch. 기존 `active` cleanup 유지(이중 방어).
+
+### TDD 사이클
+
+| 사이클 | AC | RED | GREEN |
+|---|---|---|---|
+| 1 | AC-11 (drilldown 계약) | `attendance/route.test.ts` 마스터 `?crewId=crew-2` → crew-2 의 2026-05-09(김민정 부재) 반환 + 크루는 `?crewId` 무시(본인 강제) 2건 작성 → FAIL(초기 discriminator 오류로 RED 확인) | discriminator 를 crew-2 고유일(05-09)로 교정 → 2 PASS (백엔드 enforceReadScope 가 이미 마스터 requested 허용 → UI 경로만 추가) |
+| 2 | E-3 (stale 리셋) | vitest node 환경상 훅 렌더 단위테스트 미지원 → 코드 일치 + DoD(build/tsc/lint) 로 검증(task 지침) | 5개 훅 effect 시작부 동기 리셋(`set-state-in-effect` 의도적, eslint-disable 명시) |
+
+- Horizontal slicing 여부: ❌ (사이클별 vertical slice). 내부 협력자 mock 0.
+
+### 산출물
+
+| 항목 | 내용 |
+|---|---|
+| 신규 파일 | `src/app/master/[crewId]/page.tsx`(RSC 셸), `src/features/accounts/components/MasterCrewDetail.tsx`(client 마스터 가드 + 일자목록) |
+| 수정 파일 | `CrewSummaryList.tsx`(행→Link), `useAttendance.ts`(targetCrewId 확장 + 3훅 stale 리셋), `usePay.ts`(2훅 리셋), `useProfile.ts`(1훅 리셋) |
+| 추가 테스트 | `attendance/route.test.ts` +2 (마스터 드릴다운 / 크루 격리) |
+| 프로젝트 자원 | 기존 `enforceReadScope`(scope.ts 마스터 requested 허용) 재사용 — 백엔드 무변경. `longWorkLabel`/`statusTone`/`formatDotDate`/`weekdayKo` 등 기존 도메인 헬퍼 재사용 |
+| 컨벤션 적용 | `"use client"` 경계, leaf 단일출처(`@/types`), no-store fetch, mount-gate 하이드레이션(MasterView 동일 패턴), 변경 파일 한정 lint |
+
+### 자가 검증 (DoD)
+
+- 빌드: ✅ `pnpm build` → 성공, `ƒ /master/[crewId]` dynamic 라우트 생성 확인.
+- 타입체크: ✅ `npx tsc --noEmit` → exit 0.
+- 단위 테스트: ✅ `pnpm test` → 21 files / **177 passed** (기존 175 + 신규 2, 회귀 0).
+- Lint: ✅ `pnpm lint` → 0 error / 0 warning.
+
+### 경계면 일치 확인
+
+- API ↔ Frontend: `useMonthAttendance(month, crewId)` → GET `/api/attendance?month=&crewId=`(authHeaders master) ↔ route `enforceReadScope(readScope(req), requested)` 마스터 requested 허용. 크루는 서버에서 무시(본인 강제) → UI 가드(router.replace)와 이중.
+- 권한 경계: `/master/[crewId]` 접근 시 MasterCrewDetail mount-gate 가드(role≠master → `router.replace("/")`), 데이터 격리는 서버 enforceReadScope 가 최종 강제(클라 가드 우회해도 크루 헤더면 본인 데이터만).
+- 전환 stale: 5개 데이터 훅 모두 crewId effect 재실행 시 동기 리셋(data=null/empty + loading=true) → 이전 사용자 데이터 노출 0. active cleanup 으로 race 차단 유지.
+
+### 범위 준수
+
+- P1-1(crew-2/3 주휴수당) · P1-4(active 시드) follow-up 미손댐. 그 외 변경 0. 기존 175 테스트 무수정 GREEN.

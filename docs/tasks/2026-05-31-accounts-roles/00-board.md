@@ -17,8 +17,8 @@
 | 1 기획 | planner | ✅ 완료 | `01-prd.md` (AC 19+5, sub-task 8) |
 | 2 승인 | (user gate) | ✅ APPROVE | `02-approval.md` (B/C/E + 내부 A/D) |
 | 2.5 아키텍처 | architect | ✅ 완료 | `03-architecture.md` (헤더+fallback 회귀0, 8 sub-task 순서) |
-| 3 구현 | developer | 🔄 진행중(3청크) | `04-implementation.md` |
-| 4 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 3 구현 | developer | 🔄 rework v2 | `04-implementation.md` (REWORK A: AC-11 드릴다운 + E-3 stale) |
+| 4 리뷰 | reviewer+codex | ⏸ REWORK A | `05-review.md` (권한경계 OK, codex P1-2/P1-3) |
 
 ## 진행 로그
 - 2026-05-31 — T8 시작. mock 역할전환 / 전체범위 / 크루 2~3명. 최대 규모 task.
