@@ -8,7 +8,9 @@ export interface AttendanceRecord {
   status: WorkStatus;
   clockIn: string | null; // "HH:MM" (휴가/결근/미출근 → null)
   clockOut: string | null; // "HH:MM"
-  breakMinutes: number; // 휴게(분), 기본 30
+  breakMinutes: number; // 휴게(분), 기본 30. 범위 있으면 calcBreakMinutes 파생 캐시(T7 §0 안 A)
+  breakStart?: string; // 신규 optional "HH:MM" 휴게 시작 (T7 범위형)
+  breakEnd?: string; // 신규 optional "HH:MM" 휴게 종료 (T7 범위형)
   workMinutes: number; // = clockOut - clockIn - break (휴가 0)
   overtimeMinutes: number; // 정규(390) 초과분, 없으면 0
   deductMinutes: number; // 급여차감(지각·결근분), 기본 0
@@ -20,6 +22,8 @@ export interface EditRequestChange {
   status: WorkStatus;
   clockIn: string | null;
   clockOut: string | null;
+  breakStart?: string; // 신규 optional — 휴게 범위 편집 시에만 포함 (T7)
+  breakEnd?: string; // 신규 optional (T7)
 }
 
 export interface EditRequest {

@@ -11,6 +11,7 @@ import type {
 } from "@/types";
 import {
   DEFAULT_BREAK_MINUTES,
+  DEFAULT_BREAK_RANGE,
   HOURLY_WAGE,
   SEED_MONTH,
   SEED_JOIN_DATE,
@@ -91,6 +92,9 @@ export const SEED_STORE_INFO: StoreInfo = {
   workTime: SEED_WORK_TIME,
 };
 
+// T7: 근무일 휴게 범위(11:30~12:00) — 파생 30분 = DEFAULT_BREAK_MINUTES(회귀 0, architect §3.4).
+const [SEED_BREAK_START, SEED_BREAK_END] = DEFAULT_BREAK_RANGE.split("~");
+
 export function buildSeedRecords(): AttendanceRecord[] {
   return SEED_ROWS.map((r) => ({
     date: `${SEED_MONTH}-${r.day}`,
@@ -98,6 +102,10 @@ export function buildSeedRecords(): AttendanceRecord[] {
     clockIn: r.clockIn,
     clockOut: r.clockOut,
     breakMinutes: r.status === "휴가" ? 0 : DEFAULT_BREAK_MINUTES,
+    // 휴가일은 범위 미부여(breakMinutes 0 유지). 그 외엔 11:30~12:00 → 파생 30 = 기존값.
+    ...(r.status === "휴가"
+      ? {}
+      : { breakStart: SEED_BREAK_START, breakEnd: SEED_BREAK_END }),
     workMinutes: r.workMinutes,
     overtimeMinutes: r.overtimeMinutes,
     deductMinutes: r.deductMinutes,

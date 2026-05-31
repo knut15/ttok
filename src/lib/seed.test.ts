@@ -27,6 +27,19 @@ describe("seed 불변식", () => {
     expect(weekly[0].amount).toBe(67080);
   });
 
+  // T7: 근무일에 휴게 범위(11:30~12:00) 부여 — 파생 30분 = 기존 breakMinutes(회귀 0).
+  it("⑤ 근무일은 breakStart=11:30/breakEnd=12:00 범위를 갖고, 휴가일은 범위 미부여", () => {
+    const work = records.find((r) => r.date === "2026-05-01");
+    expect(work!.breakStart).toBe("11:30");
+    expect(work!.breakEnd).toBe("12:00");
+    expect(work!.breakMinutes).toBe(30); // 파생 = 기존값
+
+    const vacation = records.find((r) => r.status === "휴가");
+    expect(vacation!.breakStart).toBeUndefined();
+    expect(vacation!.breakEnd).toBeUndefined();
+    expect(vacation!.breakMinutes).toBe(0);
+  });
+
   it("근무일(월~금) 레코드가 시드에 존재한다", () => {
     expect(records.some((r) => r.date === "2026-05-28" && r.status === "정상")).toBe(true);
     expect(records.some((r) => r.status === "휴가")).toBe(true);
