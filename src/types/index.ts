@@ -32,6 +32,12 @@ export interface EditRequest {
   createdAt: string; // ISO
 }
 
+/** 수락 API 응답 결합형(architect §2.2). status "수락" 전이 요청 + 재계산된 레코드. */
+export interface ApproveResult {
+  request: EditRequest; // status "수락"으로 전이된 요청
+  record: AttendanceRecord; // after 반영 + 재계산된 레코드
+}
+
 export type PayItemKind = "work" | "vacation" | "weekly_holiday"; // 근무/휴가/주휴
 
 export interface PayItem {

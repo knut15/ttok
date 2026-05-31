@@ -4,6 +4,7 @@ import {
   formatDotDate,
   buildMonthGrid,
   formatBirthDate,
+  shiftMonth,
 } from "./date";
 
 describe("isValidDateString (엣지#5)", () => {
@@ -26,6 +27,22 @@ describe("formatDotDate (AC-11)", () => {
 describe("formatBirthDate (AC-12 — 요일 없음)", () => {
   it("1986-04-06 → 1986년 4월 6일", () => {
     expect(formatBirthDate("1986-04-06")).toBe("1986년 4월 6일");
+  });
+});
+
+// 월 ±1 이동 — 연/월 경계 처리(AC-10, E-10)
+describe("shiftMonth", () => {
+  it("같은 해 안에서 +1: 2026-05 → 2026-06", () => {
+    expect(shiftMonth("2026-05", 1)).toBe("2026-06");
+  });
+  it("같은 해 안에서 -1: 2026-05 → 2026-04", () => {
+    expect(shiftMonth("2026-05", -1)).toBe("2026-04");
+  });
+  it("연말 경계 +1: 2026-12 → 2027-01", () => {
+    expect(shiftMonth("2026-12", 1)).toBe("2027-01");
+  });
+  it("연초 경계 -1: 2026-01 → 2025-12", () => {
+    expect(shiftMonth("2026-01", -1)).toBe("2025-12");
   });
 });
 

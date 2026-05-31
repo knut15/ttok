@@ -5,6 +5,9 @@ import type { WorkStatus } from "@/types";
 /** 정규 근무시간(분). 08:00~15:00 - 휴게 30분 = 6.5h = 390분. */
 export const REGULAR_MINUTES = 390;
 
+/** 정규 종료시각(분). 15:00 = 900분. 연장은 이 시각 초과분만 인정(clockOut 기준). ADR 0001. */
+export const REGULAR_END_MINUTES = 900;
+
 /** 시급(원). 시드 기준. */
 export const HOURLY_WAGE = 10320;
 

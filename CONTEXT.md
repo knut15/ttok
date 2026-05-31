@@ -13,13 +13,13 @@
 | **급여차감시간** (deductMinutes) | 지각·결근 등으로 근무로 인정되지 않아 급여인정시간에서 제외되는 시간(분). |
 | **결근 차감 정책** | 결근 = 정규 전액 차감. `updateStatus(date,"결근")` 시 `deductMinutes = REGULAR_MINUTES(390)`, `workMinutes/overtimeMinutes/breakMinutes = 0`(clockIn/clockOut 보존) → 급여인정시간 0원. 결근과 휴가는 의미가 다르다(차감 vs 단순 0원). |
 | **휴가 차감 정책** | 휴가 = 무급(차감 아님). `deductMinutes = 0`, work/overtime/break = 0. 일급 0원이되 급여차감시간 합산에 포함되지 않는다. |
-| **실근무 인정** | `workMinutes`는 실제 clock(출/퇴근 시각) 기준으로 산정한다. 조기 출근분도 정규 인정시간에 포함되며(예 5/28 07:58 출근 → 392분), 연장(overtimeMinutes)은 **정시 퇴근(15:00) 초과분만** 인정한다. 정시에 퇴근하면 조기출근으로 근무가 392분이어도 연장은 0이다. |
-| **연장근무** (overtimeMinutes) | 정규 근무시간(기준선) 초과분. 급여·캘린더에서 별도 집계·표기. `max(0, workMinutes − 정규근무분)`. |
+| **실근무 인정** | `workMinutes`는 실제 clock(출/퇴근 시각) 기준으로 산정한다. 조기 출근분도 정규 인정시간에 포함되며(예 5/28 07:58 출근 → 392분), 연장(overtimeMinutes)은 **정시 퇴근(정규 종료시각 15:00=900분) 초과분만** 인정한다. 정시에 퇴근하면 조기출근으로 근무가 392분이어도 연장은 0이다. |
+| **연장근무** (overtimeMinutes) | 정시 퇴근(정규 종료시각 15:00=900분) 초과분. 급여·캘린더에서 별도 집계·표기. **`max(0, parseHHMM(clockOut) − 900)`, clockIn·workMinutes 무관**(ADR 0001). `src/lib/time.ts` `calcOvertimeByClock`. 조기출근으로 workMinutes가 390을 넘어도 정시 퇴근이면 연장 0. (이전 `workMinutes − 390` 표현은 조기출근 시 연장 오산정 → ADR 0001로 교정.) |
 | **정규 근무시간** | 기준선 08:00~15:00, 휴게 30분 → 390분(6시간30분). `src/lib/constants.ts`. |
 | **일급** (dailyPay/amount) | `round(급여인정시간/60 × 시급)`. 휴가일은 0원. 검산: 390분 × 10,320원 = 67,080원. |
 | **주휴수당** (weeklyHolidayPay) | 주 소정근로 충족 시 지급되는 별도 급여 항목. 급여 리스트에서 **블루 별도 행**. 본 구현은 시드 고정값(67,080원 1건)으로 처리(산식 비구현). |
 | **출근상태** (WorkStatus) | `정상 / 지각 / 결근 / 휴가 / 연장` 5종 enum. |
-| **근무기록 수정요청** (EditRequest) | 출퇴근/상태 정정 요청. 사유(0~100자) 입력 후 생성. 상태 `대기 → 수락` 추적. |
+| **근무기록 수정요청** (EditRequest) | 출퇴근/상태 정정 요청. 사유(0~100자) 입력 후 생성. 상태 `대기 → 수락` 추적. **수락 시 해당 날짜 레코드에 `after`(status·clockIn·clockOut)를 반영하고 work/overtime(연장 정합)·차감 정책을 재계산**한다(`approveRequest`, `POST /api/attendance/requests/approve`). 레코드 없는 날은 after 로 신규 생성(upsert), 이미 수락된 요청 재수락은 멱등 no-op(레코드 불변). 응답은 `{request, record}`(ApproveResult). 거절/철회/수락취소는 미지원. |
 | **월 급여 요약** (PaySummary) | `{ totalPay, deductMinutes, overtimeCount, overtimeMinutes }`. 불변식: `totalPay = Σ items.amount`(주휴 포함). |
 | **사용자 프로필** (UserProfile) | 근무자 개인정보 `{ name, birthDate, phone, email, avatarInitial }`. 이름·생년월일은 본인인증 전 **읽기전용**, 휴대폰·이메일만 편집 가능. |
 | **매장 정보** (StoreInfo) | 소속 매장 `{ name, joinDate, employed, workDays, workTime }`. UI 표기 "입사 YYYY.MM.DD ~ 재직중 / 근무 월~금 HH:MM~HH:MM". |

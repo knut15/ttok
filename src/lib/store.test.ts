@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { __resetStore, getRecord, updateStatus, upsertTodayClock } from "./store";
+import {
+  __resetStore,
+  getRecord,
+  updateStatus,
+  upsertTodayClock,
+  addRequest,
+  approveRequest,
+} from "./store";
 import { calcPaidMinutes, calcDailyPay } from "./pay";
 import { HOURLY_WAGE, DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";
+import type { EditRequestChange } from "@/types";
 
 const VACATION_DATE = "2026-05-29"; // 시드상 휴가
 
@@ -120,5 +128,143 @@ describe("updateStatus — 상태 전환 시 연산 필드 재계산(버그2)", 
     expect(rec!.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
     expect(rec!.workMinutes).toBe(390);
     expect(rec!.overtimeMinutes).toBe(0);
+  });
+});
+
+// 수정요청 수락 반영(AC-1~4, E-1~4). Q1 upsert / Q2 멱등 no-op.
+function pending(date: string, after: EditRequestChange) {
+  return addRequest({ date, reason: "정정 요청", after });
+}
+
+describe("approveRequest — 수락 반영", () => {
+  // AC-1 / AC-2 / AC-3: after 반영 + status 전이 + work/overtime 재계산
+  it("대기 요청 수락 시 레코드에 after 가 반영되고 status가 대기→수락으로 전이한다", () => {
+    const date = "2026-05-04";
+    const req = pending(date, {
+      status: "연장",
+      clockIn: "07:26",
+      clockOut: "15:34",
+    });
+    const result = approveRequest(req.id);
+
+    expect(result).not.toBeNull();
+    // AC-2: 요청 status 전이
+    expect(result!.request.status).toBe("수락");
+    // AC-1: 레코드 after 반영
+    expect(result!.record.status).toBe("연장");
+    expect(result!.record.clockIn).toBe("07:26");
+    expect(result!.record.clockOut).toBe("15:34");
+    // store 진실원에도 반영
+    expect(getRecord(date)!.clockOut).toBe("15:34");
+  });
+
+  // AC-3 / AC-7: workMinutes 재계산 + 연장 정합(clockOut 15:34 → 34)
+  it("정상/연장 after 는 workMinutes 재계산 + overtime=clockOut 초과분(15:34→34)", () => {
+    const req = pending("2026-05-04", {
+      status: "연장",
+      clockIn: "07:26",
+      clockOut: "15:34",
+    });
+    const { record } = approveRequest(req.id)!;
+    // 07:26~15:34 - 30 = 488 - 30 = 458
+    expect(record.workMinutes).toBe(458);
+    expect(record.overtimeMinutes).toBe(34);
+  });
+
+  // AC-5 / 연장 정합: 조기출근·정시퇴근(07:58~15:00) → work 392여도 overtime 0
+  it("조기출근·정시퇴근(07:58~15:00) 수락 시 work 392·overtime 0 (조기출근 연장 아님)", () => {
+    const req = pending("2026-05-28", {
+      status: "정상",
+      clockIn: "07:58",
+      clockOut: "15:00",
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.workMinutes).toBe(392); // 07:58~15:00 - 30
+    expect(record.overtimeMinutes).toBe(0);
+  });
+
+  // AC-2: 다른 요청은 불변
+  it("수락 시 다른 대기 요청의 status는 불변", () => {
+    const a = pending("2026-05-04", {
+      status: "정상",
+      clockIn: "08:00",
+      clockOut: "15:00",
+    });
+    const b = pending("2026-05-06", {
+      status: "정상",
+      clockIn: "08:00",
+      clockOut: "15:00",
+    });
+    approveRequest(a.id);
+    // b 는 store 에서 여전히 대기
+    expect(approveRequest(b.id)!.request.id).toBe(b.id);
+  });
+
+  // E-1: 없는 id → null
+  it("존재하지 않는 요청 id 는 null 을 반환하고 store 를 변경하지 않는다", () => {
+    expect(approveRequest("req-999")).toBeNull();
+  });
+
+  // AC-4: 결근 after → deduct=390, work/overtime/break=0
+  it("after.status=결근 수락 시 결근 차감 정책(deduct=390·work/overtime/break=0) 적용", () => {
+    const req = pending("2026-05-26", {
+      status: "결근",
+      clockIn: "08:00",
+      clockOut: "15:00",
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.status).toBe("결근");
+    expect(record.deductMinutes).toBe(REGULAR_MINUTES);
+    expect(record.workMinutes).toBe(0);
+    expect(record.overtimeMinutes).toBe(0);
+    expect(record.breakMinutes).toBe(0);
+  });
+
+  // AC-4: 휴가 after → deduct=0, work/overtime/break=0
+  it("after.status=휴가 수락 시 휴가 차감 정책(deduct=0·work/overtime/break=0) 적용", () => {
+    const req = pending("2026-05-26", {
+      status: "휴가",
+      clockIn: null,
+      clockOut: null,
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(record.status).toBe("휴가");
+    expect(record.deductMinutes).toBe(0);
+    expect(record.workMinutes).toBe(0);
+    expect(record.overtimeMinutes).toBe(0);
+    expect(record.breakMinutes).toBe(0);
+  });
+
+  // E-2: 멱등 no-op — 이미 수락이면 재반영 안 함
+  it("이미 수락된 요청 재수락은 멱등 no-op(레코드 불변·status 수락 유지)", () => {
+    const date = "2026-05-04";
+    const req = pending(date, {
+      status: "연장",
+      clockIn: "07:26",
+      clockOut: "15:34",
+    });
+    approveRequest(req.id);
+    const after1 = getRecord(date)!;
+    const result2 = approveRequest(req.id)!;
+    expect(result2.request.status).toBe("수락");
+    // 레코드 재반영(이중계산) 없음 — work/overtime 동일
+    expect(result2.record.workMinutes).toBe(after1.workMinutes);
+    expect(result2.record.overtimeMinutes).toBe(after1.overtimeMinutes);
+  });
+
+  // E-3 / Q1: 레코드 없는 날 수락 → after 로 신규 레코드 생성(upsert)
+  it("레코드 없는 날(시드 외) 수락 시 after 로 신규 레코드를 생성한다(upsert)", () => {
+    const date = "2026-07-15"; // 시드 외
+    expect(getRecord(date)).toBeNull();
+    const req = pending(date, {
+      status: "정상",
+      clockIn: "08:00",
+      clockOut: "16:30",
+    });
+    const { record } = approveRequest(req.id)!;
+    expect(getRecord(date)).not.toBeNull();
+    expect(record.clockOut).toBe("16:30");
+    expect(record.workMinutes).toBe(480); // 08:00~16:30 - 30
+    expect(record.overtimeMinutes).toBe(90); // 16:30 → 990−900
   });
 });

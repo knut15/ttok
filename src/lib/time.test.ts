@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { calcWorkMinutes, calcOvertime, formatHHMM, parseHHMM } from "./time";
+import {
+  calcWorkMinutes,
+  calcOvertime,
+  calcOvertimeByClock,
+  formatHHMM,
+  parseHHMM,
+} from "./time";
 
 describe("parseHHMM 범위 검증", () => {
   it("정상 경계 23:59 → 1439", () => {
@@ -65,5 +71,46 @@ describe("calcOvertime", () => {
     });
     expect(work).toBe(510);
     expect(calcOvertime(work)).toBe(120);
+  });
+});
+
+// 연장 정합(G2, ADR 0001): 연장 = max(0, parseHHMM(clockOut) − 900). clockIn 무관.
+describe("calcOvertimeByClock — 정시 퇴근(900분) 초과분만 연장", () => {
+  // AC-5 / E-6: 조기출근·정시퇴근 → 연장 0 (work 392여도)
+  it("07:58 출근·15:00 퇴근(조기출근·정시퇴근)이어도 연장 0", () => {
+    expect(calcOvertimeByClock({ clockOut: "15:00" })).toBe(0);
+  });
+
+  // AC-6: 08:00~16:30 → 990−900 = 90
+  it("16:30 퇴근이면 연장 90(990−900)", () => {
+    expect(calcOvertimeByClock({ clockOut: "16:30" })).toBe(90);
+  });
+
+  // AC-7: IMG_3609 5/05 정시퇴근 변형 → 0
+  it("15:00 정시 퇴근이면 연장 0 (clockIn 무관)", () => {
+    expect(calcOvertimeByClock({ clockOut: "15:00" })).toBe(0);
+  });
+
+  // AC-7: 15:34 → 934−900 = 34
+  it("15:34 퇴근이면 연장 34(934−900)", () => {
+    expect(calcOvertimeByClock({ clockOut: "15:34" })).toBe(34);
+  });
+
+  // E-7: 17:00 → 1020−900 = 120
+  it("17:00 연장퇴근이면 연장 120(1020−900)", () => {
+    expect(calcOvertimeByClock({ clockOut: "17:00" })).toBe(120);
+  });
+
+  // E-6: 조기 퇴근(14:00) → 0
+  it("14:00 조기퇴근이면 연장 0", () => {
+    expect(calcOvertimeByClock({ clockOut: "14:00" })).toBe(0);
+  });
+
+  // E-4 / E-8: clockOut null 또는 형식 불량 → 0
+  it("clockOut 이 null 이면 연장 0", () => {
+    expect(calcOvertimeByClock({ clockOut: null })).toBe(0);
+  });
+  it("clockOut 형식이 불량하면(NaN) 연장 0", () => {
+    expect(calcOvertimeByClock({ clockOut: "bad" })).toBe(0);
   });
 });

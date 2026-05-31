@@ -1,6 +1,6 @@
 // 근무/연장 시간 계산 — 순수 함수 (부수효과 0, store 비의존). architect §3.1.
 
-import { REGULAR_MINUTES } from "./constants";
+import { REGULAR_MINUTES, REGULAR_END_MINUTES } from "./constants";
 
 /** "HH:MM" → 분(0~1439). 형식 불량·범위 초과(시>23·분>59) → NaN. */
 export function parseHHMM(t: string): number {
@@ -36,4 +36,15 @@ export function calcOvertime(
   regular: number = REGULAR_MINUTES,
 ): number {
   return Math.max(0, workMinutes - regular);
+}
+
+/**
+ * 연장(분) = 정시 퇴근(정규 종료시각 15:00=900분) 초과분. clockIn 무관(ADR 0001).
+ * clockOut null/형식불량(NaN) → 0. 조기출근·정규내 근무는 연장이 아니다.
+ */
+export function calcOvertimeByClock(i: { clockOut: string | null }): number {
+  if (i.clockOut === null) return 0;
+  const end = parseHHMM(i.clockOut);
+  if (Number.isNaN(end)) return 0;
+  return Math.max(0, end - REGULAR_END_MINUTES);
 }

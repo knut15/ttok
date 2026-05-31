@@ -3,6 +3,7 @@
 // 휘발성: 서버 재시작 시 seed 로 초기화(엣지#7, 명세 동작). globalThis 가드로 dev HMR 보존.
 
 import type {
+  ApproveResult,
   AttendanceRecord,
   EditRequest,
   ProfilePatch,
@@ -12,8 +13,32 @@ import type {
   WorkStatus,
 } from "@/types";
 import { buildSeedRecords, buildSeedProfile, SEED_STORE_INFO } from "./seed";
-import { calcWorkMinutes, calcOvertime } from "./time";
+import { calcWorkMinutes, calcOvertimeByClock } from "./time";
 import { DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";
+
+/**
+ * clock 기반 정상/연장 재계산(휴게 복원 포함) — 내부 private 헬퍼(architect §3.2, DRY).
+ * 연장은 clockOut 의 정규 종료시각(15:00) 초과분(ADR 0001). deduct 는 호출부 정책.
+ * clock 한쪽이라도 null 이면 work/overtime 0(E-4).
+ */
+function recalcClockFields(rec: AttendanceRecord): AttendanceRecord {
+  if (rec.clockIn && rec.clockOut) {
+    const breakMinutes =
+      rec.breakMinutes === 0 ? DEFAULT_BREAK_MINUTES : rec.breakMinutes;
+    const workMinutes = calcWorkMinutes({
+      clockIn: rec.clockIn,
+      clockOut: rec.clockOut,
+      breakMinutes,
+    });
+    return {
+      ...rec,
+      breakMinutes,
+      workMinutes,
+      overtimeMinutes: calcOvertimeByClock({ clockOut: rec.clockOut }),
+    };
+  }
+  return { ...rec, workMinutes: 0, overtimeMinutes: 0 };
+}
 
 interface StoreShape {
   records: Map<string, AttendanceRecord>; // key = "YYYY-MM-DD"
@@ -102,20 +127,9 @@ export function updateStatus(
       breakMinutes: 0,
     };
   } else if (rec.clockIn && rec.clockOut) {
-    // 휴가/결근에서 역전환 시 break=0 이면 기본값으로 복원 후 재계산.
-    const breakMinutes =
-      rec.breakMinutes === 0 ? DEFAULT_BREAK_MINUTES : rec.breakMinutes;
-    const workMinutes = calcWorkMinutes({
-      clockIn: rec.clockIn,
-      clockOut: rec.clockOut,
-      breakMinutes,
-    });
+    // 휴가/결근에서 역전환 시 break=0 이면 기본값으로 복원 후 재계산(공통 헬퍼, ADR 0001).
     updated = {
-      ...rec,
-      status,
-      breakMinutes,
-      workMinutes,
-      overtimeMinutes: calcOvertime(workMinutes),
+      ...recalcClockFields({ ...rec, status }),
       // 정상/연장 → 지각 차감 해소(deduct=0). 지각 → 기존 deduct 보존.
       deductMinutes: status === "지각" ? rec.deductMinutes : 0,
     };
@@ -168,7 +182,7 @@ export function upsertTodayClock(
       clockOut: next.clockOut,
       breakMinutes: next.breakMinutes,
     });
-    next.overtimeMinutes = calcOvertime(next.workMinutes);
+    next.overtimeMinutes = calcOvertimeByClock({ clockOut: next.clockOut });
   }
   store.records.set(date, next);
   return next;
@@ -209,6 +223,85 @@ export function addRequest(req: NewEditRequest): EditRequest {
   };
   store.requests.push(created);
   return created;
+}
+
+/**
+ * 수정요청 수락 반영(AC-1~4). 없으면 null(404).
+ * - Q2 멱등: 이미 status="수락"이면 레코드 재반영 없이 현 {request,record} 반환.
+ * - Q1 upsert: 대상 날짜 레코드가 없으면 after 로 신규 생성.
+ * - after.status 별 정책은 updateStatus 와 동일(결근 전액차감 / 휴가 무급 / 정상·연장·지각 재계산).
+ * - status 대기→수락 전이. 응답은 ApproveResult({request, record}).
+ */
+export function approveRequest(id: string): ApproveResult | null {
+  const store = getStore();
+  const req = store.requests.find((r) => r.id === id);
+  if (!req) return null; // E-1 → 404
+
+  // Q2 멱등 no-op: 이미 수락이면 레코드 재반영 없이 현재 상태 반환.
+  if (req.status === "수락") {
+    const existing = store.records.get(req.date);
+    const record = existing ?? newRecordFrom(req.date, req.after);
+    return { request: req, record };
+  }
+
+  const after = req.after;
+  // Q1 upsert: 레코드 없으면 after status/clock 을 입힐 기준 레코드를 신규 생성.
+  const base =
+    store.records.get(req.date) ?? newRecordFrom(req.date, after);
+  const merged: AttendanceRecord = {
+    ...base,
+    status: after.status,
+    clockIn: after.clockIn,
+    clockOut: after.clockOut,
+  };
+
+  let record: AttendanceRecord;
+  if (after.status === "결근") {
+    // 결근 = 정규 전액 차감(updateStatus 와 동일 정책, AC-4).
+    record = {
+      ...merged,
+      workMinutes: 0,
+      overtimeMinutes: 0,
+      deductMinutes: REGULAR_MINUTES,
+      breakMinutes: 0,
+    };
+  } else if (after.status === "휴가") {
+    // 휴가 = 무급(차감 아님), work/overtime/break=0 (AC-4).
+    record = {
+      ...merged,
+      workMinutes: 0,
+      overtimeMinutes: 0,
+      deductMinutes: 0,
+      breakMinutes: 0,
+    };
+  } else {
+    // 정상/연장/지각 → 휴게 복원 + work/overtime 재계산(공통 헬퍼).
+    record = {
+      ...recalcClockFields(merged),
+      deductMinutes: after.status === "지각" ? base.deductMinutes : 0,
+    };
+  }
+
+  store.records.set(req.date, record);
+  req.status = "수락"; // 대기→수락 (AC-2)
+  return { request: req, record };
+}
+
+/** after 의 status/clock 을 입힌 신규 레코드(upsert 기준값). 재계산은 호출부. */
+function newRecordFrom(
+  date: string,
+  after: EditRequest["after"],
+): AttendanceRecord {
+  return {
+    date,
+    status: after.status,
+    clockIn: after.clockIn,
+    clockOut: after.clockOut,
+    breakMinutes: DEFAULT_BREAK_MINUTES,
+    workMinutes: 0,
+    overtimeMinutes: 0,
+    deductMinutes: 0,
+  };
 }
 
 // === 마이페이지/프로필 접근자 (append) ===

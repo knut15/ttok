@@ -52,6 +52,13 @@ export function nowHHMM(now: Date = new Date()): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+/** "YYYY-MM" 을 delta 개월 이동. 연도 경계 자동 보정(2026-12 +1 → 2027-01). */
+export function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const dt = new Date(y, m - 1 + delta, 1);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+}
+
 /** 월 그리드 빌드: 6주(42칸) 또는 필요한 만큼. 앞쪽 공백 + 일자. */
 export function buildMonthGrid(month: string): (string | null)[] {
   const [y, m] = month.split("-").map(Number);

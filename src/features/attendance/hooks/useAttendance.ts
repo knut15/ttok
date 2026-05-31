@@ -109,5 +109,18 @@ export function useEditRequests() {
     [reload],
   );
 
-  return { requests, reload, submit };
+  // 수정요청 수락(AC-9): POST 후 목록 reload. ok 반환.
+  const approve = useCallback(
+    async (id: string) => {
+      const res = await fetch("/api/attendance/requests/approve", {
+        method: "POST",
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) await reload();
+      return res.ok;
+    },
+    [reload],
+  );
+
+  return { requests, reload, submit, approve };
 }

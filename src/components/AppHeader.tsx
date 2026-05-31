@@ -7,7 +7,7 @@ export function AppHeader({
   right,
 }: {
   brand?: boolean;
-  title?: string;
+  title?: ReactNode;
   right?: ReactNode;
 }) {
   return (

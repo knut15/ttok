@@ -41,8 +41,9 @@ function Row({
 // 시간변경은 로컬 draft 로 수집 → 수정요청(before→after)으로 제출.
 // 상태변경(상태시트→PATCH 즉시 적용)과 시간변경(요청용 draft)은 분리된 흐름.
 export function AttendanceDetail({ date }: { date: string }) {
-  const { record, loading, changeStatus } = useDayAttendance(date);
-  const { requests, submit } = useEditRequests();
+  const { record, loading, changeStatus, reload: reloadDay } =
+    useDayAttendance(date);
+  const { requests, submit, approve } = useEditRequests();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const [draft, setDraft] = useState<{
@@ -129,7 +130,13 @@ export function AttendanceDetail({ date }: { date: string }) {
         }}
       />
 
-      <EditRequestList requests={requests.filter((r) => r.date === date)} />
+      <EditRequestList
+        requests={requests.filter((r) => r.date === date)}
+        onApprove={async (id) => {
+          // 수락 후 목록 배지(useEditRequests 내부 reload) + 출/퇴근 Row(record) 갱신.
+          if (await approve(id)) await reloadDay();
+        }}
+      />
 
       <StatusChangeSheet
         open={sheetOpen}
