@@ -8,7 +8,7 @@
 | 용어 | 정의 |
 |---|---|
 | **근무시간** (workMinutes) | 퇴근시각 − 출근시각 − 휴게시간. 분(minute) 단위. 시각 역전·음수는 0으로 하한 처리. |
-| **휴게시간** (breakMinutes) | 근무 중 무급 휴게(예 11:30~12:00 = 30분). 근무시간에서 차감. |
+| **휴게시간** (breakMinutes) | 근무 중 무급 휴게(예 11:30~12:00 = 30분). 근무시간에서 차감. **휴게는 범위(`breakStart`~`breakEnd`, HH:MM)로 저장**하며 `breakMinutes`는 `calcBreakMinutes`(`src/lib/time.ts`, `max(0, breakEnd−breakStart)`) 파생 캐시다(범위 없으면 기존 분값 유지, ADR 0004). 휴가일은 범위 미부여(0). |
 | **급여인정시간** (paidMinutes) | 근무시간에서 급여차감시간을 뺀, 급여 산정 기준 시간. `max(0, workMinutes − deductMinutes)`. 휴가일은 0. |
 | **급여차감시간** (deductMinutes) | 지각·결근 등으로 근무로 인정되지 않아 급여인정시간에서 제외되는 시간(분). |
 | **결근 차감 정책** | 결근 = 정규 전액 차감. `updateStatus(date,"결근")` 시 `deductMinutes = REGULAR_MINUTES(390)`, `workMinutes/overtimeMinutes/breakMinutes = 0`(clockIn/clockOut 보존) → 급여인정시간 0원. 결근과 휴가는 의미가 다르다(차감 vs 단순 0원). |
@@ -19,7 +19,8 @@
 | **일급** (dailyPay/amount) | `round(급여인정시간/60 × 시급)`. 휴가일은 0원. 검산: 390분 × 10,320원 = 67,080원. |
 | **주휴수당** (weeklyHolidayPay) | 주 소정근로 충족 시 지급되는 별도 급여 항목. 급여 리스트에서 **블루 별도 행**. 본 구현은 시드 고정값(67,080원 1건)으로 처리(산식 비구현). |
 | **출근상태** (WorkStatus) | `정상 / 지각 / 결근 / 휴가 / 연장` 5종 enum. |
-| **근무기록 수정요청** (EditRequest) | 출퇴근/상태 정정 요청. 사유(0~100자) 입력 후 생성. 상태 `대기 → 수락` 추적. **수락 시 해당 날짜 레코드에 `after`(status·clockIn·clockOut)를 반영하고 work/overtime(연장 정합)·차감 정책을 재계산**한다(`approveRequest`, `POST /api/attendance/requests/approve`). 레코드 없는 날은 after 로 신규 생성(upsert), 이미 수락된 요청 재수락은 멱등 no-op(레코드 불변). 응답은 `{request, record}`(ApproveResult). 거절/철회/수락취소는 미지원. |
+| **근무기록 수정요청** (EditRequest) | 출퇴근/상태 정정 요청. 사유(0~100자) 입력 후 생성. 상태 `대기 → 수락` 추적. **수락 시 해당 날짜 레코드에 `after`(status·clockIn·clockOut·`breakStart`?·`breakEnd`?)를 반영하고 work/overtime(연장 정합)·차감 정책을 재계산**한다(`approveRequest`, `POST /api/attendance/requests/approve`). `after`에 휴게 범위가 명시되면 그것을 진실원으로 `breakMinutes`를 파생·반영하고 work를 재계산한다(0이어도 DEFAULT 복원 없이 존중, ADR 0004 R1). 휴게 범위 미명시 요청은 기존 휴게를 그대로 두는 멱등 동작. **출근시각(clockIn)은 모든 편집 경로에서 불변**(실제 기록값). 레코드 없는 날은 after 로 신규 생성(upsert), 이미 수락된 요청 재수락은 멱등 no-op(레코드 불변). 응답은 `{request, record}`(ApproveResult). 거절/철회/수락취소는 미지원. |
+| **편집 시트 역할** (AttendanceDetail) | **출근 행 = 상태변경**(`StatusChangeSheet`, 즉시 PATCH). **퇴근 행 = 상태변경**(`ClockOutStatusSheet`, 상태 라디오 + 퇴근시각 입력 → 수정요청→수락). **휴게 행 = 시간변경**(`BreakChangeSheet`, 휴게 시작·종료 HH:MM 2입력 → 수정요청→수락, 퇴근시각 입력 없음). 휴게/퇴근 편집은 즉시 PATCH가 아닌 수정요청→수락 경로로 통일한다(ADR 0004). |
 | **월 급여 요약** (PaySummary) | `{ totalPay, deductMinutes, overtimeCount, overtimeMinutes }`. 불변식: `totalPay = Σ items.amount`(주휴 포함). |
 | **사용자 프로필** (UserProfile) | 근무자 개인정보 `{ name, birthDate, phone, email, avatarInitial }`. 이름·생년월일은 본인인증 전 **읽기전용**, 휴대폰·이메일만 편집 가능. |
 | **매장 정보** (StoreInfo) | 소속 매장 `{ name, joinDate, employed, workDays, workTime }`. UI 표기 "입사 YYYY.MM.DD ~ 재직중 / 근무 월~금 HH:MM~HH:MM". |

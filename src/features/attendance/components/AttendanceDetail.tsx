@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
-import { BottomSheet } from "@/components/BottomSheet";
 import {
   useDayAttendance,
   useEditRequests,
 } from "@/features/attendance/hooks/useAttendance";
 import { statusTone } from "@/features/attendance/domain";
 import { DEFAULT_BREAK_RANGE } from "@/lib/constants";
-import { parseHHMM } from "@/lib/time";
+import type { WorkStatus } from "@/types";
 import { StatusChangeSheet } from "./StatusChangeSheet";
+import { BreakChangeSheet } from "./BreakChangeSheet";
+import { ClockOutStatusSheet } from "./ClockOutStatusSheet";
 import { EditRequestForm } from "./EditRequestForm";
 import { EditRequestList } from "./EditRequestList";
+
+const [DEFAULT_BREAK_START, DEFAULT_BREAK_END] = DEFAULT_BREAK_RANGE.split("~");
 
 function Row({
   label,
@@ -37,26 +40,36 @@ function Row({
   );
 }
 
-// 근무기록 상세(AC-14~16): 출/퇴근/휴게 카드 + 상태변경 시트 + 수정요청.
-// 시간변경은 로컬 draft 로 수집 → 수정요청(before→after)으로 제출.
-// 상태변경(상태시트→PATCH 즉시 적용)과 시간변경(요청용 draft)은 분리된 흐름.
+// 근무기록 상세(T7): 출/퇴근/휴게 카드 + 시트 3종 + 수정요청.
+// - 출근 행 → StatusChangeSheet 즉시 PATCH(현행 유지, Q2).
+// - 퇴근 행 → ClockOutStatusSheet(상태+퇴근시각) → draft → 수정요청(Q3).
+// - 휴게 행 → BreakChangeSheet(휴게 범위) → draft → 수정요청(Q3).
+// clockIn 은 모든 경로에서 record 값 고정(불변, AC-8).
 export function AttendanceDetail({ date }: { date: string }) {
   const { record, loading, changeStatus, reload: reloadDay } =
     useDayAttendance(date);
   const { requests, submit, approve } = useEditRequests();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [timeSheetOpen, setTimeSheetOpen] = useState(false);
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
+  const [clockOutSheetOpen, setClockOutSheetOpen] = useState(false);
+  const [breakSheetOpen, setBreakSheetOpen] = useState(false);
   const [draft, setDraft] = useState<{
-    clockIn: string | null;
+    status: WorkStatus;
     clockOut: string | null;
+    breakStart?: string;
+    breakEnd?: string;
   } | null>(null);
   // record 로드/변경 시 draft 를 현재 값으로 동기화(렌더 중 상태 조정 — effect 불필요).
   const [syncKey, setSyncKey] = useState<string | null>(null);
   const recordKey = record
-    ? `${record.date}|${record.clockIn ?? ""}|${record.clockOut ?? ""}`
+    ? `${record.date}|${record.clockOut ?? ""}|${record.status}|${record.breakStart ?? ""}|${record.breakEnd ?? ""}`
     : null;
   if (record && recordKey !== syncKey) {
-    setDraft({ clockIn: record.clockIn, clockOut: record.clockOut });
+    setDraft({
+      status: record.status,
+      clockOut: record.clockOut,
+      breakStart: record.breakStart,
+      breakEnd: record.breakEnd,
+    });
     setSyncKey(recordKey);
   }
 
@@ -73,42 +86,60 @@ export function AttendanceDetail({ date }: { date: string }) {
 
   // sync 가 같은 렌더에서 이미 draft 를 채우지만, 타입 안전을 위해 record 로 폴백.
   const effectiveDraft = draft ?? {
-    clockIn: record.clockIn,
+    status: record.status,
     clockOut: record.clockOut,
+    breakStart: record.breakStart,
+    breakEnd: record.breakEnd,
   };
 
-  const changeBtn = (
-    <button
-      type="button"
-      onClick={() => setSheetOpen(true)}
-      className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
-    >
-      상태변경
-    </button>
-  );
+  // 휴게 표시: record.breakStart~breakEnd(있으면) 아니면 DEFAULT_BREAK_RANGE.
+  const breakRangeLabel =
+    record.breakStart && record.breakEnd
+      ? `${record.breakStart}~${record.breakEnd}`
+      : DEFAULT_BREAK_RANGE;
 
   return (
     <div>
       <div className="space-y-3 px-5">
         <Row
           label="출근"
-          // 출근은 시간변경 대상 아님 — record 값 고정 표시(AC-13).
+          // 출근은 시간변경 대상 아님 — record 값 고정 표시. 상태변경은 즉시 PATCH(현행).
           value={record.clockIn ?? "-"}
           badge={
             record.status !== "정상" ? (
               <StatusBadge label={record.status} tone={statusTone(record.status)} />
             ) : undefined
           }
-          action={changeBtn}
-        />
-        <Row label="퇴근" value={effectiveDraft.clockOut ?? "-"} action={changeBtn} />
-        <Row
-          label="휴게"
-          value={record.breakMinutes > 0 ? DEFAULT_BREAK_RANGE : "-"}
           action={
             <button
               type="button"
-              onClick={() => setTimeSheetOpen(true)}
+              onClick={() => setStatusSheetOpen(true)}
+              className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+            >
+              상태변경
+            </button>
+          }
+        />
+        <Row
+          label="퇴근"
+          value={effectiveDraft.clockOut ?? "-"}
+          action={
+            <button
+              type="button"
+              onClick={() => setClockOutSheetOpen(true)}
+              className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+            >
+              상태변경
+            </button>
+          }
+        />
+        <Row
+          label="휴게"
+          value={record.breakMinutes > 0 ? breakRangeLabel : "-"}
+          action={
+            <button
+              type="button"
+              onClick={() => setBreakSheetOpen(true)}
               className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
             >
               시간변경
@@ -123,10 +154,17 @@ export function AttendanceDetail({ date }: { date: string }) {
             date,
             reason,
             after: {
-              status: record.status,
-              // AC-14: clockIn 은 항상 record 값(불변), clockOut 만 편집값 반영.
+              status: effectiveDraft.status,
+              // AC-8: clockIn 은 항상 record 값(불변).
               clockIn: record.clockIn,
               clockOut: effectiveDraft.clockOut,
+              // 휴게 범위는 draft 에 있으면 담는다(없으면 키 부재 → 기존 휴게 유지).
+              ...(effectiveDraft.breakStart && effectiveDraft.breakEnd
+                ? {
+                    breakStart: effectiveDraft.breakStart,
+                    breakEnd: effectiveDraft.breakEnd,
+                  }
+                : {}),
             },
           });
         }}
@@ -135,93 +173,51 @@ export function AttendanceDetail({ date }: { date: string }) {
       <EditRequestList
         requests={requests.filter((r) => r.date === date)}
         onApprove={async (id) => {
-          // 수락 후 목록 배지(useEditRequests 내부 reload) + 출/퇴근 Row(record) 갱신.
           if (await approve(id)) await reloadDay();
         }}
       />
 
       <StatusChangeSheet
-        open={sheetOpen}
+        open={statusSheetOpen}
         current={record.status}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => setStatusSheetOpen(false)}
         onChange={changeStatus}
       />
 
-      <TimeChangeSheet
-        // 열릴 때마다 remount 하여 현재 draft 로 입력을 초기화(effect 불필요).
-        key={`${timeSheetOpen}|${effectiveDraft.clockIn ?? ""}|${effectiveDraft.clockOut ?? ""}`}
-        open={timeSheetOpen}
-        initial={effectiveDraft}
-        onClose={() => setTimeSheetOpen(false)}
+      <ClockOutStatusSheet
+        key={`clockout|${clockOutSheetOpen}|${effectiveDraft.clockOut ?? ""}|${effectiveDraft.status}`}
+        open={clockOutSheetOpen}
+        initial={{ status: effectiveDraft.status, clockOut: effectiveDraft.clockOut }}
+        onClose={() => setClockOutSheetOpen(false)}
         onApply={(next) => {
-          setDraft(next);
-          setTimeSheetOpen(false);
+          setDraft((d) => ({
+            status: next.status,
+            clockOut: next.clockOut,
+            breakStart: d?.breakStart,
+            breakEnd: d?.breakEnd,
+          }));
+          setClockOutSheetOpen(false);
+        }}
+      />
+
+      <BreakChangeSheet
+        key={`break|${breakSheetOpen}|${effectiveDraft.breakStart ?? ""}|${effectiveDraft.breakEnd ?? ""}`}
+        open={breakSheetOpen}
+        initial={{
+          breakStart: effectiveDraft.breakStart ?? DEFAULT_BREAK_START,
+          breakEnd: effectiveDraft.breakEnd ?? DEFAULT_BREAK_END,
+        }}
+        onClose={() => setBreakSheetOpen(false)}
+        onApply={(next) => {
+          setDraft((d) => ({
+            status: d?.status ?? record.status,
+            clockOut: d?.clockOut ?? record.clockOut,
+            breakStart: next.breakStart,
+            breakEnd: next.breakEnd,
+          }));
+          setBreakSheetOpen(false);
         }}
       />
     </div>
-  );
-}
-
-// 시간변경 시트(AC-13/14): 시간 수정은 퇴근(clockOut)만 가능.
-// 출근(clockIn)은 읽기전용 표시(실제 출근 시 기록되는 값 — 사후 보정 대상 아님).
-// 퇴근은 HH:MM 입력 → draft 갱신. parseHHMM NaN 이면 "적용" 비활성.
-// clockIn 은 initial 값을 그대로 onApply 로 돌려보내 불변 보장.
-function TimeChangeSheet({
-  open,
-  initial,
-  onClose,
-  onApply,
-}: {
-  open: boolean;
-  initial: { clockIn: string | null; clockOut: string | null };
-  onClose: () => void;
-  onApply: (next: { clockIn: string | null; clockOut: string | null }) => void;
-}) {
-  // key 로 remount 되므로 initial 로 직접 초기화(effect 불필요). 퇴근만 상태로 관리.
-  const [clockOut, setClockOut] = useState(initial.clockOut ?? "");
-
-  const canApply = clockOut === "" || !Number.isNaN(parseHHMM(clockOut));
-
-  return (
-    <BottomSheet open={open} onClose={onClose} title="시간변경">
-      <div className="space-y-3">
-        <label className="flex items-center justify-between gap-3">
-          <span className="text-sm text-muted">출근</span>
-          <input
-            type="time"
-            value={initial.clockIn ?? ""}
-            readOnly
-            disabled
-            className="rounded-lg border border-black/10 bg-black/[0.04] px-3 py-2 text-base text-muted"
-            aria-label="출근 시각 (수정 불가)"
-          />
-        </label>
-        <label className="flex items-center justify-between gap-3">
-          <span className="text-sm text-muted">퇴근</span>
-          <input
-            type="time"
-            value={clockOut}
-            onChange={(e) => setClockOut(e.target.value)}
-            className="rounded-lg border border-black/10 px-3 py-2 text-base"
-            aria-label="퇴근 시각"
-          />
-        </label>
-        <p className="text-xs text-muted">퇴근 시각만 수정할 수 있어요. 형식: HH:MM (예 15:00)</p>
-      </div>
-      <button
-        type="button"
-        disabled={!canApply}
-        onClick={() =>
-          onApply({
-            // clockIn 은 항상 record 값 유지(AC-14), clockOut 만 편집값 반영.
-            clockIn: initial.clockIn,
-            clockOut: clockOut === "" ? null : clockOut,
-          })
-        }
-        className="mt-4 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-black/5 disabled:text-muted"
-      >
-        적용
-      </button>
-    </BottomSheet>
   );
 }
