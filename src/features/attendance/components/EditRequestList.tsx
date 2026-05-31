@@ -3,12 +3,15 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { formatPayRowDate } from "@/lib/date";
 import type { EditRequest } from "@/types";
 
+// T8-7: 수락 버튼은 마스터에게만(canApprove). UI 숨김 + approve API 403 이중 방어(AC-18).
 export function EditRequestList({
   requests,
   onApprove,
+  canApprove = false,
 }: {
   requests: EditRequest[];
   onApprove?: (id: string) => void;
+  canApprove?: boolean;
 }) {
   if (requests.length === 0) return null;
 
@@ -34,8 +37,8 @@ export function EditRequestList({
                 label={req.status}
                 tone={req.status === "수락" ? "coral" : "neutral"}
               />
-              {/* AC-9: 대기 요청에만 수락 버튼. 수락 상태엔 버튼 없음. */}
-              {req.status === "대기" && onApprove && (
+              {/* AC-9/AC-18: 대기 요청에만 + 마스터(canApprove)만 수락 버튼. */}
+              {req.status === "대기" && canApprove && onApprove && (
                 <button
                   type="button"
                   onClick={() => onApprove(req.id)}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import { CurrentUserProvider } from "@/features/accounts/context/CurrentUserProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,10 +26,12 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="bg-background">
-        <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
-          <main className="flex-1 pb-24">{children}</main>
-          <BottomNav />
-        </div>
+        <CurrentUserProvider>
+          <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
+            <main className="flex-1 pb-24">{children}</main>
+            <BottomNav />
+          </div>
+        </CurrentUserProvider>
       </body>
     </html>
   );

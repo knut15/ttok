@@ -3,13 +3,20 @@ import { NextResponse } from "next/server";
 import { getMonthRecords } from "@/lib/store";
 import { buildPayItems } from "@/lib/seed";
 import { buildPaySummary } from "@/lib/pay";
+import { readScope, enforceReadScope } from "@/lib/scope";
 import type { PayResponse } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
-  const month = new URL(request.url).searchParams.get("month") ?? "";
-  const records = getMonthRecords(month);
+  const url = new URL(request.url);
+  const month = url.searchParams.get("month") ?? "";
+  // T8-4: 본인 강제(크루) / 마스터 target.
+  const scoped = enforceReadScope(
+    readScope(request),
+    url.searchParams.get("crewId") ?? undefined,
+  );
+  const records = getMonthRecords(month, scoped);
   const items = buildPayItems(records);
   const deductMinutes = records.reduce((s, r) => s + r.deductMinutes, 0);
   const summary = buildPaySummary(items, { deductMinutes });

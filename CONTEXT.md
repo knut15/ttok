@@ -30,6 +30,11 @@
 | **crewId 스코프** | store/API가 데이터를 사용자별로 격리하는 키. store 내부는 `recordsByCrew: Map<crewId, Map<date, AttendanceRecord>>` / `profilesByCrew`로 분리. 9개 store 함수는 trailing `crewId=DEFAULT_CREW_ID` optional 인자로 받으며, **미지정 시 김민정(`crew-minjung`)으로 fallback**하여 단일사용자 흐름을 보존한다(ADR 0004 append-only 회귀 0 전략 계승). |
 | **초대** (Invite) | 마스터가 발급하는 합류 코드 `{ code, createdBy, targetCrewId?, status, createdAt }`. `status: 대기 → 사용`. `createInvite(masterId)`가 혼동문자 제외 6자 코드 발급. `joinByInvite(code, crewId)`: 유효 미사용 → 크루 `active=true`+코드 `사용`(JoinResult); 없는 코드 → `null`(400 의미); 이미 사용된 코드 → `"used"`(409 의미). 만료/회수 미구현(mock). |
 | **크루 집계** (CrewSummary) | 마스터 집계 행 `{ crewId, name, avatarInitial, workMinutes, overtimeMinutes, vacationDays }`. `getCrewSummaries(month)`가 크루(role=crew)별 월 합산. 빈 크루/없는 월은 0(NaN 방어). |
+| **현재 사용자 전달** (헤더 scope) | 클라이언트가 현재 사용자를 fetch 헤더 `x-crew-id`/`x-role`로 API에 전달한다(`HEADER_CREW_ID`/`HEADER_ROLE`). URL은 불변이라 기존 테스트에 무영향(회귀 0). 헤더 부재 → `role=crew`, `crewId=crew-minjung` 폴백. `readScope(req)`(`src/lib/scope.ts`)가 추출. |
+| **읽기 스코프 강제** (enforceReadScope) | `enforceReadScope(scope, requested?)`: **크루는 requested를 무시하고 본인 crewId를 강제**(타인 데이터 노출 0), **마스터는 requested(쿼리 `?crewId=` 또는 헤더) 허용, 없으면 self**. API GET/PATCH(attendance·pay·profile)가 store 호출 전 적용. 수정요청 생성(POST)은 항상 생성자 본인 crewId로 태그. |
+| **수락 마스터 게이트** | `POST /api/attendance/requests/approve`는 `readScope(req).role !== "master"` 이면 **403 + store 불변**(`approveRequest` 미호출). UI는 `EditRequestList`의 `canApprove`(=`role==="master"`) prop으로 수락 버튼을 숨긴다. UI 숨김 + API 403 이중 방어. |
+| **현재 사용자 컨텍스트** (CurrentUserProvider) | `"use client"` Context. 초기 state는 항상 김민정(`crew-minjung`, role crew) → SSR/CSR 1차 렌더 동일(하이드레이션 mismatch 0). `localStorage`(`crewmon.currentUser`)는 **mount 후 useEffect에서만** 읽어 복원(초기 useState 미참조). `setCurrentUser`가 state+localStorage 갱신. `useCurrentUser()` 소비, `authHeaders(user)` → `{x-crew-id, x-role}`. |
+| **역할전환** (RoleSwitcher) | 마이페이지의 mock 계정 전환 UI. `GET /api/crews`(→ `listCrews()`) 목록에서 선택 시 `setCurrentUser`. 전환 시 데이터 훅들이 `crewId`를 effect 의존성으로 두어 재fetch·무효화한다(stale은 active cleanup으로 차단). 마스터 선택 시 마이페이지에 `/master` 진입 링크 노출(`/master` 화면은 다음 청크). |
 
 ## 데이터 표기 규칙 (UI)
 

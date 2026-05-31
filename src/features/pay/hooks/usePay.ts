@@ -2,16 +2,23 @@
 
 import { useEffect, useState } from "react";
 import type { PayResponse, PayDetail } from "@/types";
+import {
+  authHeaders,
+  useCurrentUser,
+} from "@/features/accounts/hooks/useCurrentUser";
 
 const NO_STORE: RequestInit = { cache: "no-store" };
 
+/** T8-4: authHeaders spread + crewId 를 effect 의존성에 추가(전환 시 무효화). */
 export function useMonthPay(month: string) {
+  const { user } = useCurrentUser();
+  const crewId = user.crewId ?? user.id;
   const [data, setData] = useState<PayResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/pay?month=${month}`, NO_STORE)
+    fetch(`/api/pay?month=${month}`, { ...NO_STORE, headers: authHeaders(user) })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: PayResponse | null) => {
         if (!active) return;
@@ -21,18 +28,21 @@ export function useMonthPay(month: string) {
     return () => {
       active = false;
     };
-  }, [month]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month, crewId]);
 
   return { data, loading };
 }
 
 export function useDayPay(date: string) {
+  const { user } = useCurrentUser();
+  const crewId = user.crewId ?? user.id;
   const [detail, setDetail] = useState<PayDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/pay/${date}`, NO_STORE)
+    fetch(`/api/pay/${date}`, { ...NO_STORE, headers: authHeaders(user) })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: PayDetail | null) => {
         if (!active) return;
@@ -42,7 +52,8 @@ export function useDayPay(date: string) {
     return () => {
       active = false;
     };
-  }, [date]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, crewId]);
 
   return { detail, loading };
 }

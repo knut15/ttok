@@ -6,6 +6,7 @@ import {
   useDayAttendance,
   useEditRequests,
 } from "@/features/attendance/hooks/useAttendance";
+import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { statusTone } from "@/features/attendance/domain";
 import { DEFAULT_BREAK_RANGE } from "@/lib/constants";
 import type { WorkStatus } from "@/types";
@@ -49,6 +50,7 @@ export function AttendanceDetail({ date }: { date: string }) {
   const { record, loading, changeStatus, reload: reloadDay } =
     useDayAttendance(date);
   const { requests, submit, approve } = useEditRequests();
+  const { user } = useCurrentUser();
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [clockOutSheetOpen, setClockOutSheetOpen] = useState(false);
   const [breakSheetOpen, setBreakSheetOpen] = useState(false);
@@ -172,6 +174,7 @@ export function AttendanceDetail({ date }: { date: string }) {
 
       <EditRequestList
         requests={requests.filter((r) => r.date === date)}
+        canApprove={user.role === "master"}
         onApprove={async (id) => {
           if (await approve(id)) await reloadDay();
         }}

@@ -3,17 +3,28 @@
 import { NextResponse } from "next/server";
 import { getProfile, updateProfile } from "@/lib/store";
 import { isValidEmail, isValidPhone } from "@/features/mypage/domain";
+import { readScope, enforceReadScope } from "@/lib/scope";
 import type { ProfilePatch } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-// GET /api/profile → 200 { profile, store } (AC-4)
-export async function GET(): Promise<Response> {
-  return NextResponse.json(getProfile(), { headers: NO_STORE });
+/** T8-4: 요청 헤더 scope → 본인 강제(크루)/마스터 target(?crewId). */
+function scopeOf(request: Request): string {
+  return enforceReadScope(
+    readScope(request),
+    new URL(request.url).searchParams.get("crewId") ?? undefined,
+  );
+}
+
+// GET /api/profile → 200 { profile, store } (AC-4). 헤더 없으면(기존 테스트) 김민정 fallback.
+export async function GET(request?: Request): Promise<Response> {
+  if (!request) return NextResponse.json(getProfile(), { headers: NO_STORE });
+  return NextResponse.json(getProfile(scopeOf(request)), { headers: NO_STORE });
 }
 
 // PATCH /api/profile  body: { phone?, email? } (AC-5/6/7/8)
 export async function PATCH(request: Request): Promise<Response> {
+  const scoped = scopeOf(request);
   const body = (await request.json()) as Record<string, unknown>;
 
   // 1) 형식 검증 — 전달된 phone/email만 검사 (AC-8, 머지보다 선행)
@@ -36,9 +47,9 @@ export async function PATCH(request: Request): Promise<Response> {
   if (typeof body.email === "string") patch.email = body.email;
 
   // 3) 머지 후 200 + 갱신 profile 반환 (AC-5/6/7)
-  const updated = updateProfile(patch);
+  const updated = updateProfile(patch, scoped);
   return NextResponse.json(
-    { profile: updated, store: getProfile().store },
+    { profile: updated, store: getProfile(scoped).store },
     { headers: NO_STORE },
   );
 }

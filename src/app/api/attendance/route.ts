@@ -8,18 +8,30 @@ import {
 import type { WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
 import { parseHHMM } from "@/lib/time";
+import { readScope, enforceReadScope } from "@/lib/scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
-  const month =
-    new URL(request.url).searchParams.get("month") ?? "";
-  const records = getMonthRecords(month);
+  const url = new URL(request.url);
+  const month = url.searchParams.get("month") ?? "";
+  // T8-4: 헤더 scope → 크루 본인 강제, 마스터는 ?crewId 허용.
+  const scoped = enforceReadScope(
+    readScope(request),
+    url.searchParams.get("crewId") ?? undefined,
+  );
+  const records = getMonthRecords(month, scoped);
   return NextResponse.json(records, { headers: NO_STORE });
 }
 
 export async function PATCH(request: Request): Promise<Response> {
-  const date = new URL(request.url).searchParams.get("date");
+  const url = new URL(request.url);
+  const date = url.searchParams.get("date");
+  // T8-4: 변경 대상도 본인 강제(크루)/마스터 target.
+  const scoped = enforceReadScope(
+    readScope(request),
+    url.searchParams.get("crewId") ?? undefined,
+  );
   if (!date) {
     return NextResponse.json(
       { error: "date 쿼리가 필요합니다." },
@@ -40,7 +52,7 @@ export async function PATCH(request: Request): Promise<Response> {
         { status: 400, headers: NO_STORE },
       );
     }
-    const next = upsertTodayClock(date, body.field, body.time);
+    const next = upsertTodayClock(date, body.field, body.time, scoped);
     return NextResponse.json(next, { headers: NO_STORE });
   }
 
@@ -50,7 +62,7 @@ export async function PATCH(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  const updated = updateStatus(date, body.status);
+  const updated = updateStatus(date, body.status, scoped);
   if (!updated) {
     return NextResponse.json(
       { error: "해당 날짜 레코드가 없습니다." },

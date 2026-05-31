@@ -1,15 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
+import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
+import { RoleSwitcher } from "@/features/accounts/components/RoleSwitcher";
 import { ProfileSummary } from "./ProfileSummary";
 import { StoreCard } from "./StoreCard";
 import { DocumentBox } from "./DocumentBox";
 import { ServiceMenu } from "./ServiceMenu";
 
 // /mypage 클라이언트 뷰: useProfile 로딩 가드 후 4섹션 조립 (AC-9).
+// T8-3: 역할전환(RoleSwitcher) + 마스터일 때 /master 진입점(링크만).
 export function MyPageView() {
   const { data, loading } = useProfile();
+  const { user } = useCurrentUser();
 
   return (
     <div className="pb-24">
@@ -41,6 +46,17 @@ export function MyPageView() {
           <StoreCard store={data.store} />
           <DocumentBox />
           <ServiceMenu />
+          {user.role === "master" && (
+            <section className="px-5 pt-8">
+              <Link
+                href="/master"
+                className="block rounded-2xl bg-coral px-4 py-3 text-center font-semibold text-white"
+              >
+                마스터 집계 보기
+              </Link>
+            </section>
+          )}
+          <RoleSwitcher />
         </>
       )}
     </div>
