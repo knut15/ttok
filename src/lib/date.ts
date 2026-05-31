@@ -63,6 +63,14 @@ export function todayDate(now: Date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * 로컬 기준 현재월 "YYYY-MM" (AC-T6-6). UTC 변환 금지(날짜 밀림 방지).
+ * todayDate 의 앞 7자 재사용 → 단일 진실 소스. now 주입 가능 → 결정적 테스트.
+ */
+export function todayMonth(now: Date = new Date()): string {
+  return todayDate(now).slice(0, 7);
+}
+
 /** "YYYY-MM" 을 delta 개월 이동. 연도 경계 자동 보정(2026-12 +1 → 2027-01). */
 export function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);

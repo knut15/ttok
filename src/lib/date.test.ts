@@ -8,6 +8,7 @@ import {
   shiftDay,
   monthsBetween,
   todayDate,
+  todayMonth,
 } from "./date";
 
 describe("isValidDateString (엣지#5)", () => {
@@ -107,6 +108,19 @@ describe("todayDate (AC-T6-1)", () => {
   });
   it("zero-pad: new Date(2026,11,9) → 2026-12-09", () => {
     expect(todayDate(new Date(2026, 11, 9))).toBe("2026-12-09");
+  });
+});
+
+// 로컬 기준 현재월 "YYYY-MM" — Date 주입으로 결정적 검증(AC-T6-6)
+describe("todayMonth (AC-T6-6)", () => {
+  it("month 0-index 변환: new Date(2026,4,31) → 2026-05 (4=5월)", () => {
+    expect(todayMonth(new Date(2026, 4, 31))).toBe("2026-05");
+  });
+  it("연말 zero-pad: new Date(2026,11,1) → 2026-12", () => {
+    expect(todayMonth(new Date(2026, 11, 1))).toBe("2026-12");
+  });
+  it("연초: new Date(2026,0,15) → 2026-01", () => {
+    expect(todayMonth(new Date(2026, 0, 15))).toBe("2026-01");
   });
 });
 
