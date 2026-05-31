@@ -3,6 +3,7 @@ import {
   calcWorkMinutes,
   calcOvertime,
   calcOvertimeByClock,
+  calcBreakMinutes,
   formatHHMM,
   parseHHMM,
 } from "./time";
@@ -112,5 +113,40 @@ describe("calcOvertimeByClock — 정시 퇴근(900분) 초과분만 연장", ()
   });
   it("clockOut 형식이 불량하면(NaN) 연장 0", () => {
     expect(calcOvertimeByClock({ clockOut: "bad" })).toBe(0);
+  });
+});
+
+// T7 휴게 범위 → 분 파생 (architect §2.2/§3.1). 순수 O(1), 역전/NaN 방어.
+describe("calcBreakMinutes — 휴게 범위(HH:MM~HH:MM) → 분 파생", () => {
+  it("11:30~12:00 이면 30분을 반환한다", () => {
+    expect(calcBreakMinutes({ breakStart: "11:30", breakEnd: "12:00" })).toBe(
+      30,
+    );
+  });
+
+  it("역전(12:00~11:30)이면 0을 반환한다(fallback 기본 0)", () => {
+    expect(calcBreakMinutes({ breakStart: "12:00", breakEnd: "11:30" })).toBe(
+      0,
+    );
+  });
+
+  it("동일 시각(11:30~11:30)이면 0을 반환한다", () => {
+    expect(calcBreakMinutes({ breakStart: "11:30", breakEnd: "11:30" })).toBe(
+      0,
+    );
+  });
+
+  it("형식 불량(NaN)이면 0을 반환한다", () => {
+    expect(calcBreakMinutes({ breakStart: "bad", breakEnd: "12:00" })).toBe(0);
+    expect(calcBreakMinutes({ breakStart: "11:30", breakEnd: "99:99" })).toBe(
+      0,
+    );
+  });
+
+  it("범위 한쪽이 없으면 fallback 을 반환한다(범위 미명시 하위호환)", () => {
+    expect(
+      calcBreakMinutes({ breakStart: "11:30", breakEnd: null, fallback: 30 }),
+    ).toBe(30);
+    expect(calcBreakMinutes({ fallback: 45 })).toBe(45);
   });
 });

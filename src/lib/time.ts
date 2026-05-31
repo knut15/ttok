@@ -30,6 +30,24 @@ export function calcWorkMinutes(i: {
   return Math.max(0, end - start - i.breakMinutes);
 }
 
+/**
+ * 휴게 범위("HH:MM"~"HH:MM") → 분 파생. 순수 O(1)(정규식+산술, 루프 없음). architect §2.2/§3.1.
+ * - 둘 다 유효 HH:MM 이고 end>start → end−start.
+ * - 한쪽이라도 없음 / NaN / 역전·동일(end<=start) → fallback(기본 0). 음수 발생 불가(가드 선차단).
+ */
+export function calcBreakMinutes(i: {
+  breakStart?: string | null;
+  breakEnd?: string | null;
+  fallback?: number;
+}): number {
+  const fallback = i.fallback ?? 0;
+  if (!i.breakStart || !i.breakEnd) return fallback;
+  const s = parseHHMM(i.breakStart);
+  const e = parseHHMM(i.breakEnd);
+  if (Number.isNaN(s) || Number.isNaN(e) || e <= s) return fallback;
+  return e - s;
+}
+
 /** 정규 근무시간 초과분(분). 없으면 0. */
 export function calcOvertime(
   workMinutes: number,
