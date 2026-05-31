@@ -5,7 +5,8 @@ import type { EditRequestChange } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-export async function GET(): Promise<Response> {
+export async function GET(_request?: Request): Promise<Response> {
+  void _request;
   return NextResponse.json(listRequests(), { headers: NO_STORE });
 }
 

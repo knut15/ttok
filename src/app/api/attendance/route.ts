@@ -1,6 +1,10 @@
 // GET 월간 조회(AC-6) / PATCH 상태변경(AC-8). architect §2.3.
 import { NextResponse } from "next/server";
-import { getMonthRecords, updateStatus } from "@/lib/store";
+import {
+  getMonthRecords,
+  updateStatus,
+  upsertTodayClock,
+} from "@/lib/store";
 import type { WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
 
@@ -21,7 +25,24 @@ export async function PATCH(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  const body = (await request.json()) as { status?: WorkStatus };
+  const body = (await request.json()) as {
+    status?: WorkStatus;
+    field?: "clockIn" | "clockOut";
+    time?: string;
+  };
+
+  // 쟁점 C: 출/퇴근 토글 — 현재 시각(client new Date()) 기록.
+  if (body.field === "clockIn" || body.field === "clockOut") {
+    if (!body.time) {
+      return NextResponse.json(
+        { error: "time 이 필요합니다." },
+        { status: 400, headers: NO_STORE },
+      );
+    }
+    const next = upsertTodayClock(date, body.field, body.time);
+    return NextResponse.json(next, { headers: NO_STORE });
+  }
+
   if (!body.status || !WORK_STATUSES.includes(body.status)) {
     return NextResponse.json(
       { error: "유효한 status 가 필요합니다." },

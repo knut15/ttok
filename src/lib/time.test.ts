@@ -1,5 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { calcWorkMinutes, calcOvertime, formatHHMM } from "./time";
+import { calcWorkMinutes, calcOvertime, formatHHMM, parseHHMM } from "./time";
+
+describe("parseHHMM 범위 검증", () => {
+  it("정상 경계 23:59 → 1439", () => {
+    expect(parseHHMM("23:59")).toBe(1439);
+  });
+  it("정상 경계 00:00 → 0", () => {
+    expect(parseHHMM("00:00")).toBe(0);
+  });
+  // 버그3: 99:99 같이 범위 초과 시 NaN (급여 과다산정 방지)
+  it("시/분 범위 초과면 NaN (99:99)", () => {
+    expect(parseHHMM("99:99")).toBeNaN();
+  });
+  it("시 24 이상이면 NaN (24:00)", () => {
+    expect(parseHHMM("24:00")).toBeNaN();
+  });
+  it("분 60 이상이면 NaN (12:60)", () => {
+    expect(parseHHMM("12:60")).toBeNaN();
+  });
+  it("형식 불량은 기존대로 NaN", () => {
+    expect(parseHHMM("bad")).toBeNaN();
+  });
+});
 
 describe("calcWorkMinutes", () => {
   // AC-1

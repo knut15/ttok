@@ -1,65 +1,84 @@
-import Image from "next/image";
+// 홈 RSC 셸(AC-11): 브랜드 헤더·날짜·매장명·근무 진행·토글(client)·공지/바로가기.
+import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
+import { Card } from "@/components/Card";
+import { StatusBadge } from "@/components/StatusBadge";
+import { ClockToggle } from "@/features/attendance/components/ClockToggle";
+import { formatDotDate } from "@/lib/date";
 
-export default function Home() {
+const TODAY = "2026-05-29"; // 데모 기준일(시드 월). AC-11 헤더 날짜.
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div>
+      <AppHeader
+        brand
+        right={
+          <span aria-hidden className="text-xl text-muted">
+            🔔
+          </span>
+        }
+      />
+
+      <div className="space-y-3 px-5 pt-1">
+        <Link
+          href="/attendance"
+          className="flex items-center justify-between text-base font-bold text-foreground"
+        >
+          <span>{formatDotDate(TODAY)}</span>
+          <span className="text-muted">›</span>
+        </Link>
+
+        <ClockToggle date={TODAY} />
+
+        <Link href="#" className="block">
+          <Card className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <span className="text-coral" aria-hidden>
+                ◆
+              </span>
+              크루몬 서비스 종료 안내
+            </span>
+            <span className="text-muted">›</span>
+          </Card>
+        </Link>
+
+        <section className="pt-1">
+          <h2 className="mb-2 text-base font-bold text-foreground">
+            확인해 주세요!
+          </h2>
+          <Link href="/pay">
+            <Card className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="grid h-9 w-9 place-items-center rounded-lg bg-coral-soft text-coral"
+                >
+                  ₩
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">이번 달 출퇴근 기록</p>
+                  <p className="text-xs text-muted">
+                    곧 발급될 급여명세서와 비교해 보세요!
+                  </p>
+                </div>
+              </div>
+              <span className="text-muted">›</span>
+            </Card>
+          </Link>
+        </section>
+
+        <section className="pt-1">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-base font-bold text-foreground">매장공지</h2>
+            <span className="text-muted">›</span>
+          </div>
+          <Card className="flex items-center gap-2">
+            <span className="text-sm font-semibold">오늘 할 일</span>
+            <StatusBadge label="공지" tone="green" />
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }

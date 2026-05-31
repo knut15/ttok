@@ -66,4 +66,25 @@ describe("PATCH /api/attendance", () => {
     );
     expect(res.status).toBe(404);
   });
+
+  // 쟁점 C: 출/퇴근 토글로 주입한 시각이 기록되고 time.ts 로 workMinutes 재계산
+  it("clockIn→clockOut 토글이 주입 시각을 기록하고 근무시간을 재계산한다", async () => {
+    // 시드에 없는 '오늘' 날짜 → 기본 휴게 30분의 새 레코드 생성
+    await PATCH(
+      req("/api/attendance?date=2026-06-01", {
+        method: "PATCH",
+        body: JSON.stringify({ field: "clockIn", time: "08:00" }),
+      }),
+    );
+    const out = await PATCH(
+      req("/api/attendance?date=2026-06-01", {
+        method: "PATCH",
+        body: JSON.stringify({ field: "clockOut", time: "15:00" }),
+      }),
+    );
+    const body = await out.json();
+    expect(body.clockIn).toBe("08:00");
+    expect(body.clockOut).toBe("15:00");
+    expect(body.workMinutes).toBe(390); // 동일 time.ts 계산 경로
+  });
 });

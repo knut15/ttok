@@ -2,11 +2,14 @@
 
 import { REGULAR_MINUTES } from "./constants";
 
-/** "HH:MM" → 분(0~1439). 형식 불량 → NaN. */
+/** "HH:MM" → 분(0~1439). 형식 불량·범위 초과(시>23·분>59) → NaN. */
 export function parseHHMM(t: string): number {
   const m = /^(\d{1,2}):(\d{2})$/.exec(t);
   if (!m) return NaN;
-  return Number(m[1]) * 60 + Number(m[2]);
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return NaN;
+  return h * 60 + min;
 }
 
 /** 분 → "HH:MM". */

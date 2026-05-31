@@ -14,7 +14,6 @@ interface StoreShape {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __crewmonStore: StoreShape | undefined;
 }
 
@@ -48,7 +47,12 @@ export function getRecord(date: string): AttendanceRecord | null {
   return getStore().records.get(date) ?? null;
 }
 
-/** 출근상태 변경(AC-8). 없으면 null. */
+/**
+ * 출근상태 변경(AC-8, 버그2). 없으면 null.
+ * status 의존 연산 필드를 일관되게 재계산(CONTEXT.md 급여인정시간 정의):
+ * - 휴가/결근 → 인정시간 0 (work/overtime/deduct=0), clock 은 보존.
+ * - 정상/연장/지각 & clock 존재 → work/overtime 재계산. deduct 는 보존(지각 산식 미정의).
+ */
 export function updateStatus(
   date: string,
   status: WorkStatus,
@@ -56,7 +60,34 @@ export function updateStatus(
   const store = getStore();
   const rec = store.records.get(date);
   if (!rec) return null;
-  const updated: AttendanceRecord = { ...rec, status };
+
+  let updated: AttendanceRecord;
+  if (status === "휴가" || status === "결근") {
+    // 휴가=무급 / 결근=근무없음 → 인정시간 0 (clock 보존).
+    updated = {
+      ...rec,
+      status,
+      workMinutes: 0,
+      overtimeMinutes: 0,
+      deductMinutes: 0,
+    };
+  } else if (rec.clockIn && rec.clockOut) {
+    const workMinutes = calcWorkMinutes({
+      clockIn: rec.clockIn,
+      clockOut: rec.clockOut,
+      breakMinutes: rec.breakMinutes,
+    });
+    updated = {
+      ...rec,
+      status,
+      workMinutes,
+      overtimeMinutes: calcOvertime(workMinutes),
+      // deduct 는 보존(지각 산식 본 범위 미정의 — 임의 추정 금지).
+    };
+  } else {
+    updated = { ...rec, status };
+  }
+
   store.records.set(date, updated);
   return updated;
 }
@@ -85,6 +116,13 @@ export function upsertTodayClock(
     } satisfies AttendanceRecord);
 
   const next: AttendanceRecord = { ...prev, [field]: time };
+  // 버그1: 토글로 시각이 기록되면 그 날을 "근무한 날"로 만든다.
+  // 휴가/결근(무근무·휴게0) 상태였다면 정상 근무일로 정상화한다.
+  if (prev.status === "휴가" || prev.status === "결근") {
+    next.status = "정상";
+    next.breakMinutes = DEFAULT_BREAK_MINUTES;
+    next.deductMinutes = 0;
+  }
   if (next.clockIn && next.clockOut) {
     next.workMinutes = calcWorkMinutes({
       clockIn: next.clockIn,
