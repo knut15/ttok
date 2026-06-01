@@ -2,8 +2,8 @@
 
 import { Card } from "@/components/Card";
 import { ProgressBar } from "@/components/ProgressBar";
-import { REGULAR_MINUTES, REGULAR_RANGE, STORE_NAME } from "@/lib/constants";
-import { longWorkLabel } from "@/features/attendance/domain";
+import { REGULAR_MINUTES, STORE_NAME } from "@/lib/constants";
+import { clockRangeLabel, longWorkLabel } from "@/features/attendance/domain";
 import { useTodayClock } from "@/features/attendance/hooks/useAttendance";
 
 // 홈 출퇴근 상태 카드(T12 AC-1: 상태 전용).
@@ -39,7 +39,7 @@ export function ClockToggle({ date }: { date: string }) {
       <div className="mt-3">
         <ProgressBar
           percent={percent}
-          leftLabel={REGULAR_RANGE.replace("~", "-")}
+          leftLabel={clockRangeLabel(record, phase)}
           rightLabel={`${percent}%`}
         />
       </div>

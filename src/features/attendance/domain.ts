@@ -2,7 +2,7 @@
 // components 는 도메인 타입을 모르므로 이 매핑이 경계 역할을 한다(architect §1.1).
 
 import type { AttendanceRecord, WorkStatus } from "@/types";
-import { REGULAR_MINUTES } from "@/lib/constants";
+import { REGULAR_MINUTES, REGULAR_RANGE } from "@/lib/constants";
 import type { Tone } from "@/lib/constants";
 
 export interface Badge {
@@ -38,6 +38,25 @@ export function clockPhase(record: AttendanceRecord | null): ClockPhase {
   if (!record?.clockIn) return "before";
   if (!record?.clockOut) return "working";
   return "done";
+}
+
+/**
+ * 홈 진행바 좌측 라벨(T13). 실제 출퇴근 시각으로 표기.
+ *  - before / clockIn 없음 → 정규시간 placeholder("08:00 ~ 15:00")
+ *  - working(clockIn O, clockOut X) → "${clockIn} ~"(퇴근 미정)
+ *  - done(clockIn & clockOut) → "${clockIn} ~ ${clockOut}"
+ */
+export function clockRangeLabel(
+  record: AttendanceRecord | null,
+  phase: ClockPhase,
+): string {
+  if (phase === "before" || !record?.clockIn) {
+    return REGULAR_RANGE.replace("~", " ~ ");
+  }
+  if (phase === "working" || !record.clockOut) {
+    return `${record.clockIn} ~`;
+  }
+  return `${record.clockIn} ~ ${record.clockOut}`;
 }
 
 /** 상태별 점 색상 토큰. */

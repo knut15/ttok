@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatBadge, clockPhase } from "./domain";
+import { formatBadge, clockPhase, clockRangeLabel } from "./domain";
 import type { AttendanceRecord } from "@/types";
 
 function rec(p: Partial<AttendanceRecord>): AttendanceRecord {
@@ -59,5 +59,29 @@ describe("clockPhase (FAB/ClockToggle 공용 phase 인지, AC-3~5)", () => {
     expect(clockPhase(rec({ clockIn: "08:00", clockOut: "15:00" }))).toBe(
       "done",
     );
+  });
+});
+
+describe("clockRangeLabel (T13: 홈 진행바 좌측 라벨)", () => {
+  it("before(미출근)는 정규시간 placeholder", () => {
+    expect(clockRangeLabel(null, "before")).toBe("08:00 ~ 15:00");
+  });
+
+  it("clockIn 없으면 정규 placeholder(phase 무관 방어)", () => {
+    expect(clockRangeLabel(rec({ clockIn: null, clockOut: null }), "before")).toBe(
+      "08:00 ~ 15:00",
+    );
+  });
+
+  it("working(근무중)은 실제 출근시각 + 퇴근 미정", () => {
+    expect(
+      clockRangeLabel(rec({ clockIn: "14:30", clockOut: null }), "working"),
+    ).toBe("14:30 ~");
+  });
+
+  it("done(마감)은 실제 출근~퇴근", () => {
+    expect(
+      clockRangeLabel(rec({ clockIn: "14:30", clockOut: "15:30" }), "done"),
+    ).toBe("14:30 ~ 15:30");
   });
 });
