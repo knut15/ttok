@@ -7,12 +7,16 @@ import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { useSchedule } from "@/features/schedule/hooks/useSchedule";
 import { ScheduleCalendar } from "./ScheduleCalendar";
+import { ScheduleGrid } from "./ScheduleGrid";
 import { ScheduleDaySheet } from "./ScheduleDaySheet";
 import { SEED_MONTH } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth } from "@/lib/date";
 
+type ViewMode = "calendar" | "grid";
+
 export function ScheduleView() {
   const [month, setMonth] = useState(SEED_MONTH);
+  const [view, setView] = useState<ViewMode>("calendar");
   const [selected, setSelected] = useState<string | null>(null);
   const { entries, canWrite, crews, loading, save, remove } = useSchedule(month);
 
@@ -43,16 +47,44 @@ export function ScheduleView() {
           </span>
         }
       />
-      <p className="px-5 pb-3 text-sm text-muted">
-        근무 스케쥴{canWrite ? " · 날짜를 눌러 근무자를 배정하세요" : ""}
-      </p>
-      <ScheduleCalendar
-        month={month}
-        entries={entries}
-        crews={crews}
-        loading={loading}
-        onSelectDate={setSelected}
-      />
+      <div className="flex items-center justify-between px-5 pb-3">
+        <p className="text-sm text-muted">
+          근무 스케쥴{canWrite ? " · 탭하여 근무자 배정" : ""}
+        </p>
+        {/* 달력 / 표 보기 토글(요구사항 3: 둘 다). */}
+        <div className="flex rounded-full bg-black/[0.06] p-0.5 text-xs font-semibold">
+          {(["calendar", "grid"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setView(m)}
+              aria-pressed={view === m}
+              className={`rounded-full px-3 py-1 transition ${
+                view === m ? "bg-surface text-foreground shadow-sm" : "text-muted"
+              }`}
+            >
+              {m === "calendar" ? "달력" : "표"}
+            </button>
+          ))}
+        </div>
+      </div>
+      {view === "calendar" ? (
+        <ScheduleCalendar
+          month={month}
+          entries={entries}
+          crews={crews}
+          loading={loading}
+          onSelectDate={setSelected}
+        />
+      ) : (
+        <ScheduleGrid
+          month={month}
+          entries={entries}
+          crews={crews}
+          loading={loading}
+          onSelectDate={setSelected}
+        />
+      )}
       {selected ? (
         <ScheduleDaySheet
           key={selected}

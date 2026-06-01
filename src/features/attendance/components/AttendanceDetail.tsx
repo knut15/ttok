@@ -17,6 +17,8 @@ import { ClockOutStatusSheet } from "./ClockOutStatusSheet";
 import { AddRecordForm } from "./AddRecordForm";
 import { EditRequestForm } from "./EditRequestForm";
 import { EditRequestList } from "./EditRequestList";
+import { useDaySchedule } from "@/features/schedule/hooks/useDaySchedule";
+import { ScheduleVsActual } from "@/features/schedule/components/ScheduleVsActual";
 
 const [DEFAULT_BREAK_START, DEFAULT_BREAK_END] = DEFAULT_BREAK_RANGE.split("~");
 
@@ -53,6 +55,7 @@ export function AttendanceDetail({ date }: { date: string }) {
     useDayAttendance(date);
   const { requests, submit, approve } = useEditRequests();
   const { user } = useCurrentUser();
+  const schedule = useDaySchedule(date); // T21: 예정 대비 실제 비교용
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [clockOutSheetOpen, setClockOutSheetOpen] = useState(false);
   const [breakSheetOpen, setBreakSheetOpen] = useState(false);
@@ -128,6 +131,11 @@ export function AttendanceDetail({ date }: { date: string }) {
 
   return (
     <div>
+      {schedule ? (
+        <div className="px-5 pb-3">
+          <ScheduleVsActual entry={schedule} record={record} />
+        </div>
+      ) : null}
       <div className="space-y-3 px-5">
         <Row
           label="출근"

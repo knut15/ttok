@@ -1,5 +1,6 @@
 // 스케쥴 캘린더 셀 1칸(presentational, T19/T20-4). 날짜 + 등록된 근무자 아바타.
 // 출퇴근 캘린더와 달리 Link 가 아닌 button — 탭 시 해당 날짜 편집 시트를 연다.
+// 아바타는 mockup 처럼 겹쳐진(overlapping) 원형 그레이스케일 + 초과분 "+N" 칩.
 import type { ScheduleAssignee } from "@/types";
 
 export interface ScheduleCellView {
@@ -8,17 +9,15 @@ export interface ScheduleCellView {
   assignees: ScheduleAssignee[];
 }
 
-const MAX_AVATARS = 4;
+const MAX_AVATARS = 3;
 
 function Avatar({ a }: { a: ScheduleAssignee }) {
-  // 근무=코랄, 휴무=점선 회색(시각 구분).
+  // 그레이스케일 원형(이미지처럼). 휴무자는 흰색 배경(+테두리)로 구분. ring 으로 겹침 경계 분리.
   return (
     <span
       title={`${a.name}${a.off ? " (휴무)" : ""}`}
-      className={`grid h-5 w-5 place-items-center rounded-full text-[9px] font-bold ${
-        a.off
-          ? "border border-dashed border-black/25 text-muted"
-          : "bg-coral/15 text-coral"
+      className={`grid h-5 w-5 place-items-center rounded-full text-[8px] font-bold ring-2 ring-surface ${
+        a.off ? "border border-black/15 bg-white text-muted" : "bg-neutral-600 text-white"
       }`}
     >
       {a.avatarInitial}
@@ -56,12 +55,15 @@ export function ScheduleDayCell({
     >
       <span className={`text-sm font-semibold ${numColor}`}>{view.dayNum}</span>
       {shown.length > 0 ? (
-        <span className="flex flex-wrap justify-center gap-0.5">
-          {shown.map((a) => (
-            <Avatar key={a.crewId} a={a} />
+        // 겹쳐진 아바타 그룹: 첫 칸 외에는 음수 마진으로 포개고, 초과분은 "+N" 칩.
+        <span className="flex items-center pl-1">
+          {shown.map((a, i) => (
+            <span key={a.crewId} className={i === 0 ? "" : "-ml-1.5"}>
+              <Avatar a={a} />
+            </span>
           ))}
           {extra > 0 ? (
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-black/[0.06] text-[9px] font-bold text-muted">
+            <span className="-ml-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-black/[0.06] px-1 text-[8px] font-bold text-muted ring-2 ring-surface">
               +{extra}
             </span>
           ) : null}
