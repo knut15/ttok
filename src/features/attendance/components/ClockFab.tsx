@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { todayDate } from "@/lib/date";
 import { useTodayClock } from "@/features/attendance/hooks/useAttendance";
+import { clockOutConfirmMessage } from "./clockFabConfirm";
 
 // 마운트 여부 구독(HomeToday/BottomNav 동일 패턴). 서버/첫CSR false → mount 전 미렌더.
 const emptySubscribe = () => () => {};
@@ -33,7 +34,15 @@ function ClockFabInner({ onRegistered }: { onRegistered?: () => void }) {
   const { phase, busy, clockIn, clockOut } = useTodayClock(todayDate());
 
   async function handleClick() {
-    const res = phase === "before" ? await clockIn() : await clockOut();
+    if (phase === "before") {
+      // 출근은 즉시(확인 없음, T12 AC-3 / T11 회귀 0).
+      const res = await clockIn();
+      if (res) onRegistered?.();
+      return;
+    }
+    // 퇴근은 현재 시각 확인 대화상자 후에만 처리(취소 시 미처리, T12 AC-3).
+    if (!window.confirm(clockOutConfirmMessage())) return;
+    const res = await clockOut();
     if (res) onRegistered?.();
   }
 

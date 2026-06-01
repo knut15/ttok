@@ -6,11 +6,12 @@ import { REGULAR_MINUTES, REGULAR_RANGE, STORE_NAME } from "@/lib/constants";
 import { longWorkLabel } from "@/features/attendance/domain";
 import { useTodayClock } from "@/features/attendance/hooks/useAttendance";
 
-// 홈 출퇴근 토글(AC-11, AC-12, 쟁점 C: new Date() 기록).
-// T11 ST-1: 등록 로직을 공용 훅 useTodayClock 으로 추출·소비(단일 진실원, ClockFab 와 공유).
-//   렌더/마크업/라벨/PATCH 동작 불변(AC-R2). 크루 스코프(authHeaders)·crewId 무효화는 훅이 계승.
+// 홈 출퇴근 상태 카드(T12 AC-1: 상태 전용).
+//   T11 까지의 출근/퇴근/마감 버튼은 제거됨 — 출퇴근 등록은 /attendance 의 ClockFab 으로 일원화.
+//   여기서는 record/phase 로 매장명·headline·진행바만 표시하고 clock PATCH(clockIn/clockOut)은 호출하지 않는다.
+//   GET 구독(useTodayClock)은 유지 → 등록 후 홈 진입 시 최신 상태 반영(크루 스코프 authHeaders 계승).
 export function ClockToggle({ date }: { date: string }) {
-  const { record, phase, busy, clockIn, clockOut } = useTodayClock(date);
+  const { record, phase } = useTodayClock(date);
 
   const workMinutes = record?.workMinutes ?? 0;
   const percent =
@@ -41,38 +42,6 @@ export function ClockToggle({ date }: { date: string }) {
           leftLabel={REGULAR_RANGE.replace("~", "-")}
           rightLabel={`${percent}%`}
         />
-      </div>
-
-      <div className="mt-4">
-        {phase === "before" && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => clockIn()}
-            className="w-full rounded-xl bg-coral py-3 font-bold text-white disabled:opacity-60"
-          >
-            출근
-          </button>
-        )}
-        {phase === "working" && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => clockOut()}
-            className="w-full rounded-xl bg-coral py-3 font-bold text-white disabled:opacity-60"
-          >
-            퇴근
-          </button>
-        )}
-        {phase === "done" && (
-          <button
-            type="button"
-            disabled
-            className="w-full rounded-xl bg-black/5 py-3 font-bold text-muted"
-          >
-            오늘 근무 마감
-          </button>
-        )}
       </div>
     </Card>
   );

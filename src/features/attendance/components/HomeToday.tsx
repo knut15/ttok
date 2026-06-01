@@ -35,7 +35,6 @@ export function HomeToday() {
           <div className="h-5 w-40 animate-pulse rounded bg-black/10" />
           <div className="mt-3 h-6 w-48 animate-pulse rounded bg-black/10" />
           <div className="mt-3 h-2 w-full animate-pulse rounded bg-black/10" />
-          <div className="mt-4 h-12 w-full animate-pulse rounded-xl bg-black/10" />
         </Card>
       </>
     );
