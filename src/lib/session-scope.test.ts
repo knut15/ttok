@@ -37,7 +37,7 @@ describe("resolveScope", () => {
     });
   });
 
-  it("operationalId 가 없으면(신규 실매장) userId 를 crewId 로 쓴다", async () => {
+  it("operationalId 가 없으면(신규 실매장) membershipId 를 crewId 로 쓴다", async () => {
     authMock.mockResolvedValue({
       user: { id: "user-2" },
       role: "master",
@@ -47,7 +47,7 @@ describe("resolveScope", () => {
       isManager: false,
     });
     const s = await resolveScope(req());
-    expect(s.crewId).toBe("user-2");
+    expect(s.crewId).toBe("mem-2"); // membershipId 우선(운영 데이터 키 일치)
     expect(s.role).toBe("master");
   });
 

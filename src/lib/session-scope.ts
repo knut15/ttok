@@ -30,7 +30,8 @@ export async function resolveScope(req: Request): Promise<SessionScope> {
 
   if (session?.user?.id && session.role) {
     return {
-      crewId: session.operationalId ?? session.user.id,
+      // crewId 통일: 데모=operationalId, 실멤버=membershipId(운영 데이터 키와 일치).
+      crewId: session.operationalId ?? session.membershipId ?? session.user.id,
       role: session.role,
       userId: session.user.id,
       storeId: session.storeId ?? undefined,
