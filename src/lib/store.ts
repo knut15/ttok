@@ -37,6 +37,7 @@ import {
   DEFAULT_CREW_ID,
   INVITE_CODE_ALPHABET,
   INVITE_CODE_LENGTH,
+  MASTER_ID,
   REGULAR_MINUTES,
   WORK_STATUSES,
 } from "./constants";
@@ -698,8 +699,13 @@ export function approveSubstitute(id: string): ScheduleEntry | null {
     if (e) {
       if (e.approval !== "수락") {
         e.approval = "수락";
-        // 요구사항: 대타 승인 시 해당 크루에게 알림.
+        // 대타 승인 시 해당 크루 + 마스터 양쪽에 알림.
+        const crewName = store.crews.find((c) => c.id === e.crewId)?.name ?? e.crewId;
         pushNotification(e.crewId, `대타 근무(${e.date} ${e.startTime}~${e.endTime})가 승인되었습니다.`);
+        pushNotification(
+          MASTER_ID,
+          `${crewName}님의 대타 근무(${e.date} ${e.startTime}~${e.endTime})를 승인했습니다.`,
+        );
       }
       return e;
     }

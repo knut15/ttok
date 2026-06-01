@@ -21,11 +21,17 @@ const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
   const month = new URL(request.url).searchParams.get("month") ?? SEED_MONTH;
+  const scope = readScope(request);
+  const canWrite = canWriteSchedule(scope);
+
+  // 권한 스코프: master/매니저(canWrite)는 전체, 일반 크루는 본인 것만(요구사항).
+  const entries = getMonthScheduleView(month);
+  const fixedShifts = listFixedShifts();
   const payload: ScheduleResponse = {
     month,
-    entries: getMonthScheduleView(month), // 명시 배정 + 고정근무 자동적용
-    fixedShifts: listFixedShifts(),
-    canWrite: canWriteSchedule(readScope(request)),
+    entries: canWrite ? entries : entries.filter((e) => e.crewId === scope.crewId),
+    fixedShifts: canWrite ? fixedShifts : fixedShifts.filter((f) => f.crewId === scope.crewId),
+    canWrite,
   };
   return NextResponse.json(payload, { headers: NO_STORE });
 }

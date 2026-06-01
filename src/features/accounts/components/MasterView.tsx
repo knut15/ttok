@@ -15,7 +15,9 @@ import { useMasterSummary } from "@/features/accounts/hooks/useMasterSummary";
 import { useMasterRequests } from "@/features/accounts/hooks/useMasterRequests";
 import { useMasterSubstitutes } from "@/features/accounts/hooks/useMasterSubstitutes";
 import { CrewSummaryList } from "./CrewSummaryList";
+import { CrewWorkChart } from "./CrewWorkChart";
 import { MasterRequestList } from "./MasterRequestList";
+import { NotificationBell } from "@/components/NotificationBell";
 import { formatPayRowDate } from "@/lib/date";
 import { SEED_MONTH } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth } from "@/lib/date";
@@ -102,6 +104,7 @@ export function MasterView() {
             </button>
           </span>
         }
+        right={<NotificationBell />}
       />
       <p className="px-5 pb-4 text-sm text-muted">전체 크루 근무 집계</p>
       {loading ? (
@@ -109,7 +112,10 @@ export function MasterView() {
           집계 불러오는 중…
         </p>
       ) : (
-        <CrewSummaryList crews={crews} onToggleManager={toggleManager} />
+        <>
+          <CrewWorkChart crews={crews} />
+          <CrewSummaryList crews={crews} onToggleManager={toggleManager} />
+        </>
       )}
 
       {/* FR-2: 마스터 수정요청 컨펌 섹션(가드 하위). 전체 크루 요청 조회·수락. */}

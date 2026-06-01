@@ -33,6 +33,34 @@ describe("GET /api/schedule (T18)", () => {
     expect(body.month).toBe(SEED_MONTH);
     expect(body.entries.length).toBeGreaterThan(0);
   });
+
+  it("일반 크루는 본인 스케줄만 받는다(권한 스코프)", async () => {
+    const body = await (
+      await GET(new Request(`http://localhost/api/schedule?month=2026-06`, { headers: PLAIN_CREW }))
+    ).json();
+    expect(body.canWrite).toBe(false);
+    expect(body.entries.length).toBeGreaterThan(0);
+    expect(body.entries.every((e: { crewId: string }) => e.crewId === "crew-2")).toBe(true);
+    expect(body.fixedShifts.every((f: { crewId: string }) => f.crewId === "crew-2")).toBe(true);
+  });
+
+  it("마스터는 전체 크루 스케줄을 받는다", async () => {
+    const body = await (
+      await GET(new Request(`http://localhost/api/schedule?month=2026-06`, { headers: MASTER }))
+    ).json();
+    expect(body.canWrite).toBe(true);
+    const crewIds = new Set(body.entries.map((e: { crewId: string }) => e.crewId));
+    expect(crewIds.size).toBeGreaterThan(1);
+  });
+
+  it("매니저는 전체 크루 스케줄을 받는다", async () => {
+    const body = await (
+      await GET(new Request(`http://localhost/api/schedule?month=2026-06`, { headers: MANAGER }))
+    ).json();
+    expect(body.canWrite).toBe(true);
+    const crewIds = new Set(body.entries.map((e: { crewId: string }) => e.crewId));
+    expect(crewIds.size).toBeGreaterThan(1);
+  });
 });
 
 describe("POST /api/schedule — 작성 권한 (T18)", () => {

@@ -50,6 +50,10 @@ export function ScheduleView() {
     removeFixed,
   } = useSchedule(month);
 
+  // 일반 크루는 본인만, master/매니저(canWrite)는 전체 크루를 본다(요구사항).
+  const myCrewId = user.crewId ?? user.id;
+  const visibleCrews = canWrite ? crews : crews.filter((c) => c.id === myCrewId);
+
   const saveFixedShift = useCallback(
     async (input: Parameters<typeof saveFixed>[0]) => {
       setFixedBusy(true);
@@ -175,7 +179,7 @@ export function ScheduleView() {
         <ScheduleCalendar
           month={month}
           entries={entries}
-          crews={crews}
+          crews={visibleCrews}
           loading={loading}
           onSelectDate={setSelected}
         />
@@ -183,7 +187,7 @@ export function ScheduleView() {
         <ScheduleGrid
           month={month}
           entries={entries}
-          crews={crews}
+          crews={visibleCrews}
           loading={loading}
           onSelectDate={setSelected}
         />
@@ -193,7 +197,7 @@ export function ScheduleView() {
           key={selected}
           date={selected}
           entries={dayEntries}
-          crews={crews}
+          crews={visibleCrews}
           fixedShifts={fixedShifts}
           canWrite={canWrite}
           onClose={() => setSelected(null)}
