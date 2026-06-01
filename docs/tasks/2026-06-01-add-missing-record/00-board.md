@@ -9,3 +9,5 @@
 | 3 구현 | developer | 미시작 |
 | 4 리뷰 | reviewer+codex | 미시작 |
 - 2026-06-01 T15 시작.
+
+# 🎉 T15 PASS (rework 0): 빈날짜 AddRecordForm(미래거부)→수정요청(대기)→마스터 수락 upsert 생성. Q5 역전400. store 무변경. 226 test, codex PASS. 커밋 0116211.
