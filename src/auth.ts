@@ -44,11 +44,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user?.id) token.sub = user.id;
-      // 멤버십 클레임 스탬프: 로그인/세션 갱신/아직 멤버십 미보유(온보딩 전) 시 재조회.
-      // 멤버십을 한번 얻으면 membershipId 캐시 → 이후 요청은 추가 쿼리 없음.
-      if (token.sub && (user || trigger === "update" || !token.membershipId)) {
+      // 멤버십 클레임을 매 요청 갱신 — 온보딩 완료/매니저 승격이 재로그인 없이 즉시 반영.
+      // (앱 규모상 요청당 1쿼리 허용. 캐시 시 매니저 토글이 멤버에게 지연 반영되는 문제 방지.)
+      if (token.sub) {
         const m = await prisma.membership.findFirst({
           where: { userId: token.sub, active: true },
           orderBy: { createdAt: "asc" },

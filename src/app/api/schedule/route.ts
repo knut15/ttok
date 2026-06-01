@@ -12,6 +12,7 @@ import {
   upsertSchedule,
 } from "@/lib/store";
 import { resolveScope } from "@/lib/session-scope";
+import { getStoreCrewIds } from "@/lib/identity-repo";
 import { isValidDateString } from "@/lib/date";
 import { parseHHMM } from "@/lib/time";
 import { SEED_MONTH } from "@/lib/constants";
@@ -21,12 +22,20 @@ const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
   const month = new URL(request.url).searchParams.get("month") ?? SEED_MONTH;
-  const scope = (await resolveScope(request));
+  const scope = await resolveScope(request);
   const canWrite = canWriteSchedule(scope);
 
-  // 권한 스코프: master/매니저(canWrite)는 전체, 일반 멤버는 본인 것만(요구사항).
-  const entries = getMonthScheduleView(month);
-  const fixedShifts = listFixedShifts();
+  let entries = getMonthScheduleView(month);
+  let fixedShifts = listFixedShifts();
+
+  // 매장 스코프(세션): 자기 매장 멤버 crewId 만 — 실매장은 데모 시드(목 데이터) 미노출.
+  if (scope.storeId) {
+    const ids = new Set(await getStoreCrewIds(scope.storeId));
+    entries = entries.filter((e) => ids.has(e.crewId));
+    fixedShifts = fixedShifts.filter((f) => ids.has(f.crewId));
+  }
+
+  // 권한 스코프: master/매니저(canWrite)는 매장 전체, 일반 멤버는 본인 것만.
   const payload: ScheduleResponse = {
     month,
     entries: canWrite ? entries : entries.filter((e) => e.crewId === scope.crewId),

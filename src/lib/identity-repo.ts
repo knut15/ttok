@@ -23,6 +23,18 @@ export function findActiveMembership(userId: string) {
   });
 }
 
+/**
+ * 매장 소속 전원의 운영 crewId 집합(operationalId ?? membership.id). master 포함.
+ * 인메모리 운영데이터(스케줄 등)를 매장 단위로 필터링하는 데 사용 — 실매장은 데모 시드 미포함.
+ */
+export async function getStoreCrewIds(storeId: string): Promise<string[]> {
+  const ms = await prisma.membership.findMany({
+    where: { storeId, active: true },
+    select: { operationalId: true, id: true },
+  });
+  return ms.map((m) => m.operationalId ?? m.id);
+}
+
 /** 매장의 멤버(role=crew) 목록 + 사용자(이름). 마스터 집계용. 가입순. */
 export function getStoreMembers(storeId: string) {
   return prisma.membership.findMany({

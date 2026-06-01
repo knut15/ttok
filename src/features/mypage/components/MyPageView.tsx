@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { InvitePanel } from "@/features/accounts/components/InvitePanel";
+import { MasterMemberList } from "@/features/accounts/components/MasterMemberList";
 import { ProfileSummary } from "./ProfileSummary";
 import { StoreCard } from "./StoreCard";
 import { DocumentBox } from "./DocumentBox";
@@ -44,7 +45,8 @@ export function MyPageView() {
               </Link>
             </section>
           )}
-          {/* 마스터만 초대코드 발급(멤버 합류는 온보딩에서). */}
+          {/* 마스터: 합류 멤버 목록(매니저 지정/해제) + 초대코드 발급. */}
+          {user.role === "master" && <MasterMemberList />}
           {user.role === "master" && <InvitePanel />}
           <section className="px-5 pb-8 pt-10">
             <button

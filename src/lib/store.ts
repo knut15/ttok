@@ -597,12 +597,16 @@ export function isManagerCrew(id: string): boolean {
 }
 
 /**
- * 스케쥴 작성권한 판정(서버 단일 진실원 — 헤더 신뢰 X).
- * master 면 무조건 true. crew 면 store 의 isManager 플래그로만 판정.
+ * 스케쥴 작성권한 판정. master 면 무조건 true.
+ * crew 는 세션 isManager(Prisma Membership 진실원) 우선, 없으면 인메모리 isManagerCrew(데모/레거시).
  */
-export function canWriteSchedule(scope: { crewId: string; role: Role }): boolean {
+export function canWriteSchedule(scope: {
+  crewId: string;
+  role: Role;
+  isManager?: boolean;
+}): boolean {
   if (scope.role === "master") return true;
-  return isManagerCrew(scope.crewId);
+  return scope.isManager === true || isManagerCrew(scope.crewId);
 }
 
 /**
