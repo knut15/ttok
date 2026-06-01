@@ -3,7 +3,7 @@
 // 대상이 없거나 master 역할이면 404(crew 만 토글 가능). client 는 route 경유로만 store 접근.
 import { NextResponse } from "next/server";
 import { setManager } from "@/lib/store";
-import { readScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import type { Crew } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -13,7 +13,7 @@ export async function PATCH(
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   // 마스터 게이트. 멤버/헤더 부재 → 403.
-  if (readScope(request).role !== "master") {
+  if ((await resolveScope(request)).role !== "master") {
     return NextResponse.json(
       { error: "매니저 지정 권한이 없습니다." },
       { status: 403, headers: NO_STORE },

@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { getRecord } from "@/lib/store";
 import { calcPaidMinutes, calcDailyPay } from "@/lib/pay";
 import { HOURLY_WAGE, DEFAULT_BREAK_RANGE } from "@/lib/constants";
-import { readScope, enforceReadScope } from "@/lib/scope";
+import { enforceReadScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import type { PayDetail } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -15,7 +16,7 @@ export async function GET(
   const { date } = await ctx.params;
   // T8-4: 본인 강제(멤버) / 마스터 target(?crewId).
   const scoped = enforceReadScope(
-    readScope(request),
+    (await resolveScope(request)),
     new URL(request.url).searchParams.get("crewId") ?? undefined,
   );
   const record = getRecord(date, scoped);

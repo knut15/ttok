@@ -4,7 +4,8 @@ import { addRequest, listRequests } from "@/lib/store";
 import { WORK_STATUSES } from "@/lib/constants";
 import { parseHHMM } from "@/lib/time";
 import { todayDate } from "@/lib/date";
-import { readScope, enforceReadScope } from "@/lib/scope";
+import { enforceReadScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import type { EditRequestChange, WorkStatus } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -12,7 +13,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function GET(request?: Request): Promise<Response> {
   // T8-4: 헤더 없으면(기존 테스트) listRequests() 전체 — 회귀 0. 헤더 있으면 scope 적용.
   if (!request) return NextResponse.json(listRequests(), { headers: NO_STORE });
-  const scope = readScope(request);
+  const scope = (await resolveScope(request));
   const scoped = enforceReadScope(
     scope,
     new URL(request.url).searchParams.get("crewId") ?? undefined,
@@ -117,7 +118,7 @@ export async function POST(request: Request): Promise<Response> {
     date: body.date,
     reason: body.reason.trim().slice(0, 100),
     after: body.after,
-    crewId: readScope(request).crewId,
+    crewId: (await resolveScope(request)).crewId,
   });
   return NextResponse.json(created, { status: 201, headers: NO_STORE });
 }

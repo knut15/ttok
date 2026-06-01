@@ -11,13 +11,13 @@ import {
   updateFixedShift,
   crewFixedWeekdays,
 } from "@/lib/store";
-import { readScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import { parseHHMM } from "@/lib/time";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-function gate(request: Request): Response | null {
-  if (!canWriteSchedule(readScope(request))) {
+async function gate(request: Request): Promise<Response | null> {
+  if (!canWriteSchedule(await resolveScope(request))) {
     return NextResponse.json(
       { error: "고정 근무 등록 권한이 없습니다." },
       { status: 403, headers: NO_STORE },
@@ -35,7 +35,7 @@ interface Body {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const denied = gate(request);
+  const denied = await gate(request);
   if (denied) return denied;
 
   const body = (await request.json().catch(() => null)) as Body | null;
@@ -85,7 +85,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 export async function PATCH(request: Request): Promise<Response> {
-  const denied = gate(request);
+  const denied = await gate(request);
   if (denied) return denied;
 
   const body = (await request.json().catch(() => null)) as Body | null;
@@ -140,7 +140,7 @@ export async function PATCH(request: Request): Promise<Response> {
 }
 
 export async function DELETE(request: Request): Promise<Response> {
-  const denied = gate(request);
+  const denied = await gate(request);
   if (denied) return denied;
 
   const body = (await request.json().catch(() => null)) as Body | null;

@@ -1,0 +1,97 @@
+// Crewmon 신원/테넌트 레이어 스키마 (ADR: 인증·계정 영속화).
+// 범위: User·Store·Membership·Invite (+ Auth.js 표준 테이블). 운영 데이터(출퇴근/스케줄/급여)는
+// 당분간 인메모리 store 유지 — operationalId 가 그 crewId 공간으로의 브리지.
+// dev=SQLite, prod=Postgres(provider 만 교체). 타입은 Postgres 호환만 사용.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ===== Auth.js(NextAuth v5) 표준 모델 =====
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime     @default(now())
+  accounts      Account[]
+  sessions      Session[] // adapter 계약상 유지(JWT 전략이라 실사용 안 함)
+  memberships   Membership[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ===== Crewmon 신원/테넌트 =====
+model Store {
+  id            String       @id @default(cuid())
+  name          String // 매장명
+  bizNumber     String       @unique // 사업자등록번호(숫자만)
+  bizVerified   Boolean      @default(false) // 국세청 진위확인 통과 여부(dev=false 허용)
+  operationalId String?      @unique // 인메모리 store 매장 키(데모 매장만), 신규 실매장=null
+  createdAt     DateTime     @default(now())
+  memberships   Membership[]
+  invites       Invite[]
+}
+
+model Membership {
+  id            String   @id @default(cuid()) // 신규 실멤버의 crewId 역할
+  userId        String
+  storeId       String
+  role          String // "master" | "crew"
+  isManager     Boolean  @default(false)
+  operationalId String? // 데모 매핑: crew-minjung/crew-2/... 또는 master-1
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storeId])
+}
+
+model Invite {
+  code       String   @id // 6자리(INVITE_CODE_ALPHABET)
+  storeId    String
+  createdBy  String // 발급 마스터 Membership/User id
+  status     String   @default("대기") // "대기" | "사용"
+  usedByUser String?
+  createdAt  DateTime @default(now())
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}

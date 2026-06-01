@@ -2,13 +2,13 @@
 // 마스터 전용: role≠master → 403. listPendingSubstitutes ⨝ listCrews(crewId→name).
 import { NextResponse } from "next/server";
 import { listPendingSubstitutes, listCrews } from "@/lib/store";
-import { readScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import type { MasterSubstituteRow, MasterSubstitutesResponse } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
-  if (readScope(request).role !== "master") {
+  if ((await resolveScope(request)).role !== "master") {
     return NextResponse.json(
       { error: "대타 승인 조회 권한이 없습니다." },
       { status: 403, headers: NO_STORE },

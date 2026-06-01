@@ -11,7 +11,7 @@ import {
   listFixedShifts,
   upsertSchedule,
 } from "@/lib/store";
-import { readScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import { isValidDateString } from "@/lib/date";
 import { parseHHMM } from "@/lib/time";
 import { SEED_MONTH } from "@/lib/constants";
@@ -21,7 +21,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
   const month = new URL(request.url).searchParams.get("month") ?? SEED_MONTH;
-  const scope = readScope(request);
+  const scope = (await resolveScope(request));
   const canWrite = canWriteSchedule(scope);
 
   // 권한 스코프: master/매니저(canWrite)는 전체, 일반 멤버는 본인 것만(요구사항).
@@ -45,7 +45,7 @@ interface PostBody {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const scope = readScope(request);
+  const scope = (await resolveScope(request));
   // 작성권한 게이트(서버 단일 진실원). master 또는 매니저 crew 만.
   if (!canWriteSchedule(scope)) {
     return NextResponse.json(

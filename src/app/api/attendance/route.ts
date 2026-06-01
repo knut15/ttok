@@ -8,7 +8,8 @@ import {
 import type { WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
 import { parseHHMM } from "@/lib/time";
-import { readScope, enforceReadScope } from "@/lib/scope";
+import { enforceReadScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -17,7 +18,7 @@ export async function GET(request: Request): Promise<Response> {
   const month = url.searchParams.get("month") ?? "";
   // T8-4: 헤더 scope → 멤버 본인 강제, 마스터는 ?crewId 허용.
   const scoped = enforceReadScope(
-    readScope(request),
+    await resolveScope(request),
     url.searchParams.get("crewId") ?? undefined,
   );
   const records = getMonthRecords(month, scoped);
@@ -29,7 +30,7 @@ export async function PATCH(request: Request): Promise<Response> {
   const date = url.searchParams.get("date");
   // T8-4: 변경 대상도 본인 강제(멤버)/마스터 target.
   const scoped = enforceReadScope(
-    readScope(request),
+    await resolveScope(request),
     url.searchParams.get("crewId") ?? undefined,
   );
   if (!date) {

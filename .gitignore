@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local sqlite db (Prisma dev) — 스키마/마이그레이션은 커밋, 데이터파일은 제외
+/prisma/*.db
+/prisma/*.db-journal
 
 # vercel
 .vercel

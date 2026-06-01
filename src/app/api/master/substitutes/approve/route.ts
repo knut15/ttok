@@ -2,12 +2,12 @@
 // 마스터 전용: role≠master → 403. 없는 id → 404.
 import { NextResponse } from "next/server";
 import { approveSubstitute } from "@/lib/store";
-import { readScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function POST(request: Request): Promise<Response> {
-  if (readScope(request).role !== "master") {
+  if ((await resolveScope(request)).role !== "master") {
     return NextResponse.json(
       { error: "대타 승인 권한이 없습니다." },
       { status: 403, headers: NO_STORE },

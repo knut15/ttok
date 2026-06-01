@@ -2,13 +2,13 @@
 // T8-7: 수락은 마스터 전용(AC-18/19). 멤버 → 403 + store 불변(approveRequest 미호출).
 import { NextResponse } from "next/server";
 import { approveRequest } from "@/lib/store";
-import { readScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function POST(request: Request): Promise<Response> {
   // 마스터 게이트(UI 숨김과 이중 방어). role≠master → 403, store 불변.
-  if (readScope(request).role !== "master") {
+  if ((await resolveScope(request)).role !== "master") {
     return NextResponse.json(
       { error: "수락 권한이 없습니다." },
       { status: 403, headers: NO_STORE },

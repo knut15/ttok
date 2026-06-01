@@ -3,7 +3,8 @@
 import { NextResponse } from "next/server";
 import { getRecord } from "@/lib/store";
 import { isValidDateString } from "@/lib/date";
-import { readScope, enforceReadScope } from "@/lib/scope";
+import { enforceReadScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -21,7 +22,7 @@ export async function GET(
   }
   // T8-4: 본인 강제(멤버) / 마스터 target(?crewId).
   const scoped = enforceReadScope(
-    readScope(request),
+    (await resolveScope(request)),
     new URL(request.url).searchParams.get("crewId") ?? undefined,
   );
   // AC-2(T12): 유효 날짜인데 기록 없음 → 200 + null(클라가 record 없음으로 처리).

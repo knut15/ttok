@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { getMonthRecords } from "@/lib/store";
 import { buildPayItems } from "@/lib/seed";
 import { buildPaySummary } from "@/lib/pay";
-import { readScope, enforceReadScope } from "@/lib/scope";
+import { enforceReadScope } from "@/lib/scope";
+import { resolveScope } from "@/lib/session-scope";
 import type { PayResponse } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -13,7 +14,7 @@ export async function GET(request: Request): Promise<Response> {
   const month = url.searchParams.get("month") ?? "";
   // T8-4: 본인 강제(멤버) / 마스터 target.
   const scoped = enforceReadScope(
-    readScope(request),
+    (await resolveScope(request)),
     url.searchParams.get("crewId") ?? undefined,
   );
   const records = getMonthRecords(month, scoped);

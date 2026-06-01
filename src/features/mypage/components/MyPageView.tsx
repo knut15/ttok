@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
-import { RoleSwitcher } from "@/features/accounts/components/RoleSwitcher";
 import { InvitePanel } from "@/features/accounts/components/InvitePanel";
 import { ProfileSummary } from "./ProfileSummary";
 import { StoreCard } from "./StoreCard";
 import { DocumentBox } from "./DocumentBox";
 import { ServiceMenu } from "./ServiceMenu";
 
-// /mypage 클라이언트 뷰: useProfile 로딩 가드 후 4섹션 조립 (AC-9).
-// T8-3: 역할전환(RoleSwitcher) + 마스터일 때 /master 진입점(링크만).
+// /mypage 클라이언트 뷰: useProfile 로딩 가드 후 섹션 조립.
+// 세션 모델: 마스터만 초대코드 발급, 로그아웃 제공(계정 전환=재로그인).
 export function MyPageView() {
   const { data, loading } = useProfile();
   const { user } = useCurrentUser();
@@ -44,9 +44,17 @@ export function MyPageView() {
               </Link>
             </section>
           )}
-          {/* T8-6: role 별 초대 섹션(마스터=생성 / 멤버=합류). */}
-          <InvitePanel />
-          <RoleSwitcher />
+          {/* 마스터만 초대코드 발급(멤버 합류는 온보딩에서). */}
+          {user.role === "master" && <InvitePanel />}
+          <section className="px-5 pb-8 pt-10">
+            <button
+              type="button"
+              onClick={() => signOut({ redirectTo: "/login" })}
+              className="w-full rounded-2xl border border-black/10 px-4 py-3 font-semibold text-muted"
+            >
+              로그아웃
+            </button>
+          </section>
         </>
       )}
     </div>

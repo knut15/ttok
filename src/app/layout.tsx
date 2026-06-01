@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { BottomNav } from "@/components/BottomNav";
-import { GlobalHeader } from "@/components/GlobalHeader";
-import { CurrentUserProvider } from "@/features/accounts/context/CurrentUserProvider";
+import { SessionProviderClient } from "@/features/auth/components/SessionProviderClient";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,20 +18,15 @@ export const metadata: Metadata = {
   description: "크루몬 — 출퇴근·급여 관리",
 };
 
-// RSC 셸: 모바일 세로 단일 컬럼(AC-19e) + 하단 고정 BottomNav(AC-19b).
+// RSC 루트 셸: html/body + 세션 컨텍스트. 헤더/하단탭은 (app) 그룹 레이아웃(가드 통과 후)에만.
+// /login·/onboarding 은 (app) 밖이라 앱 셸 없이 단독 렌더.
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="bg-background">
-        <CurrentUserProvider>
-          <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
-            <GlobalHeader />
-            <main className="flex-1 pb-24">{children}</main>
-            <BottomNav />
-          </div>
-        </CurrentUserProvider>
+        <SessionProviderClient>{children}</SessionProviderClient>
       </body>
     </html>
   );
