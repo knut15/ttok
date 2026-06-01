@@ -166,6 +166,15 @@ export interface JoinResult {
   ok: true;
 }
 
+/** GET /api/invites 응답 행(Prisma Invite, 마스터 관리 목록용). */
+export interface StoreInvite {
+  code: string;
+  status: InviteStatus | "회수";
+  expiresAt: string | null; // ISO
+  usedByUser: string | null;
+  createdAt: string; // ISO
+}
+
 // === FR-2 마스터 수정요청 컨펌 (append-only, leaf) ===
 
 /** 마스터 수정요청 목록 행 — EditRequest + 멤버명(서버 조인, 폴백 crewId). */

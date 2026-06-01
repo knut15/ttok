@@ -18,11 +18,11 @@ ADR 0001(인메모리 store)·ADR 0005(localStorage mock 역할전환, `x-role`/
 
 ## Decision
 
-### ① 영속성 = Prisma + SQLite, 범위는 "신원/테넌트 레이어"로 한정
+### ① 영속성 = Prisma + Postgres(dev·prod 동일), 범위는 "신원/테넌트 레이어"로 한정
 - DB(`prisma/schema.prisma`)에는 **User·Account·Session·VerificationToken(Auth.js 표준) + Store·Membership·Invite**만 둔다.
 - 운영 데이터(출퇴근/스케줄/급여/고정근무/알림)는 **여전히 인메모리 store**가 진실원(ADR 0001 유지). 후속 스텝에서 이관.
 - 브리지: `Membership.operationalId`(데모는 `crew-minjung`/`master-1` 등, 신규 실매장은 null)가 인메모리 store의 `crewId` 공간으로 매핑.
-- dev=SQLite, prod=Postgres(스키마 `provider`만 교체). 타입은 Postgres 호환만 사용. Prisma 6 핀(7은 datasource `url` 폐지·driver adapter 강제로 마찰 → 6 채택).
+- **DB = Postgres 통일(approach A)**: 로컬 dev = Docker Postgres(`docker-compose.yml`, localhost:5433), prod = Vercel Storage(Neon 기반) Postgres. datasource 는 `url`(풀링)/`directUrl`(직결) 분리 → Vercel 의 `POSTGRES_PRISMA_URL`/`POSTGRES_URL_NON_POOLING` 매핑. Vercel 빌드에 `prisma migrate deploy` 포함. (provider별 마이그레이션 일관성 위해 SQLite 폐기, Postgres 단일 세트.) Prisma 6 핀(7은 datasource `url` 폐지·driver adapter 강제로 마찰 → 6 채택).
 
 ### ② 인증 = Auth.js(NextAuth v5) JWT 세션 + Google + loc/dev 우회 로그인
 - `src/auth.ts`: `PrismaAdapter` + `session.strategy="jwt"`(Credentials 필수). Google provider는 항상 등록(자격증명 .env 주입 시 즉시 동작).
@@ -34,6 +34,13 @@ ADR 0001(인메모리 store)·ADR 0005(localStorage mock 역할전환, `x-role`/
 - 라우트 핸들러 17개를 `readScope` → `await resolveScope`로 기계적 치환. `enforceReadScope`·403 마스터 게이트·`src/lib/scope.ts`는 무수정.
 - **테스트는 세션 쿠키가 없으므로 항상 폴백 → 기존 동작·단언과 바이트 동일**(회귀 0).
 - `auth`는 `resolveScope`에서 **동적 import** — next-auth 정적 import 체인이 라우트로 번져 vitest ESM 해석을 깨는 것을 방지(실패 시 catch→폴백).
+
+### ③-b 마스터 집계 = Prisma 멤버십 기반(합류 멤버 노출)
+- `/api/master/crews` 는 세션(매장)일 때 `getStoreCrewSummaries(storeId)`(`src/lib/master-summary.ts`)로 **Prisma 멤버십 + 인메모리 운영집계(`getCrewAggregate`)** 를 결합 → 초대로 합류한 실제 멤버가 집계에 표시된다(기존엔 인메모리 `crews` 만 읽어 누락되던 버그). 세션 없으면 레거시 `getCrewSummaries`(테스트).
+- 매니저 토글(`/api/master/crews/[id]/manager`)도 세션 경로는 Prisma `Membership.isManager` 갱신(+데모 매핑이면 인메모리 동기화로 스케줄 작성권한 일관). crewKey = operationalId ?? membership.id.
+
+### ③-c 초대코드 만료/회수
+- `Invite.expiresAt`(발급 시 now + `INVITE_TTL_DAYS`=7), status 에 `"회수"` 추가. join 시 `revoked`/`expired` 검사(→ 410). `GET /api/invites`(발급 이력), `DELETE /api/invites`{code}(대기 코드만 회수). InvitePanel 에 이력·상태·만료·회수 UI.
 
 ### ④ 온보딩 + 가드
 - `(app)` 라우트 그룹 레이아웃에서 서버 가드 `requireMembership()`: 미로그인→`/login`, 멤버십 없음→`/onboarding`.

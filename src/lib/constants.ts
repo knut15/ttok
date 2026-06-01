@@ -69,3 +69,5 @@ export const HEADER_ROLE = "x-role";
 export const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 /** 초대코드 길이. */
 export const INVITE_CODE_LENGTH = 6;
+/** 초대코드 기본 만료 기간(일). 발급 시 now + 이 일수. */
+export const INVITE_TTL_DAYS = 7;

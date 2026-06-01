@@ -496,31 +496,38 @@ export function isMaster(id: string): boolean {
 }
 
 /**
- * 마스터 집계: 멤버(role=crew)별 month 근무/연장/휴가 요약. 마스터 제외.
- * 빈 멤버/없는 월 → 0(NaN 방어, E-5/E-6). O(C·d). (AC-10/AC-11)
+ * 단일 멤버의 month 운영 집계(근무/연장/휴가). 인메모리 records 기반. 빈 멤버 → 0(NaN 방어).
+ * Prisma 멤버십 기반 마스터 집계(master-summary)에서 crewId(operationalId)별로 재사용.
+ */
+export function getCrewAggregate(
+  crewId: string,
+  month: string,
+): { workMinutes: number; overtimeMinutes: number; vacationDays: number } {
+  const map = getStore().recordsByCrew.get(crewId);
+  const recs = map
+    ? [...map.values()].filter((r) => r.date.startsWith(month))
+    : [];
+  return {
+    workMinutes: recs.reduce((s, r) => s + r.workMinutes, 0),
+    overtimeMinutes: recs.reduce((s, r) => s + r.overtimeMinutes, 0),
+    vacationDays: recs.filter((r) => r.status === "휴가").length,
+  };
+}
+
+/**
+ * 마스터 집계(레거시·인메모리 경로): store.crews(role=crew)별 요약. 세션(매장) 없을 때 폴백.
+ * 세션 경로는 master-summary.getStoreCrewSummaries(Prisma 멤버십) 사용. (AC-10/AC-11)
  */
 export function getCrewSummaries(month: string): CrewSummary[] {
-  const store = getStore();
-  return store.crews
-    .filter((c) => c.role === "crew")
-    .map((c) => {
-      const map = store.recordsByCrew.get(c.id);
-      const recs = map
-        ? [...map.values()].filter((r) => r.date.startsWith(month))
-        : [];
-      const workMinutes = recs.reduce((s, r) => s + r.workMinutes, 0);
-      const overtimeMinutes = recs.reduce((s, r) => s + r.overtimeMinutes, 0);
-      const vacationDays = recs.filter((r) => r.status === "휴가").length;
-      return {
-        crewId: c.id,
-        name: c.name,
-        avatarInitial: c.avatarInitial,
-        workMinutes,
-        overtimeMinutes,
-        vacationDays,
-        isManager: c.isManager === true,
-      };
-    });
+  return getStore()
+    .crews.filter((c) => c.role === "crew")
+    .map((c) => ({
+      crewId: c.id,
+      name: c.name,
+      avatarInitial: c.avatarInitial,
+      isManager: c.isManager === true,
+      ...getCrewAggregate(c.id, month),
+    }));
 }
 
 /** 고유 초대코드 생성(혼동문자 제외 알파벳). 충돌 시 최대 5회 재시도. */

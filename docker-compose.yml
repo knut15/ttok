@@ -1,0 +1,17 @@
+# 로컬 개발용 Postgres (approach A: provider=postgresql 통일).
+# 사용: docker compose up -d  → localhost:5433
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ttok-pg
+    environment:
+      POSTGRES_USER: ttok
+      POSTGRES_PASSWORD: ttok
+      POSTGRES_DB: ttok
+    ports:
+      - "5433:5432"
+    volumes:
+      - ttok-pgdata:/var/lib/postgresql/data
+
+volumes:
+  ttok-pgdata:

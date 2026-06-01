@@ -25,6 +25,18 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
+  if (result === "revoked") {
+    return NextResponse.json(
+      { error: "회수된 초대 코드입니다." },
+      { status: 410, headers: NO_STORE },
+    );
+  }
+  if (result === "expired") {
+    return NextResponse.json(
+      { error: "만료된 초대 코드입니다." },
+      { status: 410, headers: NO_STORE },
+    );
+  }
   if (result === "used") {
     return NextResponse.json(
       { error: "이미 사용된 초대 코드입니다." },

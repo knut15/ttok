@@ -1,9 +1,8 @@
 "use client";
 
-// 초대 플로우 훅(T8-6). 마스터=생성 / 멤버=합류. authHeaders 로 현재 사용자 전달.
-// client 는 store 직접 import 금지 → route 경유(/api/invites, /api/invites/join).
-import { useState } from "react";
-import type { Invite, JoinResult } from "@/types";
+// 초대 관리 훅(마스터). 발급/목록/회수. client 는 route 경유(/api/invites).
+import { useCallback, useEffect, useState } from "react";
+import type { Invite, StoreInvite } from "@/types";
 import {
   authHeaders,
   useCurrentUser,
@@ -12,24 +11,45 @@ import {
 const NO_STORE: RequestInit = { cache: "no-store" };
 
 export interface UseInvitesResult {
-  /** 마스터: 초대 생성 → 발급된 코드(state). */
+  /** 직전 발급 코드(강조 표시용). */
   createdCode: string | null;
-  /** 멤버: 합류 결과(성공 메시지/에러). */
-  joinMessage: string | null;
-  joinOk: boolean;
+  /** 매장 발급 이력(최신순). */
+  invites: StoreInvite[];
   loading: boolean;
   createInvite: () => Promise<void>;
-  joinByCode: (code: string) => Promise<void>;
+  revoke: (code: string) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 export function useInvites(): UseInvitesResult {
   const { user } = useCurrentUser();
   const [createdCode, setCreatedCode] = useState<string | null>(null);
-  const [joinMessage, setJoinMessage] = useState<string | null>(null);
-  const [joinOk, setJoinOk] = useState(false);
+  const [invites, setInvites] = useState<StoreInvite[]>([]);
   const [loading, setLoading] = useState(false);
 
-  async function createInvite() {
+  const refresh = useCallback(async () => {
+    const res = await fetch("/api/invites", { ...NO_STORE, headers: authHeaders(user) });
+    if (res.ok) {
+      const json = (await res.json()) as { invites: StoreInvite[] };
+      setInvites(json.invites ?? []);
+    }
+  }, [user]);
+
+  // 마운트/사용자 변경 시 목록 로드(setState 는 .then 콜백에서 — 외부시스템 동기화).
+  useEffect(() => {
+    let active = true;
+    fetch("/api/invites", { ...NO_STORE, headers: authHeaders(user) })
+      .then((res) => (res.ok ? (res.json() as Promise<{ invites: StoreInvite[] }>) : null))
+      .then((json) => {
+        if (active && json) setInvites(json.invites ?? []);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id, user.role]);
+
+  const createInvite = useCallback(async () => {
     setLoading(true);
     setCreatedCode(null);
     try {
@@ -41,45 +61,28 @@ export function useInvites(): UseInvitesResult {
       if (res.ok) {
         const invite = (await res.json()) as Invite;
         setCreatedCode(invite.code);
-      } else {
-        setCreatedCode(null);
+        await refresh();
       }
     } finally {
       setLoading(false);
     }
-  }
+  }, [user, refresh]);
 
-  async function joinByCode(code: string) {
-    setLoading(true);
-    setJoinMessage(null);
-    setJoinOk(false);
-    try {
-      const res = await fetch("/api/invites/join", {
+  const revoke = useCallback(
+    async (code: string) => {
+      const res = await fetch("/api/invites", {
         ...NO_STORE,
-        method: "POST",
+        method: "DELETE",
         headers: { ...authHeaders(user), "Content-Type": "application/json" },
-        body: JSON.stringify({ code, crewId: user.crewId ?? user.id }),
+        body: JSON.stringify({ code }),
       });
       if (res.ok) {
-        const result = (await res.json()) as JoinResult;
-        setJoinOk(true);
-        setJoinMessage(`합류 완료: ${result.crew.name} (활성화됨)`);
-      } else if (res.status === 409) {
-        setJoinMessage("이미 사용된 초대 코드입니다.");
-      } else {
-        setJoinMessage("유효하지 않은 초대 코드입니다.");
+        if (createdCode === code) setCreatedCode(null);
+        await refresh();
       }
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    [user, refresh, createdCode],
+  );
 
-  return {
-    createdCode,
-    joinMessage,
-    joinOk,
-    loading,
-    createInvite,
-    joinByCode,
-  };
+  return { createdCode, invites, loading, createInvite, revoke, refresh };
 }

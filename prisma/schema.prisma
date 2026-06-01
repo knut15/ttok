@@ -4,8 +4,9 @@
 // dev=SQLite, prod=Postgres(provider 만 교체). 타입은 Postgres 호환만 사용.
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // 앱(서버리스 풀링 URL — Vercel: POSTGRES_PRISMA_URL)
+  directUrl = env("DIRECT_URL") // 마이그레이션 직결(Vercel: POSTGRES_URL_NON_POOLING)
 }
 
 generator client {
@@ -87,11 +88,12 @@ model Membership {
 }
 
 model Invite {
-  code       String   @id // 6자리(INVITE_CODE_ALPHABET)
+  code       String    @id // 6자리(INVITE_CODE_ALPHABET)
   storeId    String
   createdBy  String // 발급 마스터 Membership/User id
-  status     String   @default("대기") // "대기" | "사용"
+  status     String    @default("대기") // "대기" | "사용" | "회수"
   usedByUser String?
-  createdAt  DateTime @default(now())
-  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime? // 만료 시각(null=무기한). 기본 발급 시 +INVITE_TTL_DAYS.
+  createdAt  DateTime  @default(now())
+  store      Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }

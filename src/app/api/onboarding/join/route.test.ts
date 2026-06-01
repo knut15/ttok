@@ -47,6 +47,18 @@ describe("POST /api/onboarding/join", () => {
     expect(res.status).toBe(409);
   });
 
+  it("회수된 코드 → 410", async () => {
+    joinByInviteCode.mockResolvedValue("revoked");
+    const res = await POST(post({ code: "REVOKD" }));
+    expect(res.status).toBe(410);
+  });
+
+  it("만료된 코드 → 410", async () => {
+    joinByInviteCode.mockResolvedValue("expired");
+    const res = await POST(post({ code: "EXPIRD" }));
+    expect(res.status).toBe(410);
+  });
+
   it("이미 멤버 → 409", async () => {
     joinByInviteCode.mockResolvedValue("already-member");
     const res = await POST(post({ code: "MEMBER" }));
