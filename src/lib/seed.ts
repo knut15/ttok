@@ -7,6 +7,7 @@ import type {
   Crew,
   Invite,
   PayItem,
+  ScheduleEntry,
   StoreInfo,
   UserProfile,
   WorkStatus,
@@ -118,11 +119,14 @@ export function buildSeedRecords(): AttendanceRecord[] {
 
 // === T8 멀티크루 시드 (append-only). 김민정 외 크루는 불변식 강제 없음(AC-3: 0건 이상 + 본인 격리). ===
 
-/** mock 계정 시드: 마스터 1 + 크루 3(김민정=DEFAULT_CREW_ID 포함). architect §2.1. */
+/**
+ * mock 계정 시드: 마스터 1 + 크루 3(김민정=DEFAULT_CREW_ID 포함). architect §2.1.
+ * T16: 김민정을 매니저로 지정(isManager) — 스케쥴 작성권한 시연용 시드.
+ */
 export function buildSeedCrews(): Crew[] {
   return [
     { id: MASTER_ID, name: "박점주", role: "master", avatarInitial: "박", joinDate: "2026-03-01", active: true },
-    { id: DEFAULT_CREW_ID, name: "김민정", role: "crew", avatarInitial: "김", joinDate: SEED_JOIN_DATE, active: true },
+    { id: DEFAULT_CREW_ID, name: "김민정", role: "crew", avatarInitial: "김", joinDate: SEED_JOIN_DATE, active: true, isManager: true },
     { id: "crew-2", name: "이서연", role: "crew", avatarInitial: "이", joinDate: "2026-04-15", active: true },
     { id: "crew-3", name: "박지훈", role: "crew", avatarInitial: "박", joinDate: "2026-05-02", active: true },
   ];
@@ -182,6 +186,49 @@ export function buildSeedRecordsByCrew(): Map<string, Map<string, AttendanceReco
 /** 초대 시드(mock). 초기 빈 배열 — 마스터가 런타임에 생성. */
 export function buildSeedInvites(): Invite[] {
   return [];
+}
+
+// === T16 스케쥴 시드 (append-only). SEED_MONTH 일부 날짜에 샘플 배정(작성자=마스터). ===
+
+interface SeedSchedule {
+  day: string; // "DD"
+  crewId: string;
+  startTime: string;
+  endTime: string;
+  off?: boolean;
+}
+
+const SEED_SCHEDULE_ROWS: SeedSchedule[] = [
+  { day: "07", crewId: DEFAULT_CREW_ID, startTime: "08:00", endTime: "15:00" },
+  { day: "07", crewId: "crew-2", startTime: "09:00", endTime: "18:00" },
+  { day: "08", crewId: DEFAULT_CREW_ID, startTime: "08:00", endTime: "15:00" },
+  { day: "08", crewId: "crew-3", startTime: "00:00", endTime: "00:00", off: true },
+  { day: "09", crewId: "crew-2", startTime: "09:00", endTime: "18:00" },
+  { day: "09", crewId: "crew-3", startTime: "13:00", endTime: "22:00" },
+];
+
+/**
+ * 스케쥴 시드 → Map<date, ScheduleEntry[]>. id 는 결정적(`sch-seed-N`) — 런타임 생성(`sch-N`)과 분리.
+ * 작성자는 마스터(MASTER_ID). off 면 시간은 무시(휴무 표기).
+ */
+export function buildSeedSchedules(): Map<string, ScheduleEntry[]> {
+  const byDate = new Map<string, ScheduleEntry[]>();
+  SEED_SCHEDULE_ROWS.forEach((row, i) => {
+    const date = `${SEED_MONTH}-${row.day}`;
+    const entry: ScheduleEntry = {
+      id: `sch-seed-${i + 1}`,
+      date,
+      crewId: row.crewId,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      createdBy: MASTER_ID,
+      ...(row.off ? { off: true } : {}),
+    };
+    const list = byDate.get(date) ?? [];
+    list.push(entry);
+    byDate.set(date, list);
+  });
+  return byDate;
 }
 
 /** 분 → "N시간 M분" 한글 라벨. */

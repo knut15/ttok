@@ -2,7 +2,7 @@
 
 // 마스터 집계 훅(T8-5). GET /api/master/crews?month= (authHeaders + month state).
 // client 는 store 직접 import 금지 → route 경유. 전환/월변경 시 재fetch(active cleanup).
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CrewSummary, MasterSummaryResponse } from "@/types";
 import {
   authHeaders,
@@ -16,6 +16,9 @@ export function useMasterSummary(month: string) {
   const crewId = user.crewId ?? user.id;
   const [crews, setCrews] = useState<CrewSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  // reload 트리거(매니저 토글 등 mutation 후 재집계).
+  const [tick, setTick] = useState(0);
+  const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let active = true;
@@ -33,7 +36,7 @@ export function useMasterSummary(month: string) {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, crewId, user.role]);
+  }, [month, crewId, user.role, tick]);
 
-  return { crews, loading };
+  return { crews, loading, reload };
 }

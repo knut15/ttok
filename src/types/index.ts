@@ -119,6 +119,7 @@ export interface Crew {
   avatarInitial: string;
   joinDate: string; // "YYYY-MM-DD"
   active: boolean; // 초대 합류 여부(false=미합류)
+  isManager?: boolean; // T16: 마스터가 지정한 매니저(스케쥴 작성권한). master 는 항상 권한 보유.
 }
 
 /** 클라이언트가 보유하는 현재 사용자(mock 신뢰 모델). crewId는 crew일 때 본인 식별. */
@@ -149,6 +150,7 @@ export interface CrewSummary {
   workMinutes: number;
   overtimeMinutes: number;
   vacationDays: number;
+  isManager: boolean; // T16: 매니저 지정 여부(마스터 토글용)
 }
 
 /** GET /api/master/crews 응답. */
@@ -173,4 +175,35 @@ export interface MasterRequestRow extends EditRequest {
 /** GET /api/master/requests 응답. listRequests 최신순 계승. */
 export interface MasterRequestsResponse {
   requests: MasterRequestRow[];
+}
+
+// === T16 스케쥴표 (append-only, leaf 단일출처) ===
+
+/**
+ * 근무 스케쥴 1건 — "근무자별 시간" 단위(근무자 1명의 하루 예정근무).
+ * 한 날짜에 crewId 당 최대 1건(upsert 시 (date, crewId) 로 동일성 판정).
+ * off=true 면 휴무(시간 무시). 실제 출퇴근(AttendanceRecord)과 별개의 "예정".
+ */
+export interface ScheduleEntry {
+  id: string;
+  date: string; // "YYYY-MM-DD"
+  crewId: string; // 배정된 근무자
+  startTime: string; // "HH:MM" (off 면 의미 없음)
+  endTime: string; // "HH:MM"
+  off?: boolean; // 휴무
+  createdBy: string; // 작성자(master/manager) id
+}
+
+/** 달력 셀 아바타용 경량 배정 정보(crew 메타 조인). */
+export interface ScheduleAssignee {
+  crewId: string;
+  name: string;
+  avatarInitial: string;
+  off: boolean;
+}
+
+/** GET /api/schedule 응답(월간). */
+export interface ScheduleResponse {
+  month: string; // "YYYY-MM"
+  entries: ScheduleEntry[];
 }

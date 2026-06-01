@@ -12,6 +12,8 @@ import type {
   JoinResult,
   ProfilePatch,
   ProfileResponse,
+  Role,
+  ScheduleEntry,
   StoreInfo,
   UserProfile,
   WorkStatus,
@@ -21,6 +23,7 @@ import {
   buildSeedCrews,
   buildSeedInvites,
   buildSeedProfile,
+  buildSeedSchedules,
   SEED_STORE_INFO,
 } from "./seed";
 import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes } from "./time";
@@ -76,6 +79,7 @@ interface StoreShape {
   requests: EditRequest[]; // crewId 태그(append)
   invites: Invite[];
   profilesByCrew: Map<string, UserProfile>; // crewId → profile
+  schedulesByDate: Map<string, ScheduleEntry[]>; // T16: date → 배정 목록
   storeInfo: StoreInfo; // 단일 매장 유지
   seq: number;
 }
@@ -95,6 +99,7 @@ function createStore(): StoreShape {
     requests: [],
     invites: buildSeedInvites(),
     profilesByCrew,
+    schedulesByDate: buildSeedSchedules(),
     storeInfo: SEED_STORE_INFO,
     seq: 1,
   };
@@ -121,6 +126,7 @@ function getStore(): StoreShape {
     !s ||
     !(s.recordsByCrew instanceof Map) ||
     !(s.profilesByCrew instanceof Map) ||
+    !(s.schedulesByDate instanceof Map) || // T16: 스키마 변경 가드(HMR 잔존 옛 store 재생성)
     !Array.isArray(s.crews)
   ) {
     globalThis.__crewmonStore = createStore();
@@ -500,6 +506,7 @@ export function getCrewSummaries(month: string): CrewSummary[] {
         workMinutes,
         overtimeMinutes,
         vacationDays,
+        isManager: c.isManager === true,
       };
     });
 }
@@ -561,4 +568,104 @@ export function joinByInvite(
       active: true,
     };
   return { crew: resolved, ok: true };
+}
+
+// === T16 스케쥴표 store 함수 + 작성권한 (append-only, architect 미러: isMaster 패턴) ===
+
+/** id 가 매니저 권한 crew 인가(role=crew + isManager). 마스터는 별도(isMaster). */
+export function isManagerCrew(id: string): boolean {
+  return getStore().crews.some((c) => c.id === id && c.role === "crew" && c.isManager === true);
+}
+
+/**
+ * 스케쥴 작성권한 판정(서버 단일 진실원 — 헤더 신뢰 X).
+ * master 면 무조건 true. crew 면 store 의 isManager 플래그로만 판정.
+ */
+export function canWriteSchedule(scope: { crewId: string; role: Role }): boolean {
+  if (scope.role === "master") return true;
+  return isManagerCrew(scope.crewId);
+}
+
+/**
+ * 매니저 지정/해제(마스터 전용 — 게이트는 route 책임). crew 역할만 토글 가능.
+ * 없는 id 또는 master 대상 → null(변경 안 함). 성공 시 갱신된 Crew 반환.
+ */
+export function setManager(crewId: string, on: boolean): Crew | null {
+  const crew = getStore().crews.find((c) => c.id === crewId);
+  if (!crew || crew.role !== "crew") return null;
+  crew.isManager = on;
+  return crew;
+}
+
+/** 해당 월("YYYY-MM") 스케쥴 배열. date 오름차순, 동일 날짜는 crewId 순. 빈 달 → []. */
+export function getMonthSchedules(month: string): ScheduleEntry[] {
+  const store = getStore();
+  const out: ScheduleEntry[] = [];
+  for (const [date, list] of store.schedulesByDate) {
+    if (date.startsWith(month)) out.push(...list);
+  }
+  return out.sort(
+    (a, b) => a.date.localeCompare(b.date) || a.crewId.localeCompare(b.crewId),
+  );
+}
+
+/** 해당 날짜("YYYY-MM-DD") 스케쥴 배열(crewId 순). 없으면 []. */
+export function getDaySchedules(date: string): ScheduleEntry[] {
+  const list = getStore().schedulesByDate.get(date);
+  if (!list) return [];
+  return [...list].sort((a, b) => a.crewId.localeCompare(b.crewId));
+}
+
+export interface NewSchedule {
+  date: string;
+  crewId: string;
+  startTime: string;
+  endTime: string;
+  off?: boolean;
+  createdBy: string;
+}
+
+/**
+ * 스케쥴 upsert — "근무자별 시간" 모델상 (date, crewId) 당 최대 1건.
+ * 동일 (date, crewId) 존재 → 시간/off/작성자 갱신(id 보존). 없으면 신규 생성(`sch-${seq}`).
+ */
+export function upsertSchedule(input: NewSchedule): ScheduleEntry {
+  const store = getStore();
+  const list = store.schedulesByDate.get(input.date) ?? [];
+  const existing = list.find((e) => e.crewId === input.crewId);
+
+  if (existing) {
+    existing.startTime = input.startTime;
+    existing.endTime = input.endTime;
+    existing.createdBy = input.createdBy;
+    if (input.off) existing.off = true;
+    else delete existing.off;
+    return existing;
+  }
+
+  const created: ScheduleEntry = {
+    id: `sch-${store.seq++}`,
+    date: input.date,
+    crewId: input.crewId,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    createdBy: input.createdBy,
+    ...(input.off ? { off: true } : {}),
+  };
+  list.push(created);
+  store.schedulesByDate.set(input.date, list);
+  return created;
+}
+
+/** 스케쥴 삭제(id 기준 전 날짜 탐색). 제거 성공 → true, 없으면 false. */
+export function removeSchedule(id: string): boolean {
+  const store = getStore();
+  for (const [date, list] of store.schedulesByDate) {
+    const idx = list.findIndex((e) => e.id === id);
+    if (idx === -1) continue;
+    list.splice(idx, 1);
+    if (list.length === 0) store.schedulesByDate.delete(date);
+    return true;
+  }
+  return false;
 }

@@ -14,7 +14,13 @@ function minutesLabel(min: number): string {
   return `${m}분`;
 }
 
-export function CrewSummaryList({ crews }: { crews: CrewSummary[] }) {
+interface CrewSummaryListProps {
+  crews: CrewSummary[];
+  /** 매니저 지정/해제(마스터 전용). 미지정 시 토글 버튼 숨김. */
+  onToggleManager?: (crewId: string, on: boolean) => void;
+}
+
+export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps) {
   if (crews.length === 0) {
     return (
       <p className="px-5 pt-10 text-center text-sm text-muted">
@@ -26,26 +32,58 @@ export function CrewSummaryList({ crews }: { crews: CrewSummary[] }) {
   return (
     <ul className="space-y-2 px-5">
       {crews.map((c) => (
-        <li key={c.crewId}>
+        // 토글 버튼은 Link 바깥 형제로 배치(중첩 인터랙티브 방지).
+        <li
+          key={c.crewId}
+          className="flex items-center gap-2 rounded-2xl border border-black/5 bg-surface pr-3"
+        >
           <Link
             href={`/master/${c.crewId}`}
             aria-label={`${c.name} 근무 상세 보기`}
-            className="flex items-center gap-3 rounded-2xl border border-black/5 bg-surface px-4 py-3 transition active:scale-[0.99]"
+            className="flex flex-1 items-center gap-3 px-4 py-3 transition active:scale-[0.99]"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.06] font-bold">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.06] font-bold">
               {c.avatarInitial}
+              {c.isManager ? (
+                <span
+                  aria-hidden
+                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white"
+                  title="매니저"
+                >
+                  M
+                </span>
+              ) : null}
             </span>
             <div className="flex-1">
-              <p className="font-semibold">{c.name}</p>
+              <p className="font-semibold">
+                {c.name}
+                {c.isManager ? (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    매니저
+                  </span>
+                ) : null}
+              </p>
               <p className="text-sm text-muted">
                 근무 {minutesLabel(c.workMinutes)} · 연장{" "}
                 {minutesLabel(c.overtimeMinutes)} · 휴일 {c.vacationDays}일
               </p>
             </div>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
           </Link>
+          {onToggleManager ? (
+            <button
+              type="button"
+              onClick={() => onToggleManager(c.crewId, !c.isManager)}
+              aria-pressed={c.isManager}
+              aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                c.isManager
+                  ? "bg-amber-500 text-white"
+                  : "bg-black/[0.06] text-muted"
+              }`}
+            >
+              {c.isManager ? "매니저 해제" : "매니저 지정"}
+            </button>
+          ) : null}
         </li>
       ))}
     </ul>

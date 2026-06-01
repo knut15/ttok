@@ -3,11 +3,14 @@
 // /master 클라이언트 가드 + 집계뷰 조립(T8-5). architect §4.
 // role 은 클라 컨텍스트(localStorage) 진실원 → SSR 가드 불가, client 가드.
 // 하이드레이션 안전: mount 전(localStorage 복원 전)에는 섣부른 리다이렉트 금지(로딩 가드).
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
-import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
+import {
+  authHeaders,
+  useCurrentUser,
+} from "@/features/accounts/hooks/useCurrentUser";
 import { useMasterSummary } from "@/features/accounts/hooks/useMasterSummary";
 import { useMasterRequests } from "@/features/accounts/hooks/useMasterRequests";
 import { CrewSummaryList } from "./CrewSummaryList";
@@ -28,7 +31,21 @@ export function MasterView() {
   const router = useRouter();
   const { user } = useCurrentUser();
   const [month, setMonth] = useState(SEED_MONTH);
-  const { crews, loading } = useMasterSummary(month);
+  const { crews, loading, reload } = useMasterSummary(month);
+
+  // 매니저 지정/해제(마스터 전용). PATCH 후 집계 재로드로 토글 상태 반영.
+  const toggleManager = useCallback(
+    async (crewId: string, on: boolean) => {
+      const res = await fetch(`/api/master/crews/${crewId}/manager`, {
+        method: "PATCH",
+        cache: "no-store",
+        headers: { ...authHeaders(user), "Content-Type": "application/json" },
+        body: JSON.stringify({ on }),
+      });
+      if (res.ok) reload();
+    },
+    [user, reload],
+  );
   const {
     requests,
     loading: requestsLoading,
@@ -82,7 +99,7 @@ export function MasterView() {
           집계 불러오는 중…
         </p>
       ) : (
-        <CrewSummaryList crews={crews} />
+        <CrewSummaryList crews={crews} onToggleManager={toggleManager} />
       )}
 
       {/* FR-2: 마스터 수정요청 컨펌 섹션(가드 하위). 전체 크루 요청 조회·수락. */}
