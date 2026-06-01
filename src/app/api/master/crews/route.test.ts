@@ -14,13 +14,13 @@ const MASTER = { "x-role": "master", "x-crew-id": MASTER_ID } as const;
 describe("GET /api/master/crews — 마스터 집계 (T8-5 / AC-10 / AC-11 / AC-12)", () => {
   beforeEach(() => __resetStore());
 
-  // AC-10/AC-11: 마스터는 크루 3명의 월 집계를 받는다
-  it("마스터는 200 과 MasterSummaryResponse(크루 3명 집계) 를 반환한다", async () => {
+  // AC-10/AC-11: 마스터는 크루 4명의 월 집계를 받는다(신규입사자 포함)
+  it("마스터는 200 과 MasterSummaryResponse(크루 4명 집계) 를 반환한다", async () => {
     const res = await GET(get(SEED_MONTH, MASTER));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.month).toBe(SEED_MONTH);
-    expect(body.crews).toHaveLength(3);
+    expect(body.crews).toHaveLength(4);
     const minjung = body.crews.find(
       (c: { crewId: string }) => c.crewId === DEFAULT_CREW_ID,
     );

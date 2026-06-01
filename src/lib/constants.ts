@@ -51,8 +51,15 @@ export const DEFAULT_CREW_ID = "crew-minjung";
 /** 마스터(점주) 계정 id. 본인 근무기록 없음(E-4). */
 export const MASTER_ID = "master-1";
 
-/** 시드 크루 id 목록(마스터 제외). 김민정 + 크루2/3. */
-export const CREW_IDS: readonly string[] = ["crew-minjung", "crew-2", "crew-3"] as const;
+/** 시드 크루 id 목록(마스터 제외). 김민정 + 크루2/3 + 신규입사자(crew-4). */
+export const CREW_IDS: readonly string[] = ["crew-minjung", "crew-2", "crew-3", "crew-4"] as const;
+
+// === 운영시간(매장 영업시간) — 근무시간(개별 시프트)과 구분. 매니저/마스터가 이 범위 내에서 개별 등록. ===
+/** 매장 운영시간. 평일 08:00~19:00 / 주말 09:00~17:00. */
+export const OPERATING_HOURS = {
+  weekday: { open: "08:00", close: "19:00" },
+  weekend: { open: "09:00", close: "17:00" },
+} as const;
 
 /** 현재 사용자 전달 헤더 키(Q-D=헤더 방식, URL 불변 → 회귀 0). */
 export const HEADER_CREW_ID = "x-crew-id";

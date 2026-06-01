@@ -8,13 +8,13 @@ import {
 import { DEFAULT_CREW_ID, MASTER_ID } from "./constants";
 
 // T8-1 (AC-1 / AC-2 / AC-3): 멀티크루 시드 — 기존 김민정 시드 불변 + 신규 크루.
-describe("buildSeedCrews — 마스터1 + 크루3 (AC-1)", () => {
+describe("buildSeedCrews — 마스터1 + 크루4 (AC-1, 신규입사자 포함)", () => {
   const crews = buildSeedCrews();
 
-  it("마스터 1명 + 크루 3명 = 총 4 계정이 존재한다", () => {
-    expect(crews).toHaveLength(4);
+  it("마스터 1명 + 크루 4명 = 총 5 계정이 존재한다", () => {
+    expect(crews).toHaveLength(5);
     expect(crews.filter((c) => c.role === "master")).toHaveLength(1);
-    expect(crews.filter((c) => c.role === "crew")).toHaveLength(3);
+    expect(crews.filter((c) => c.role === "crew")).toHaveLength(4);
   });
 
   it("마스터 id=MASTER_ID, 김민정 crew=DEFAULT_CREW_ID 가 포함된다", () => {

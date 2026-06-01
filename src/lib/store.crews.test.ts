@@ -45,18 +45,18 @@ describe("getProfile — crewId 스코프 (AC-R2)", () => {
 });
 
 describe("listCrews — mock 계정 목록 (AC-1)", () => {
-  it("마스터 1 + 크루 3 = 4 계정을 반환한다", () => {
+  it("마스터 1 + 크루 4 = 5 계정을 반환한다", () => {
     const crews = listCrews();
-    expect(crews).toHaveLength(4);
+    expect(crews).toHaveLength(5);
     expect(crews.some((c) => c.id === MASTER_ID && c.role === "master")).toBe(true);
     expect(crews.some((c) => c.id === DEFAULT_CREW_ID && c.role === "crew")).toBe(true);
   });
 });
 
 describe("getCrewSummaries — 마스터 집계 (AC-10 / AC-11)", () => {
-  it("크루 3명의 근무/연장/휴가 요약을 반환한다(마스터 제외)", () => {
+  it("크루 4명의 근무/연장/휴가 요약을 반환한다(마스터 제외)", () => {
     const summaries = getCrewSummaries(SEED_MONTH);
-    expect(summaries).toHaveLength(3);
+    expect(summaries).toHaveLength(4);
     // 마스터는 집계 대상이 아니다
     expect(summaries.some((s) => s.crewId === MASTER_ID)).toBe(false);
     const minjung = summaries.find((s) => s.crewId === DEFAULT_CREW_ID)!;

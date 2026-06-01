@@ -2,7 +2,7 @@
 
 // 스케쥴 호스트 뷰(T19). 월 이동 + 캘린더 + 날짜 편집 시트.
 // 읽기는 전원, 작성(추가/수정/삭제)은 canWrite(master/매니저)만 — 시트가 분기 처리.
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { useSchedule } from "@/features/schedule/hooks/useSchedule";
@@ -10,12 +10,18 @@ import { ScheduleCalendar } from "./ScheduleCalendar";
 import { ScheduleGrid } from "./ScheduleGrid";
 import { ScheduleDaySheet } from "./ScheduleDaySheet";
 import { SEED_MONTH } from "@/lib/constants";
-import { formatMonthLabel, shiftMonth } from "@/lib/date";
+import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
 
 type ViewMode = "calendar" | "grid";
 
+// 마운트 여부 구독(AttendanceCalendarView 동일 패턴) — SSR/첫CSR 은 SEED_MONTH, 마운트 후 현재월.
+const emptySubscribe = () => () => {};
+
 export function ScheduleView() {
-  const [month, setMonth] = useState(SEED_MONTH);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  // 기본 월: 마운트 후 현재월(6월). 사용자가 직접 고르면 그 값 유지.
+  const [picked, setMonth] = useState<string | null>(null);
+  const month = picked ?? (mounted ? todayMonth() : SEED_MONTH);
   const [view, setView] = useState<ViewMode>("calendar");
   const [selected, setSelected] = useState<string | null>(null);
   const { entries, canWrite, crews, loading, save, remove } = useSchedule(month);
