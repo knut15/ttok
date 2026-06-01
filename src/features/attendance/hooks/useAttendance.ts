@@ -120,8 +120,8 @@ export interface UseTodayClock {
   record: AttendanceRecord | null;
   phase: ClockPhase; // !clockIn→before, !clockOut→working, else done
   busy: boolean; // PATCH in-flight 가드(E-2)
-  clockIn: () => Promise<AttendanceRecord | null>;
-  clockOut: () => Promise<AttendanceRecord | null>;
+  clockIn: (time?: string) => Promise<AttendanceRecord | null>;
+  clockOut: (time?: string) => Promise<AttendanceRecord | null>;
 }
 
 /**
@@ -158,12 +158,14 @@ export function useTodayClock(date: string): UseTodayClock {
   }, [date, crewId]);
 
   const clock = useCallback(
-    async (field: "clockIn" | "clockOut") => {
+    async (field: "clockIn" | "clockOut", time?: string) => {
       setBusy(true);
+      // P2-1: 호출부가 캡처한 시각을 주입하면 그 값을 PATCH(표시 시각 = 저장 시각).
+      //   미전달 시 기존대로 nowHHMM() 호출(회귀 0).
       const res = await fetch(`/api/attendance?date=${date}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders(user) },
-        body: JSON.stringify({ field, time: nowHHMM() }),
+        body: JSON.stringify({ field, time: time ?? nowHHMM() }),
       });
       let next: AttendanceRecord | null = null;
       if (res.ok) {
@@ -176,8 +178,11 @@ export function useTodayClock(date: string): UseTodayClock {
     [date, user],
   );
 
-  const clockIn = useCallback(() => clock("clockIn"), [clock]);
-  const clockOut = useCallback(() => clock("clockOut"), [clock]);
+  const clockIn = useCallback((time?: string) => clock("clockIn", time), [clock]);
+  const clockOut = useCallback(
+    (time?: string) => clock("clockOut", time),
+    [clock],
+  );
 
   return { record, phase: clockPhase(record), busy, clockIn, clockOut };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { todayDate } from "@/lib/date";
+import { nowHHMM, todayDate } from "@/lib/date";
 import { useTodayClock } from "@/features/attendance/hooks/useAttendance";
 import { clockOutConfirmMessage } from "./clockFabConfirm";
 
@@ -41,8 +41,11 @@ function ClockFabInner({ onRegistered }: { onRegistered?: () => void }) {
       return;
     }
     // 퇴근은 현재 시각 확인 대화상자 후에만 처리(취소 시 미처리, T12 AC-3).
-    if (!window.confirm(clockOutConfirmMessage())) return;
-    const res = await clockOut();
+    // P2-1: now 를 한 번만 캡처 → confirm 메시지 시각과 clockOut PATCH 시각을
+    //   동일 인스턴스로 통일(분 경계에서 표시 시각 ≠ 저장 시각 레이스 차단).
+    const now = new Date();
+    if (!window.confirm(clockOutConfirmMessage(now))) return;
+    const res = await clockOut(nowHHMM(now));
     if (res) onRegistered?.();
   }
 

@@ -44,3 +44,38 @@
 
 - `CONTEXT.md`: "홈 토글 스코프"·"출퇴근 등록 FAB" 갱신, "단일일 상세 조회 계약" 신규 1행 추가(T12 마킹).
 - ADR: PRD §10 명시 없음 → 미작성.
+
+---
+
+## REWORK v2 (분류 A) — P2-1 confirm 시각 ↔ 저장 시각 레이스 수정
+
+리뷰(05-review.md) codex P2-1: 퇴근 confirm 메시지 시각과 `clockOut()` 내부 `nowHHMM()` 재호출이 별도 시점이라 분 경계에서 표시 시각 ≠ 저장 시각 가능. 범위 한정 수정(P2-2는 follow-up, 본 회차 범위 외).
+
+### 수정 (파일:라인)
+
+| 결함 | 수정 | 위치 |
+|---|---|---|
+| confirm now 와 PATCH now 별도 호출 | ClockFab 퇴근 분기에서 `const now = new Date()` 단일 캡처 → `clockOutConfirmMessage(now)` + `clockOut(nowHHMM(now))` 동일 인스턴스 사용 | `ClockFab.tsx:43-47` (+ import `nowHHMM` `:4`) |
+| clockOut/clockIn 시각 주입 불가 | `clock(field, time?)` → PATCH body `time: time ?? nowHHMM()`(미전달 시 기존 동작, 회귀 0). `clockIn(time?)`/`clockOut(time?)` 시그니처 확장 | `useAttendance.ts:160-184`, 인터페이스 `:123-124` |
+| `nowHHMM(now?)` | 이미 선택적 `now: Date = new Date()` 수신 — 그대로 사용 | `date.ts:65` (무변경) |
+
+출근(clockIn) 경로는 기존 즉시 동작 불변(인자 미전달).
+
+### 테스트
+
+- TDD 사이클(vertical slice): RED(계약 명시) → GREEN(배선) → 회귀 검증.
+- `clockFabConfirm.test.ts` 보강 1건: 단일 `now`(09:05:59.999, 분 경계 직전)로 만든 `clockOutConfirmMessage(now)` 의 표시 HH:MM 과 `nowHHMM(now)`(PATCH 인자) 가 동일("09:05")함을 단정 → ClockFab 이 의존하는 "표시 시각 = 저장 시각" 계약 고정.
+- `useTodayClock` 훅은 React/fetch/useCurrentUser 결합으로 단위 격리 비용 큼 → 시그니처+배선은 tsc 타입체크 + ClockFab 호출부 코드 일치로 검증(내부 협력자 mock 회피 원칙).
+
+### 자가 검증 (직접 Bash)
+
+- `pnpm test`: ✅ **199 passed** (23 files; 베이스라인 198 + clockFabConfirm 계약 1건 순증)
+- `pnpm exec tsc --noEmit`: ✅ 0
+- `pnpm build`: ✅ Compiled successfully
+- `pnpm lint`: ✅ 0
+- 회귀: **0** (clockOut/clockIn 미전달 시 기존 `nowHHMM()` 동작 유지)
+
+### 경계면 일치 확인
+
+- **ClockFab ↔ useTodayClock**: `clockOut(nowHHMM(now))` 문자열 ↔ `clock(field, time)` `time ?? nowHHMM()` ↔ PATCH body `time` ↔ route `parseHHMM(body.time)` 검증. 캡처 시각이 저장까지 단일 인스턴스로 흐름.
+- **출근 경로**: `clockIn()` 인자 미전달 → 기존 즉시 PATCH 동작 불변(회귀 0).

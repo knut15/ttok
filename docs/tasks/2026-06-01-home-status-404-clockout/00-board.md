@@ -11,8 +11,8 @@
 | Phase | 역할 | 상태 | 산출물 |
 |---|---|---|---|
 | 스펙 | orchestrator | ✅ | `01-prd.md` |
-| 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 구현 | developer | ✅ 완료 | `04-implementation.md` (198 test, 커밋 2d1982d) |
+| 리뷰 | reviewer+codex | 🔄 진행중 | `05-review.md` |
 
 ## 진행 로그
 - 2026-06-01 — T12 시작(B+C+D). 다음: T13 과거기록 추가→승인대기.
