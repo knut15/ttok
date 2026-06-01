@@ -5,9 +5,9 @@
 // 부모가 key={date} 로 날짜별 리마운트 → drafts 는 useState 초기화로 동기화(effct setState 회피).
 import { useState } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
-import type { Crew, ScheduleEntry } from "@/types";
+import type { Crew, FixedShift, ScheduleEntry } from "@/types";
 import { formatLongDate } from "@/lib/date";
-import { getOperatingHours } from "@/lib/schedule";
+import { getDayType, getOperatingHours } from "@/lib/schedule";
 import type { SaveScheduleInput } from "@/features/schedule/hooks/useSchedule";
 
 interface Draft {
@@ -16,10 +16,48 @@ interface Draft {
   off: boolean;
 }
 
+type ChipKind = "고정" | "시간변경" | "대타";
+const CHIP_CLS: Record<ChipKind, string> = {
+  고정: "bg-neutral-200 text-neutral-600",
+  시간변경: "bg-statusblue/15 text-statusblue",
+  대타: "bg-emerald-100 text-emerald-700",
+};
+
+/**
+ * 근무자 이름 옆 변경 칩 계산.
+ * - 고정 자동적용(source fixed) → [고정]
+ * - 대타(고정 없는데 근무 투입) → [대타]
+ * - 고정 보유 + 변동저장(시간 다름) → [고정, 시간변경] / 시간 동일 → [고정]
+ */
+function chipsFor(e: ScheduleEntry | undefined, fixed: FixedShift | undefined): ChipKind[] {
+  if (!e) return [];
+  if (e.source === "fixed") return ["고정"];
+  if (e.substitute) return ["대타"];
+  if (fixed) {
+    const changed = !e.off && (e.startTime !== fixed.startTime || e.endTime !== fixed.endTime);
+    return changed ? ["고정", "시간변경"] : ["고정"];
+  }
+  return [];
+}
+
+function Chips({ kinds }: { kinds: ChipKind[] }) {
+  if (kinds.length === 0) return null;
+  return (
+    <>
+      {kinds.map((k) => (
+        <span key={k} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${CHIP_CLS[k]}`}>
+          {k}
+        </span>
+      ))}
+    </>
+  );
+}
+
 export function ScheduleDaySheet({
   date,
   entries,
   crews,
+  fixedShifts,
   canWrite,
   onClose,
   onSave,
@@ -28,6 +66,7 @@ export function ScheduleDaySheet({
   date: string;
   entries: ScheduleEntry[];
   crews: Crew[];
+  fixedShifts: FixedShift[];
   canWrite: boolean;
   onClose: () => void;
   onSave: (input: SaveScheduleInput) => Promise<boolean>;
@@ -35,6 +74,11 @@ export function ScheduleDaySheet({
 }) {
   const crewList = crews.filter((c) => c.role === "crew");
   const byCrew = new Map(entries.map((e) => [e.crewId, e]));
+  // 이 날짜 요일유형의 고정근무 맵(crewId → FixedShift) — 칩 계산용.
+  const dayType = getDayType(date);
+  const fixedMap = new Map(
+    fixedShifts.filter((f) => f.dayType === dayType).map((f) => [f.crewId, f]),
+  );
   // 운영시간 — 신규 배정 기본 시프트로 사용(근무시간은 이 범위 내에서 개별 등록).
   const op = getOperatingHours(date);
   const DEFAULT_DRAFT: Draft = { start: op.open, end: op.close, off: false };
@@ -94,18 +138,9 @@ export function ScheduleDaySheet({
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                     {c.avatarInitial}
                   </span>
-                  <span className="flex flex-1 items-center gap-1.5 font-semibold">
+                  <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                     {c.name}
-                    {e.source === "fixed" ? (
-                      <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
-                        고정
-                      </span>
-                    ) : null}
-                    {e.substitute ? (
-                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                        대타
-                      </span>
-                    ) : null}
+                    <Chips kinds={chipsFor(e, fixedMap.get(c.id))} />
                   </span>
                   <span className="text-sm text-muted">
                     {e.off ? "휴무" : `${e.startTime}–${e.endTime}`}
@@ -130,25 +165,15 @@ export function ScheduleDaySheet({
           const existing = byCrew.get(c.id);
           const isManual = existing != null && existing.source !== "fixed";
           const isFixed = existing?.source === "fixed";
-          const isSubstitute = existing?.substitute === true;
           return (
             <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
               <div className="flex items-center gap-2">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                   {c.avatarInitial}
                 </span>
-                <span className="flex flex-1 items-center gap-1.5 font-semibold">
+                <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                   {c.name}
-                  {isFixed ? (
-                    <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
-                      고정
-                    </span>
-                  ) : null}
-                  {isSubstitute ? (
-                    <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                      대타
-                    </span>
-                  ) : null}
+                  <Chips kinds={chipsFor(existing, fixedMap.get(c.id))} />
                 </span>
                 <label className="flex items-center gap-1 text-xs text-muted">
                   <input

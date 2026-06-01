@@ -182,6 +182,7 @@ export function ScheduleView() {
           date={selected}
           entries={dayEntries}
           crews={crews}
+          fixedShifts={fixedShifts}
           canWrite={canWrite}
           onClose={() => setSelected(null)}
           onSave={save}
