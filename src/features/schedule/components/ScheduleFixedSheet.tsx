@@ -141,7 +141,7 @@ export function ScheduleFixedSheet({
                   {c.name}
                   {c.isManager ? (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                      매니저
+                      크루(매니저)
                     </span>
                   ) : null}
                 </span>

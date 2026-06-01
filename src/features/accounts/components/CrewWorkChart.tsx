@@ -6,17 +6,15 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
+  BarElement,
   Tooltip,
   Legend,
   type TooltipItem,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import type { CrewSummary } from "@/types";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const toHours = (min: number) => Math.round((min / 60) * 10) / 10;
 
@@ -29,20 +27,16 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
       {
         label: "근무(시간)",
         data: crews.map((c) => toHours(c.workMinutes)),
-        borderColor: "rgba(255,107,90,1)", // coral
-        backgroundColor: "rgba(255,107,90,0.15)",
-        pointBackgroundColor: "rgba(255,107,90,1)",
-        fill: true,
-        tension: 0.3,
+        backgroundColor: "rgba(255,107,90,0.85)", // coral
+        borderRadius: 4,
+        barThickness: 12, // 좁은 막대
       },
       {
         label: "연장(시간)",
         data: crews.map((c) => toHours(c.overtimeMinutes)),
-        borderColor: "rgba(245,158,11,1)", // amber
-        backgroundColor: "rgba(245,158,11,0.15)",
-        pointBackgroundColor: "rgba(245,158,11,1)",
-        fill: true,
-        tension: 0.3,
+        backgroundColor: "rgba(245,158,11,0.85)", // amber
+        borderRadius: 4,
+        barThickness: 12,
       },
     ],
   };
@@ -54,7 +48,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
       legend: { position: "bottom" as const, labels: { boxWidth: 12, font: { size: 11 } } },
       tooltip: {
         callbacks: {
-          label: (ctx: TooltipItem<"line">) => `${ctx.dataset.label}: ${ctx.parsed.y}시간`,
+          label: (ctx: TooltipItem<"bar">) => `${ctx.dataset.label}: ${ctx.parsed.y}시간`,
         },
       },
     },
@@ -68,7 +62,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
     <div className="mx-5 mb-4 rounded-2xl border border-black/5 bg-surface p-4">
       <h3 className="pb-2 text-sm font-bold">크루별 근무시간</h3>
       <div className="h-56">
-        <Line data={data} options={options} />
+        <Bar data={data} options={options} />
       </div>
     </div>
   );

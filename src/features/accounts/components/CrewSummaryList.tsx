@@ -59,7 +59,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
                 {c.name}
                 {c.isManager ? (
                   <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                    매니저
+                    크루(매니저)
                   </span>
                 ) : null}
               </p>
