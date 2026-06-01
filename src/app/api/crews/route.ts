@@ -1,9 +1,12 @@
-// GET /api/crews → 200 Crew[] (역할전환 목록, architect §2.6). client 는 route 경유로만 store 접근.
+// GET /api/crews → 200 Crew[] — 요청자 매장의 근무자 메타(스케줄 picker 등). Prisma.
 import { NextResponse } from "next/server";
-import { listCrews } from "@/lib/store";
+import { resolveScope } from "@/lib/session-scope";
+import { resolveStoreId, listStoreCrews } from "@/lib/identity-repo";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-export async function GET(): Promise<Response> {
-  return NextResponse.json(listCrews(), { headers: NO_STORE });
+export async function GET(request: Request): Promise<Response> {
+  const storeId = await resolveStoreId(await resolveScope(request));
+  const crews = storeId ? await listStoreCrews(storeId) : [];
+  return NextResponse.json(crews, { headers: NO_STORE });
 }

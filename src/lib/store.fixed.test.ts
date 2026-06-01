@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  __resetStore,
   listFixedShifts,
   addFixedShift,
   removeFixedShift,
@@ -14,7 +13,6 @@ import { getWeekdayIndex } from "./schedule";
 
 let storeId: string;
 beforeEach(async () => {
-  __resetStore();
   storeId = await resetDb();
 });
 

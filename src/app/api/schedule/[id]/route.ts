@@ -10,7 +10,7 @@ export async function DELETE(
   request: Request,
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  if (!canWriteSchedule((await resolveScope(request)))) {
+  if (!(await canWriteSchedule(await resolveScope(request)))) {
     return NextResponse.json(
       { error: "스케쥴 삭제 권한이 없습니다." },
       { status: 403, headers: NO_STORE },

@@ -26,9 +26,9 @@ function managerOf(scope: SessionScope, fallback: boolean): boolean {
 
 // GET /api/profile → 200 { profile, store, isManager }. 헤더 없으면(기존 테스트) 김민정 fallback.
 export async function GET(request?: Request): Promise<Response> {
-  if (!request) return NextResponse.json(getProfile(), { headers: NO_STORE });
+  if (!request) return NextResponse.json(await getProfile(), { headers: NO_STORE });
   const { scope, crewId } = await resolve(request);
-  const res = getProfile(crewId);
+  const res = await getProfile(crewId);
   return NextResponse.json(
     { ...res, isManager: managerOf(scope, res.isManager) },
     { headers: NO_STORE },
@@ -60,8 +60,8 @@ export async function PATCH(request: Request): Promise<Response> {
   if (typeof body.email === "string") patch.email = body.email;
 
   // 3) 머지 후 200 + 갱신 profile 반환 (AC-5/6/7)
-  const updated = updateProfile(patch, crewId);
-  const { store, isManager } = getProfile(crewId);
+  const updated = await updateProfile(patch, crewId);
+  const { store, isManager } = await getProfile(crewId);
   return NextResponse.json(
     { profile: updated, store, isManager: managerOf(scope, isManager) },
     { headers: NO_STORE },

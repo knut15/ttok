@@ -18,7 +18,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 /** 게이트 통과 시 {storeId} 반환, 아니면 deny Response. */
 async function gate(request: Request): Promise<{ storeId: string | null; deny: Response | null }> {
   const scope = await resolveScope(request);
-  if (!canWriteSchedule(scope)) {
+  if (!(await canWriteSchedule(scope))) {
     return {
       storeId: null,
       deny: NextResponse.json(

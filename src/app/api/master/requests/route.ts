@@ -2,9 +2,9 @@
 // 마스터 전용: role≠master → 403 (AC-8, api/master/crews 게이트 복제).
 // listRequests()(전체) ⨝ listCrews()(crewId→name Map) 서버 조인 → crewName(폴백 crewId).
 import { NextResponse } from "next/server";
-import { listRequestsForCrews, listCrews } from "@/lib/store";
+import { listRequestsForCrews } from "@/lib/store";
 import { resolveScope } from "@/lib/session-scope";
-import { getStoreCrewIds, resolveStoreId } from "@/lib/identity-repo";
+import { getStoreCrewIds, getStoreMembers, resolveStoreId } from "@/lib/identity-repo";
 import { DEFAULT_CREW_ID } from "@/lib/constants";
 import type { MasterRequestRow, MasterRequestsResponse } from "@/types";
 
@@ -25,7 +25,11 @@ export async function GET(request: Request): Promise<Response> {
   const crewIds = storeId ? await getStoreCrewIds(storeId) : [];
   const all = await listRequestsForCrews(crewIds);
 
-  const nameById = new Map(listCrews().map((c) => [c.id, c.name]));
+  const nameById = new Map(
+    storeId
+      ? (await getStoreMembers(storeId)).map((m) => [m.operationalId ?? m.id, m.user?.name ?? ""])
+      : [],
+  );
   const requests: MasterRequestRow[] = all.map((req) => {
     const crewId = req.crewId ?? DEFAULT_CREW_ID;
     return { ...req, crewName: nameById.get(crewId) ?? crewId };

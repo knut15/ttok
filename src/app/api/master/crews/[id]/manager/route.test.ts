@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { PATCH } from "./route";
-import { __resetStore, isManagerCrew } from "@/lib/store";
+import { canWriteSchedule } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 
 const MASTER = { "x-role": "master", "x-crew-id": MASTER_ID, "Content-Type": "application/json" } as const;
@@ -16,21 +17,21 @@ function ctx(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
-describe("PATCH /api/master/crews/[id]/manager (T17)", () => {
-  beforeEach(() => __resetStore());
+describe("PATCH /api/master/crews/[id]/manager (Prisma)", () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   it("마스터가 일반 멤버를 매니저로 지정한다 → 200 + isManager 반영", async () => {
     const res = await PATCH(patch("crew-2", { on: true }), ctx("crew-2"));
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.crew.isManager).toBe(true);
-    expect(isManagerCrew("crew-2")).toBe(true);
+    expect(await canWriteSchedule({ crewId: "crew-2", role: "crew" })).toBe(true);
   });
 
   it("매니저 해제 → isManager false", async () => {
     const res = await PATCH(patch(DEFAULT_CREW_ID, { on: false }), ctx(DEFAULT_CREW_ID));
     expect(res.status).toBe(200);
-    expect(isManagerCrew(DEFAULT_CREW_ID)).toBe(false);
+    expect(await canWriteSchedule({ crewId: DEFAULT_CREW_ID, role: "crew" })).toBe(false);
   });
 
   it("멤버 역할은 토글 불가 → 403", async () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, POST } from "./route";
 import { DELETE } from "./[id]/route";
-import { __resetStore, getDaySchedules } from "@/lib/store";
+import { getDaySchedules } from "@/lib/store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID, SEED_MONTH } from "@/lib/constants";
 
@@ -24,7 +24,6 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
 let storeId: string;
 beforeEach(async () => {
-  __resetStore();
   storeId = await resetDb();
 });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { POST } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID } from "@/lib/constants";
 
 function post(headers?: Record<string, string>) {
@@ -13,7 +13,9 @@ function post(headers?: Record<string, string>) {
 const MASTER = { "x-role": "master", "x-crew-id": MASTER_ID } as const;
 
 describe("POST /api/invites — 초대 생성 (T8-6 / AC-13 / AC-15)", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-13: 마스터는 대기 상태의 초대 코드를 발급받는다 → 201 Invite
   it("마스터는 201 과 대기 상태의 초대 코드를 발급받는다", async () => {

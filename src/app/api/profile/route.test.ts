@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, PATCH } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 
-beforeEach(() => __resetStore());
+beforeEach(async () => {
+  await resetDb();
+});
 
 function patchReq(body: unknown) {
   return new Request("http://localhost/api/profile", {

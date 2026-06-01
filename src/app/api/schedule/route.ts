@@ -21,7 +21,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function GET(request: Request): Promise<Response> {
   const month = new URL(request.url).searchParams.get("month") ?? SEED_MONTH;
   const scope = await resolveScope(request);
-  const canWrite = canWriteSchedule(scope);
+  const canWrite = await canWriteSchedule(scope);
   const storeId = await resolveStoreId(scope);
 
   const entries = storeId ? await getMonthScheduleView(storeId, month) : [];
@@ -48,7 +48,7 @@ interface PostBody {
 export async function POST(request: Request): Promise<Response> {
   const scope = await resolveScope(request);
   // 작성권한 게이트. master 또는 매니저 crew 만.
-  if (!canWriteSchedule(scope)) {
+  if (!(await canWriteSchedule(scope))) {
     return NextResponse.json(
       { error: "스케쥴 작성 권한이 없습니다." },
       { status: 403, headers: NO_STORE },

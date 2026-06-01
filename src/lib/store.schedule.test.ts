@@ -1,64 +1,61 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  __resetStore,
   canWriteSchedule,
   getDaySchedules,
   getMonthSchedules,
-  isManagerCrew,
   removeSchedule,
-  setManager,
   upsertSchedule,
 } from "./store";
+import { setMembershipManager } from "./identity-repo";
 import { resetDb } from "./db-seed";
 import { DEFAULT_CREW_ID, MASTER_ID, SEED_MONTH } from "./constants";
 
 let storeId: string;
 beforeEach(async () => {
-  __resetStore();
   storeId = await resetDb();
 });
 
-describe("T16 매니저 권한 (isManager)", () => {
-  it("시드에서 김민정은 매니저다", () => {
-    expect(isManagerCrew(DEFAULT_CREW_ID)).toBe(true);
+describe("매니저 권한 (Prisma Membership.isManager)", () => {
+  it("시드에서 김민정은 매니저(작성권한 있음)", async () => {
+    expect(await canWriteSchedule({ crewId: DEFAULT_CREW_ID, role: "crew" })).toBe(true);
   });
 
-  it("일반 멤버는 매니저가 아니다", () => {
-    expect(isManagerCrew("crew-2")).toBe(false);
+  it("일반 멤버는 매니저 아님(작성권한 없음)", async () => {
+    expect(await canWriteSchedule({ crewId: "crew-2", role: "crew" })).toBe(false);
   });
 
-  it("setManager 로 지정/해제할 수 있다 (crew 역할만)", () => {
-    expect(setManager("crew-2", true)).not.toBeNull();
-    expect(isManagerCrew("crew-2")).toBe(true);
-    setManager("crew-2", false);
-    expect(isManagerCrew("crew-2")).toBe(false);
+  it("setMembershipManager 로 지정/해제할 수 있다(crew 만)", async () => {
+    expect(await setMembershipManager(storeId, "crew-2", true)).not.toBeNull();
+    expect(await canWriteSchedule({ crewId: "crew-2", role: "crew" })).toBe(true);
+    await setMembershipManager(storeId, "crew-2", false);
+    expect(await canWriteSchedule({ crewId: "crew-2", role: "crew" })).toBe(false);
   });
 
-  it("master 대상/없는 id 는 setManager 가 null (변경 안 함)", () => {
-    expect(setManager(MASTER_ID, true)).toBeNull();
-    expect(setManager("nope", true)).toBeNull();
-  });
-});
-
-describe("T16 canWriteSchedule (서버 권한 판정)", () => {
-  it("master 는 항상 작성권한", () => {
-    expect(canWriteSchedule({ crewId: MASTER_ID, role: "master" })).toBe(true);
-  });
-
-  it("매니저 crew 는 작성권한", () => {
-    expect(canWriteSchedule({ crewId: DEFAULT_CREW_ID, role: "crew" })).toBe(true);
-  });
-
-  it("일반 crew 는 작성권한 없음", () => {
-    expect(canWriteSchedule({ crewId: "crew-2", role: "crew" })).toBe(false);
-  });
-
-  it("role=crew 면 헤더상 다른 권한이어도 store 플래그로만 판정", () => {
-    expect(canWriteSchedule({ crewId: "crew-3", role: "crew" })).toBe(false);
+  it("master 대상/없는 id 는 setMembershipManager 가 null(crew 만 토글)", async () => {
+    expect(await setMembershipManager(storeId, MASTER_ID, true)).toBeNull();
+    expect(await setMembershipManager(storeId, "nope", true)).toBeNull();
   });
 });
 
-describe("T16 스케쥴 CRUD", () => {
+describe("canWriteSchedule (서버 권한 판정)", () => {
+  it("master 는 항상 작성권한", async () => {
+    expect(await canWriteSchedule({ crewId: MASTER_ID, role: "master" })).toBe(true);
+  });
+
+  it("매니저 crew 는 작성권한", async () => {
+    expect(await canWriteSchedule({ crewId: DEFAULT_CREW_ID, role: "crew" })).toBe(true);
+  });
+
+  it("일반 crew 는 작성권한 없음", async () => {
+    expect(await canWriteSchedule({ crewId: "crew-2", role: "crew" })).toBe(false);
+  });
+
+  it("세션 isManager 클레임이 있으면 빠른 경로로 true", async () => {
+    expect(await canWriteSchedule({ crewId: "crew-2", role: "crew", isManager: true })).toBe(true);
+  });
+});
+
+describe("스케쥴 CRUD", () => {
   it("시드 월간 스케쥴이 date·crewId 순으로 정렬되어 반환된다", async () => {
     const entries = await getMonthSchedules(storeId, SEED_MONTH);
     expect(entries.length).toBeGreaterThan(0);
@@ -100,7 +97,7 @@ describe("T16 스케쥴 CRUD", () => {
     expect(on.off).toBeUndefined();
   });
 
-  it("remove: id 로 삭제하고 빈 날짜 키는 정리된다", async () => {
+  it("remove: id 로 삭제", async () => {
     const date = `${SEED_MONTH}-22`;
     const e = await upsertSchedule({ date, crewId: "crew-2", startTime: "09:00", endTime: "18:00", createdBy: MASTER_ID });
     expect(await removeSchedule(e.id)).toBe(true);

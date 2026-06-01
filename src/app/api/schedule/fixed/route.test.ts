@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { POST, PATCH, DELETE } from "./route";
-import { __resetStore, listFixedShifts } from "@/lib/store";
+import { listFixedShifts } from "@/lib/store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 
@@ -19,7 +19,6 @@ function req(method: "POST" | "PATCH" | "DELETE", body: unknown, headers: Record
 
 let storeId: string;
 beforeEach(async () => {
-  __resetStore();
   storeId = await resetDb();
 });
 

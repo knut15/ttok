@@ -52,6 +52,45 @@ export async function getStoreCrewIds(storeId: string): Promise<string[]> {
   return ms.map((m) => m.operationalId ?? m.id);
 }
 
+/** 매장 전원(master+crew)을 Crew[] 형태로. /api/crews(스케줄 근무자 메타)용. */
+export async function listStoreCrews(storeId: string): Promise<import("@/types").Crew[]> {
+  const ms = await prisma.membership.findMany({
+    where: { storeId, active: true },
+    include: { user: true },
+    orderBy: { createdAt: "asc" },
+  });
+  return ms.map((m) => {
+    const name = m.user?.name ?? "멤버";
+    return {
+      id: m.operationalId ?? m.id,
+      name,
+      role: m.role as "master" | "crew",
+      avatarInitial: name.charAt(0) || "?",
+      joinDate: m.createdAt.toISOString().slice(0, 10),
+      active: m.active,
+      isManager: m.isManager,
+    };
+  });
+}
+
+/**
+ * 스케줄 작성권한(Prisma). master→true. crew 는 세션 isManager 빠른경로,
+ * 아니면 멤버십 isManager 조회(헤더/테스트 경로 포함).
+ */
+export async function canWriteSchedule(scope: {
+  crewId: string;
+  role: "master" | "crew";
+  isManager?: boolean;
+}): Promise<boolean> {
+  if (scope.role === "master") return true;
+  if (scope.isManager === true) return true;
+  const m = await prisma.membership.findFirst({
+    where: { role: "crew", isManager: true, OR: [{ operationalId: scope.crewId }, { id: scope.crewId }] },
+    select: { id: true },
+  });
+  return m !== null;
+}
+
 /** 매장의 멤버(role=crew) 목록 + 사용자(이름). 마스터 집계용. 가입순. */
 export function getStoreMembers(storeId: string) {
   return prisma.membership.findMany({

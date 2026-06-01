@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
 import { POST as APPROVE } from "./approve/route";
 import { POST as CREATE } from "../../schedule/route";
-import { __resetStore, getDaySchedules } from "@/lib/store";
+import { getDaySchedules } from "@/lib/store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 
@@ -28,7 +28,6 @@ function approveReq(id: string, headers: Record<string, string>) {
 
 let storeId: string;
 beforeEach(async () => {
-  __resetStore();
   storeId = await resetDb();
 });
 
