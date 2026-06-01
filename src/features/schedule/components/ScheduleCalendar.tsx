@@ -38,6 +38,8 @@ export function ScheduleCalendar({
         avatarInitial: c?.avatarInitial ?? "?",
         off: e.off === true,
         fixed: e.source === "fixed",
+        manager: c?.isManager === true,
+        substitute: e.substitute === true,
       });
       m.set(e.date, list);
     }

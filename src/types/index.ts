@@ -193,6 +193,7 @@ export interface ScheduleEntry {
   off?: boolean; // 휴무
   createdBy: string; // 작성자(master/manager) id
   source?: "manual" | "fixed"; // 출처. fixed=고정근무 자동적용(미저장 가상), 기본 manual.
+  substitute?: boolean; // 대타: 고정근무 아닌데 변동(manual)으로 근무 투입(off 제외)
 }
 
 /** 요일 유형 — 고정근무 적용 단위. */
@@ -216,6 +217,8 @@ export interface ScheduleAssignee {
   avatarInitial: string;
   off: boolean;
   fixed: boolean; // 고정근무 자동적용분(명시 배정 아님)
+  manager: boolean; // 매니저(달력 노란색)
+  substitute: boolean; // 대타(달력 민트색)
 }
 
 /** GET /api/schedule 응답(월간). canWrite 로 클라가 작성 UI 노출 여부 결정(서버 판정). */

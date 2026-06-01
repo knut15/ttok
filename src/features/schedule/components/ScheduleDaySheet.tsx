@@ -101,6 +101,11 @@ export function ScheduleDaySheet({
                         고정
                       </span>
                     ) : null}
+                    {e.substitute ? (
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                        대타
+                      </span>
+                    ) : null}
                   </span>
                   <span className="text-sm text-muted">
                     {e.off ? "휴무" : `${e.startTime}–${e.endTime}`}
@@ -125,6 +130,7 @@ export function ScheduleDaySheet({
           const existing = byCrew.get(c.id);
           const isManual = existing != null && existing.source !== "fixed";
           const isFixed = existing?.source === "fixed";
+          const isSubstitute = existing?.substitute === true;
           return (
             <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
               <div className="flex items-center gap-2">
@@ -136,6 +142,11 @@ export function ScheduleDaySheet({
                   {isFixed ? (
                     <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
                       고정
+                    </span>
+                  ) : null}
+                  {isSubstitute ? (
+                    <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      대타
                     </span>
                   ) : null}
                 </span>

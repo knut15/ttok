@@ -727,12 +727,16 @@ export function removeFixedShift(crewId: string, dayType: DayType): boolean {
  * 고정 파생 항목은 id=`fixed-…`, source="fixed" (미저장 가상).
  */
 export function getMonthScheduleView(month: string): ScheduleEntry[] {
+  const fixed = getStore().fixedShifts;
+  // (crewId|dayType) 고정근무 보유 집합 — 대타 판정용.
+  const fixedKeys = new Set(fixed.map((f) => `${f.crewId}|${f.dayType}`));
   const explicit: ScheduleEntry[] = getMonthSchedules(month).map((e) => ({
     ...e,
     source: "manual",
+    // 대타: 근무(off 아님)인데 그날 요일유형의 고정근무가 없는 경우.
+    substitute: e.off !== true && !fixedKeys.has(`${e.crewId}|${getDayType(e.date)}`),
   }));
   const explicitKeys = new Set(explicit.map((e) => `${e.date}|${e.crewId}`));
-  const fixed = getStore().fixedShifts;
   const derived: ScheduleEntry[] = [];
   if (fixed.length > 0) {
     for (const date of buildMonthGrid(month)) {

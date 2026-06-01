@@ -66,3 +66,32 @@ describe("getMonthScheduleView — 명시 배정 + 고정근무 병합", () => {
     expect(crew2Fixed.every((e) => e.startTime === "11:00" && e.endTime === "17:00")).toBe(true);
   });
 });
+
+describe("대타(substitute) 판정", () => {
+  const WEEKDAY = "2026-06-02"; // 화
+
+  it("고정근무 없는 크루를 평일 근무 투입 → 대타", () => {
+    // crew-3 은 고정근무 없음
+    upsertSchedule({ date: WEEKDAY, crewId: "crew-3", startTime: "09:00", endTime: "13:00", createdBy: MASTER_ID });
+    const e = getMonthScheduleView("2026-06").find((x) => x.date === WEEKDAY && x.crewId === "crew-3");
+    expect(e?.substitute).toBe(true);
+  });
+
+  it("평일 고정근무 보유 크루의 변동 배정은 대타 아님", () => {
+    // 김민정 = 평일 고정 → 변동(시간 변경)이어도 대타 아님
+    upsertSchedule({ date: WEEKDAY, crewId: DEFAULT_CREW_ID, startTime: "13:00", endTime: "18:00", createdBy: MASTER_ID });
+    const e = getMonthScheduleView("2026-06").find((x) => x.date === WEEKDAY && x.crewId === DEFAULT_CREW_ID);
+    expect(e?.substitute).toBe(false);
+  });
+
+  it("휴무는 대타 아님", () => {
+    upsertSchedule({ date: WEEKDAY, crewId: "crew-3", startTime: "00:00", endTime: "00:00", off: true, createdBy: MASTER_ID });
+    const e = getMonthScheduleView("2026-06").find((x) => x.date === WEEKDAY && x.crewId === "crew-3");
+    expect(e?.substitute).toBe(false);
+  });
+
+  it("고정근무 자동적용(fixed)은 대타가 아니다", () => {
+    const fixedEntries = getMonthScheduleView("2026-06").filter((e) => e.source === "fixed");
+    expect(fixedEntries.every((e) => e.substitute !== true)).toBe(true);
+  });
+});
