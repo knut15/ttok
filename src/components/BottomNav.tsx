@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
+import { useMasterPendingCount } from "@/features/accounts/hooks/useMasterPendingCount";
 
 // 하단 고정 바텀탭(AC-19b, AC-20). T8-5: role 별 분기.
 // 크루 = 기존 4탭. 마스터 = 집계(/master) 진입 중심 탭.
@@ -100,15 +101,29 @@ export function BottomNav() {
     () => false,
   );
   const tabs = mounted && user.role === "master" ? MASTER_TABS : CREW_TABS;
+  // 마스터: 대기 수정요청(크루 근태변경 승인) 알림 배지 — 집계 탭에 표시.
+  const pending = useMasterPendingCount();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md border-t border-black/5 bg-surface">
       <ul className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab.href);
+          // 집계 탭에 대기 승인 알림 배지(마스터 전용, count>0).
+          const badge = tab.href === "/master" && pending > 0 ? pending : null;
           const content = (
-            <span className="flex flex-col items-center gap-1 py-1.5">
-              <Icon name={tab.icon} active={active} />
+            <span className="relative flex flex-col items-center gap-1 py-1.5">
+              <span className="relative">
+                <Icon name={tab.icon} active={active} />
+                {badge !== null ? (
+                  <span
+                    aria-label={`새 승인 요청 ${badge}건`}
+                    className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-coral px-1 text-[9px] font-bold leading-none text-white"
+                  >
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                ) : null}
+              </span>
               <span
                 className={`text-[11px] ${active ? "font-semibold text-coral" : "text-muted"}`}
               >
