@@ -13,8 +13,17 @@
 | 1 기획 | planner | ✅ 완료 | `01-prd.md` (AC 17, sub-task 5) |
 | 2 승인 | (user gate) | ✅ APPROVE | `02-approval.md` (Q1 /master섹션 / Q4 클릭버튼만) |
 | 2.5 아키텍처 | architect | ✅ 완료 | `03-architecture.md` (서버조인·12버튼·회귀0) |
-| 3 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 4 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 3 구현 | developer | ✅ 완료 | `04-implementation.md` (191 test, 커밋 68f150d) |
+| 4 리뷰 | reviewer+codex | 🔄 진행중 | `05-review.md` |
 
 ## 진행 로그
 - 2026-06-01 — T10 시작. ClockToggle 스코프 / 마스터 컨펌 / 아이콘 32x32.
+
+---
+
+# 🎉 T10 최종 결과 (PASS, rework 0)
+- **FR-1 크루 출근 격리**: ClockToggle에 authHeaders + crewId 의존성 → 크루별 개별 출근(한 명 출근이 타 크루에 안 보임). 격리 통합테스트.
+- **FR-2 마스터 컨펌**: `GET /api/master/requests`(마스터 게이트, 서버 crewName 조인) + MasterView "수정요청 컨펌" 섹션 + 수락(기존 approve API 재사용).
+- **FR-3 아이콘 32×32**: 클릭 버튼 12개 `h-8 w-8` 통일(장식 span·텍스트 버튼 제외).
+- 191 테스트 GREEN(186 회귀 0), tsc/build/lint 0, codex PASS. 커밋 `68f150d`. ADR 0006.
+- follow-up(P2): ClockToggle 전환 중 loading disabled / PATCH stale 가드.
