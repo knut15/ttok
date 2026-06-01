@@ -121,3 +121,30 @@ describe("isMaster — 역할 판정", () => {
     expect(isMaster("ghost")).toBe(false);
   });
 });
+
+// dev HMR 잔존 store 형태 가드 — T8 store 스키마 변경 후 옛 store(globalThis)가 살아남아
+// recordsByCrew 가 undefined 이면 전 API 500 나던 버그. getStore 가드가 자동 재생성해야 한다.
+describe("getStore 형태 가드 (HMR stale store 자동 재생성)", () => {
+  it("옛 형태(records Map만, recordsByCrew 부재) 주입 시 getMonthRecords 가 throw 없이 재생성·동작", () => {
+    // T8 이전 형태를 globalThis 에 강제 주입(HMR 잔존 시뮬레이션).
+    (globalThis as unknown as { __crewmonStore: unknown }).__crewmonStore = {
+      records: new Map(),
+      requests: [],
+      seq: 1,
+    };
+    // 가드가 형태 불일치를 감지하고 createStore() 로 재생성 → 김민정 시드 반환.
+    const recs = getMonthRecords(SEED_MONTH);
+    expect(Array.isArray(recs)).toBe(true);
+    expect(recs.length).toBeGreaterThan(0);
+  });
+
+  it("프로필 접근도 옛 형태에서 재생성되어 동작(profilesByCrew 부재 방어)", () => {
+    (globalThis as unknown as { __crewmonStore: unknown }).__crewmonStore = {
+      records: new Map(),
+      requests: [],
+      seq: 1,
+    };
+    const { profile } = getProfile();
+    expect(profile.name).toBe("김민정");
+  });
+});

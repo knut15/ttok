@@ -114,10 +114,18 @@ function crewRecords(store: StoreShape, crewId: string): Map<string, AttendanceR
 }
 
 function getStore(): StoreShape {
-  if (!globalThis.__crewmonStore) {
+  const s = globalThis.__crewmonStore;
+  // 형태 가드: 부재이거나, dev HMR 로 살아남은 옛 store 형태(T8 이전: recordsByCrew 부재)면 재생성.
+  // 이 가드가 없으면 store 스키마 변경 후 dev 서버 재시작 전까지 store.recordsByCrew 가 undefined → 전 API 500.
+  if (
+    !s ||
+    !(s.recordsByCrew instanceof Map) ||
+    !(s.profilesByCrew instanceof Map) ||
+    !Array.isArray(s.crews)
+  ) {
     globalThis.__crewmonStore = createStore();
   }
-  return globalThis.__crewmonStore;
+  return globalThis.__crewmonStore as StoreShape;
 }
 
 /** 테스트 격리용: store 를 시드 상태로 재생성. */
