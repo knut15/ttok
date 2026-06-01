@@ -145,3 +145,64 @@ AC 정량 증거 보유율: 4/4 = **100%**
 | **P1** | confirm 시각 고정 (수정 요청 #1) | 현재 REWORK 항목. 사용자 신뢰성 문제(승인한 시각 ≠ 저장 시각 가능) |
 | **P2** | PATCH 잘못된 날짜 검증 추가 | codex P2-2. pre-existing gap. 사용자 흐름 영향 낮으나 계약 일관성 결함 |
 | **P3** | clockOut 시각 인자 테스트 커버 | confirm 주입 now와 PATCH 인자 동일성 단위 테스트 보강 |
+
+---
+
+## 재검증 (v2)
+
+- 리뷰어: task-reviewer (teammate mode)
+- 검증 베이스: 2d1982d → 156b724
+- 날짜: 2026-06-01
+
+### P2-1 해소 확인
+
+| 항목 | 확인 | 근거 |
+|---|---|---|
+| `now` 단일 캡처 | ✅ | `ClockFab.tsx:46` `const now = new Date()` 퇴근 분기 진입 직후 1회만 캡처 |
+| confirm 메시지 시각 = PATCH 시각 | ✅ | `ClockFab.tsx:47-48` `clockOutConfirmMessage(now)` + `clockOut(nowHHMM(now))` 동일 인스턴스 사용 |
+| 분 경계 레이스 차단 계약 테스트 | ✅ | `clockFabConfirm.test.ts:19-26` 09:05:59.999 인스턴스로 `clockOutConfirmMessage(now)` 표시 시각 = `nowHHMM(now)` PATCH 인자 동일성 단정 |
+| clockOut(time?) 인자 시그니처 | ✅ | `useAttendance.ts:123-124` `clockIn/clockOut: (time?: string) => ...`. `clock(field, time?)`:168 `time ?? nowHHMM()` — 미전달 시 기존 경로(회귀 0) |
+| 출근(clockIn) 즉시 불변 | ✅ | `ClockFab.tsx:37-41` clockIn 분기: `now` 캡처 없음, 즉시 `clockIn()` 인자 미전달 — 기존 동작 그대로 |
+
+### v2 DoD (직접 Bash)
+
+| 항목 | 결과 |
+|---|---|
+| pnpm test | ✅ 199/199 passed (23 files) — 베이스라인 198 + clockFabConfirm 계약 1건 순증 |
+| tsc --noEmit | ✅ 오류 0 |
+| pnpm build | ✅ Compiled successfully (Turbopack, 1603ms) |
+| pnpm lint | ✅ 오류 0 |
+| 회귀 | 0 — clockOut/clockIn 인자 미전달 시 `nowHHMM()` 기존 경로 유지(diff 확인) |
+
+### v2 AC 매트릭스 (변경 영향 항목)
+
+| AC# | 내용 | v2 충족 증거 | 일치 |
+|---|---|---|---|
+| **AC-3 (D)** | 퇴근 confirm 시각 = 저장 시각 (P2-1 보완) | `ClockFab.tsx:46-48` now 단일 캡처 + `clockFabConfirm.test.ts:19-26` 계약 단정 | ✅ |
+| **AC-4 (회귀)** | 199/199, tsc 0, build OK, lint OK | pnpm test/tsc/build/lint 직접 실행 확인 | ✅ |
+
+### 경계면 v2
+
+- ClockFab:46 `const now = new Date()` → ClockFab:47 `clockOutConfirmMessage(now)` → ClockFab:48 `clockOut(nowHHMM(now))` → `useAttendance.ts:168` `time ?? nowHHMM()` → PATCH body `{field, time}`. 동일 인스턴스가 confirm 표시에서 네트워크 전송까지 단일 흐름으로 연결됨. 경계면 일치.
+
+### 교차 검증 v2 (codex review --base 2d1982d)
+
+- 자체 판정(하네스축): PASS
+- codex 판정: **PASS**
+- 호출 시각: 2026-06-01T13:09 (codex review --base 2d1982d, gpt-5.5)
+- codex 출력: "The change consistently reuses the captured clock-out time for both the confirmation message and PATCH payload. Type checking passed, and no introduced regression was identified."
+- P1 finding: 0건
+- P2 finding: 0건 (v1 P2-1 해소 확인, v1 P2-2는 T12 범위 외 — 변동 없음)
+- 최종 결정: **PASS 확정** (`gate_mode: and` 양축 모두 PASS)
+
+### 최종 판정 (v2)
+
+- **판정: PASS**
+- **사유**: v1 REWORK(A) 수정 요청 #1(P2-1 confirm 시각 고정) 완전 해소. `ClockFab.tsx:46-48`에서 `const now = new Date()` 단일 캡처 → confirm 메시지·PATCH 시각 동일 인스턴스 보장. 계약 테스트(clockFabConfirm.test.ts:19-26) 추가. 199/199 통과, tsc/build/lint 0, 회귀 0. codex 재게이트 P1/P2 finding 없음.
+- **회귀 지점**: 없음 (종료)
+
+### follow-up (v2 기준 이월)
+
+| 우선순위 | 항목 | 근거 |
+|---|---|---|
+| **P2** | PATCH `/api/attendance` 잘못된 날짜 검증 추가 | v1 codex P2-2. pre-existing gap. T13 이후 별도 task 권장 |

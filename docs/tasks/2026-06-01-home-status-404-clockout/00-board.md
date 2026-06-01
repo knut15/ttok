@@ -16,3 +16,9 @@
 
 ## 진행 로그
 - 2026-06-01 — T12 시작(B+C+D). 다음: T13 과거기록 추가→승인대기.
+
+---
+# 🎉 T12 최종 (PASS, rework 1)
+- B 홈 출퇴근 버튼 제거(상태만, 등록은 FAB) / C GET [date] 유효날짜+기록없음 200+null(잘못된형식 404 유지) / D 퇴근 confirm(현재시각 단일캡처, 출근 즉시).
+- 199 테스트, tsc/build/lint 0, codex PASS. 커밋 2d1982d→156b724.
+- 이월 follow-up: PATCH /api/attendance 잘못된 날짜 검증.
