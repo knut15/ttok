@@ -34,7 +34,7 @@ export function AddRecordForm({
     <section className="px-5 pt-6">
       <h2 className="mb-2 text-lg font-bold">근무 추가</h2>
       <p className="mb-4 text-sm text-muted">
-        기록이 없는 날의 근무를 직접 입력해 추가요청합니다.
+        기록이 누락된 날의 근무를 직접 입력해 추가요청합니다.
       </p>
 
       <div className="space-y-3 rounded-2xl border border-black/10 bg-surface p-4">
