@@ -202,8 +202,9 @@ export interface ScheduleAssignee {
   off: boolean;
 }
 
-/** GET /api/schedule 응답(월간). */
+/** GET /api/schedule 응답(월간). canWrite 로 클라가 작성 UI 노출 여부 결정(서버 판정). */
 export interface ScheduleResponse {
   month: string; // "YYYY-MM"
   entries: ScheduleEntry[];
+  canWrite: boolean; // 요청자(master/매니저) 작성 권한
 }

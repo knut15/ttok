@@ -18,13 +18,15 @@ interface Tab {
 const CREW_TABS: Tab[] = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/attendance", label: "출퇴근", icon: "clock" },
+  { href: "/schedule", label: "스케쥴", icon: "calendar" },
   { href: "/pay", label: "급여", icon: "won" },
   { href: "/mypage", label: "마이페이지", icon: "user" },
 ];
 
-// 마스터 탭: 집계 진입(/master) 중심 + 마이페이지. 본인 출퇴근/급여 기록 없음(E-4) → 미노출.
+// 마스터 탭: 집계 진입(/master) 중심 + 스케쥴 + 마이페이지. 본인 출퇴근/급여 기록 없음(E-4) → 미노출.
 const MASTER_TABS: Tab[] = [
   { href: "/master", label: "집계", icon: "won" },
+  { href: "/schedule", label: "스케쥴", icon: "calendar" },
   { href: "/mypage", label: "마이페이지", icon: "user" },
 ];
 
@@ -62,6 +64,13 @@ function Icon({ name, active }: { name: string; active: boolean }) {
         <svg {...common}>
           <circle cx="12" cy="13" r="8" />
           <path d="M12 9v4l3 2M9 3h6" />
+        </svg>
+      );
+    case "calendar":
+      return (
+        <svg {...common}>
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M3 9h18M8 3v4M16 3v4" />
         </svg>
       );
     case "won":
