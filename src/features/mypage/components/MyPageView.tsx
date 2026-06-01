@@ -43,9 +43,7 @@ export function MyPageView() {
           <ProfileSummary
             name={data.profile.name}
             avatarInitial={data.profile.avatarInitial}
-            roleLabel={
-              user.role === "master" ? "마스터" : data.isManager ? "매니저" : null
-            }
+            roleLabel={user.role === "master" || data.isManager ? "매니저" : null}
           />
           <StoreCard store={data.store} />
           <DocumentBox />
