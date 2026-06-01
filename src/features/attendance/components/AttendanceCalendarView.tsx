@@ -6,6 +6,7 @@ import { useState, useSyncExternalStore } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { MonthlyCalendar } from "./MonthlyCalendar";
+import { ClockFab } from "./ClockFab";
 import { MonthPickerSheet } from "@/components/MonthPickerSheet";
 import { STORE_NAME, SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
@@ -27,6 +28,8 @@ export function AttendanceCalendarView() {
   const month = picked ?? currentMonth;
   // 월 picker open state(AC-12/15). month 단일 소유 유지(setMonth 그대로).
   const [pickerOpen, setPickerOpen] = useState(false);
+  // T11 ST-3(AC-6): FAB 등록 성공 시 reloadKey 증가 → MonthlyCalendar effect 가 현재 월 갱신.
+  const [reloadKey, setReloadKey] = useState(0);
 
   return (
     <div>
@@ -61,7 +64,8 @@ export function AttendanceCalendarView() {
         <span aria-hidden>🏪</span>
         <span className="truncate">{STORE_NAME}</span>
       </div>
-      <MonthlyCalendar month={month} />
+      <MonthlyCalendar month={month} reloadKey={reloadKey} />
+      <ClockFab onRegistered={() => setReloadKey((k) => k + 1)} />
       <MonthPickerSheet
         open={pickerOpen}
         current={month}

@@ -29,6 +29,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* T11 ST-4(FR-2/AC-9,10): 클릭 가능 요소 전역 cursor:pointer. disabled 제외(AC-10).
+   @layer base 라 Tailwind utility(cursor-not-allowed 등)가 우선 → 기존 충돌 0(AC-R*). */
+@layer base {
+  button:not(:disabled),
+  a,
+  [role="button"],
+  label,
+  summary {
+    cursor: pointer;
+  }
+}
+
 html,
 body {
   background: var(--background);

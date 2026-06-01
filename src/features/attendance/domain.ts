@@ -25,6 +25,21 @@ export function formatBadge(r: AttendanceRecord): Badge | null {
   return { text: `${diff}분`, tone: "gray" };
 }
 
+/** 출퇴근 토글/FAB 공용 phase 타입(단일 진실원). */
+export type ClockPhase = "before" | "working" | "done";
+
+/**
+ * 오늘 레코드 → 출퇴근 phase 인지(AC-3~5). ClockToggle 인라인 로직 1:1 이관.
+ *  - !clockIn → before(미출근, "출근")
+ *  - clockIn && !clockOut → working(근무중, "퇴근")
+ *  - clockIn && clockOut → done(마감, 비활성)
+ */
+export function clockPhase(record: AttendanceRecord | null): ClockPhase {
+  if (!record?.clockIn) return "before";
+  if (!record?.clockOut) return "working";
+  return "done";
+}
+
 /** 상태별 점 색상 토큰. */
 export function statusTone(status: WorkStatus): Tone {
   switch (status) {

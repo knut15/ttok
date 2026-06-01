@@ -6,6 +6,8 @@ import {
   authHeaders,
   useCurrentUser,
 } from "@/features/accounts/hooks/useCurrentUser";
+import { nowHHMM } from "@/lib/date";
+import { clockPhase, type ClockPhase } from "@/features/attendance/domain";
 
 const NO_STORE: RequestInit = { cache: "no-store" };
 
@@ -112,6 +114,72 @@ export function useDayAttendance(date: string) {
   );
 
   return { record, loading, reload, changeStatus };
+}
+
+export interface UseTodayClock {
+  record: AttendanceRecord | null;
+  phase: ClockPhase; // !clockIn→before, !clockOut→working, else done
+  busy: boolean; // PATCH in-flight 가드(E-2)
+  clockIn: () => Promise<AttendanceRecord | null>;
+  clockOut: () => Promise<AttendanceRecord | null>;
+}
+
+/**
+ * 오늘 출퇴근 등록 공용 훅(단일 진실원, T11 ST-1). ClockToggle 인라인 로직 1:1 이관.
+ *   GET `/api/attendance/${date}`(no-store, authHeaders) → phase → PATCH `/api/attendance?date=`
+ *   {field, time:nowHHMM()}(authHeaders) → setRecord. ClockToggle/ClockFab 가 공유(동작 불변, AC-R2).
+ *   crewId(= user.crewId ?? user.id) effect 의존성으로 전환 시 setRecord(null) 동기 리셋·재fetch.
+ *   busy 가드로 중복 PATCH 방지(E-2). clock 결과 record 반환 → res.ok 시 콜백 트리거(FAB).
+ */
+export function useTodayClock(date: string): UseTodayClock {
+  const { user } = useCurrentUser();
+  const crewId = user.crewId ?? user.id;
+  const [record, setRecord] = useState<AttendanceRecord | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    // 전환 시 이전 크루 레코드 즉시 리셋(stale 1프레임도 노출 금지). useAttendance/ClockToggle 동일 패턴.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRecord(null);
+    fetch(`/api/attendance/${date}`, {
+      ...NO_STORE,
+      headers: authHeaders(user),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (active) setRecord(json);
+      });
+    return () => {
+      active = false;
+    };
+    // 식별 키(date, crewId)로 의존성 고정(ClockToggle 패턴 계승).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, crewId]);
+
+  const clock = useCallback(
+    async (field: "clockIn" | "clockOut") => {
+      setBusy(true);
+      const res = await fetch(`/api/attendance?date=${date}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders(user) },
+        body: JSON.stringify({ field, time: nowHHMM() }),
+      });
+      let next: AttendanceRecord | null = null;
+      if (res.ok) {
+        next = await res.json();
+        setRecord(next);
+      }
+      setBusy(false);
+      return next;
+    },
+    [date, user],
+  );
+
+  const clockIn = useCallback(() => clock("clockIn"), [clock]);
+  const clockOut = useCallback(() => clock("clockOut"), [clock]);
+
+  return { record, phase: clockPhase(record), busy, clockIn, clockOut };
 }
 
 /** 수정요청 내역 fetch + 생성 POST. T8-4: authHeaders + crewId 의존성. */

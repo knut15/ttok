@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useMonthAttendance } from "@/features/attendance/hooks/useAttendance";
 import {
   formatBadge,
@@ -14,8 +14,20 @@ import type { AttendanceRecord } from "@/types";
 const WEEK_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 월간 캘린더(AC-13, AC-14): 그리드 셀 + 날짜 탭→상세 라우트.
-export function MonthlyCalendar({ month }: { month: string }) {
-  const { records, loading } = useMonthAttendance(month);
+// T11 ST-3(AC-6): reloadKey 증가 시 현재 월 useMonthAttendance.reload 재호출(FAB 등록 반영).
+export function MonthlyCalendar({
+  month,
+  reloadKey,
+}: {
+  month: string;
+  reloadKey?: number;
+}) {
+  const { records, loading, reload } = useMonthAttendance(month);
+
+  useEffect(() => {
+    // 초기 마운트(reloadKey 0/undefined)는 useMonthAttendance 자체 fetch 로 충분 → 중복 호출 회피.
+    if (reloadKey) reload();
+  }, [reloadKey, reload]);
 
   const byDate = useMemo(() => {
     const map = new Map<string, AttendanceRecord>();

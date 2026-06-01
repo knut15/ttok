@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatBadge } from "./domain";
+import { formatBadge, clockPhase } from "./domain";
 import type { AttendanceRecord } from "@/types";
 
 function rec(p: Partial<AttendanceRecord>): AttendanceRecord {
@@ -37,5 +37,27 @@ describe("formatBadge (쟁점 A)", () => {
 
   it("휴가는 배지 null(라벨 별도)", () => {
     expect(formatBadge(rec({ status: "휴가", workMinutes: 0 }))).toBeNull();
+  });
+});
+
+describe("clockPhase (FAB/ClockToggle 공용 phase 인지, AC-3~5)", () => {
+  it("레코드 없음(0건)이면 before(미출근)", () => {
+    expect(clockPhase(null)).toBe("before");
+  });
+
+  it("clockIn 없으면 before", () => {
+    expect(clockPhase(rec({ clockIn: null, clockOut: null }))).toBe("before");
+  });
+
+  it("clockIn 있고 clockOut 없으면 working(근무중)", () => {
+    expect(clockPhase(rec({ clockIn: "08:00", clockOut: null }))).toBe(
+      "working",
+    );
+  });
+
+  it("clockIn·clockOut 모두 있으면 done(마감)", () => {
+    expect(clockPhase(rec({ clockIn: "08:00", clockOut: "15:00" }))).toBe(
+      "done",
+    );
   });
 });
