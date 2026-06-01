@@ -160,6 +160,11 @@ export function ScheduleDaySheet({
                   </span>
                   <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                     {c.name}
+                    {c.isManager ? (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                        매니저
+                      </span>
+                    ) : null}
                     <Chips kinds={chipsFor(e, fixedMap.get(c.id))} />
                   </span>
                   <span className="text-sm text-muted">
@@ -201,6 +206,11 @@ export function ScheduleDaySheet({
                 </span>
                 <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                   {c.name}
+                  {c.isManager ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      매니저
+                    </span>
+                  ) : null}
                   {working ? (
                     <Chips kinds={chipsFor(existing, fixedMap.get(c.id))} />
                   ) : (

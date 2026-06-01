@@ -1,15 +1,17 @@
 import Link from "next/link";
 
-// 이니셜 아바타 + 이름 + "내 정보 수정" 링크 (AC-9b/AC-10). 매니저면 이름 옆 배지.
+// 이니셜 아바타 + 이름 + "내 정보 수정" 링크 (AC-9b/AC-10). 권한(마스터/매니저)이면 이름 옆 배지.
 export function ProfileSummary({
   name,
   avatarInitial,
-  isManager = false,
+  roleLabel = null,
 }: {
   name: string;
   avatarInitial: string;
-  isManager?: boolean;
+  roleLabel?: string | null; // "마스터" | "매니저" | null
 }) {
+  const roleTone =
+    roleLabel === "마스터" ? "bg-coral/15 text-coral" : "bg-amber-100 text-amber-700";
   return (
     <div className="flex items-center gap-4 px-5 pt-2">
       <span
@@ -21,9 +23,9 @@ export function ProfileSummary({
       <div>
         <p className="flex items-center gap-2 text-2xl font-extrabold text-foreground">
           {name}
-          {isManager ? (
-            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
-              매니저
+          {roleLabel ? (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${roleTone}`}>
+              {roleLabel}
             </span>
           ) : null}
         </p>
