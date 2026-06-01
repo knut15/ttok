@@ -12,8 +12,14 @@
 | 1 기획 | planner | ✅ 완료 | `01-prd.md` (AC 14, sub-task 4) |
 | 2 승인 | (user gate) | ✅ APPROVE | `02-approval.md` (Q1 즉시등록 / Q2 마스터노출) |
 | 2.5 아키텍처 | architect | ✅ 완료 | `03-architecture.md` (useTodayClock 추출·z-40·안A) |
-| 3 구현 | developer | 🔄 진행중 | `04-implementation.md` |
-| 4 리뷰 | reviewer+codex | 미시작 | `05-review.md` |
+| 3 구현 | developer | ✅ 완료 | `04-implementation.md` (195 test, 커밋 961e5ae) |
+| 4 리뷰 | reviewer+codex | 🔄 진행중 | `05-review.md` |
 
 ## 진행 로그
 - 2026-06-01 — T11 시작. FAB(오늘 등록, 출퇴근탭, 홈유지) + cursor:pointer 전역.
+
+---
+# 🎉 T11 최종 (PASS, rework 0)
+- FAB(useTodayClock 공용훅, 즉시등록, z-40, 크루스코프, 등록후 캘린더 reloadKey) + cursor:pointer 전역(@layer base, disabled 제외).
+- 195 테스트(191 회귀 0 + 4 clockPhase), tsc/build/lint 0, codex PASS. 커밋 961e5ae.
+- follow-up(P1): useTodayClock loading 가드(FAB record null 초기 활성).
