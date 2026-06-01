@@ -7,7 +7,9 @@ import type {
   AttendanceRecord,
   Crew,
   CrewSummary,
+  DayType,
   EditRequest,
+  FixedShift,
   Invite,
   JoinResult,
   ProfilePatch,
@@ -21,11 +23,14 @@ import type {
 import {
   buildSeedRecordsByCrew,
   buildSeedCrews,
+  buildSeedFixedShifts,
   buildSeedInvites,
   buildSeedProfile,
   buildSeedSchedules,
   SEED_STORE_INFO,
 } from "./seed";
+import { buildMonthGrid } from "./date";
+import { getDayType } from "./schedule";
 import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes } from "./time";
 import {
   DEFAULT_BREAK_MINUTES,
@@ -80,6 +85,7 @@ interface StoreShape {
   invites: Invite[];
   profilesByCrew: Map<string, UserProfile>; // crewId → profile
   schedulesByDate: Map<string, ScheduleEntry[]>; // T16: date → 배정 목록
+  fixedShifts: FixedShift[]; // 크루별 고정근무((crewId, dayType) 유일)
   storeInfo: StoreInfo; // 단일 매장 유지
   seq: number;
 }
@@ -100,6 +106,7 @@ function createStore(): StoreShape {
     invites: buildSeedInvites(),
     profilesByCrew,
     schedulesByDate: buildSeedSchedules(),
+    fixedShifts: buildSeedFixedShifts(),
     storeInfo: SEED_STORE_INFO,
     seq: 1,
   };
@@ -127,6 +134,7 @@ function getStore(): StoreShape {
     !(s.recordsByCrew instanceof Map) ||
     !(s.profilesByCrew instanceof Map) ||
     !(s.schedulesByDate instanceof Map) || // T16: 스키마 변경 가드(HMR 잔존 옛 store 재생성)
+    !Array.isArray(s.fixedShifts) || // 고정근무 스키마 가드
     !Array.isArray(s.crews)
   ) {
     globalThis.__crewmonStore = createStore();
@@ -668,4 +676,84 @@ export function removeSchedule(id: string): boolean {
     return true;
   }
   return false;
+}
+
+// === 고정 근무(FixedShift) + 병합 뷰 ===
+
+/** 크루별 고정근무 목록(crewId, dayType 순). */
+export function listFixedShifts(): FixedShift[] {
+  return [...getStore().fixedShifts].sort(
+    (a, b) => a.crewId.localeCompare(b.crewId) || a.dayType.localeCompare(b.dayType),
+  );
+}
+
+export interface NewFixedShift {
+  crewId: string;
+  dayType: DayType;
+  startTime: string;
+  endTime: string;
+}
+
+/** 고정근무 upsert — (crewId, dayType) 당 1건. 기존 있으면 시간 갱신. */
+export function setFixedShift(input: NewFixedShift): FixedShift {
+  const store = getStore();
+  const existing = store.fixedShifts.find(
+    (f) => f.crewId === input.crewId && f.dayType === input.dayType,
+  );
+  if (existing) {
+    existing.startTime = input.startTime;
+    existing.endTime = input.endTime;
+    return existing;
+  }
+  const created: FixedShift = { ...input };
+  store.fixedShifts.push(created);
+  return created;
+}
+
+/** 고정근무 해제((crewId, dayType)). 제거 성공 → true. */
+export function removeFixedShift(crewId: string, dayType: DayType): boolean {
+  const store = getStore();
+  const idx = store.fixedShifts.findIndex(
+    (f) => f.crewId === crewId && f.dayType === dayType,
+  );
+  if (idx === -1) return false;
+  store.fixedShifts.splice(idx, 1);
+  return true;
+}
+
+/**
+ * 월간 스케쥴 병합 뷰: 명시 배정(manual) 우선 + 고정근무 자동적용(fixed).
+ * 같은 (date, crewId) 에 명시 배정이 있으면 고정근무는 생략(명시가 변동/오버라이드).
+ * 고정 파생 항목은 id=`fixed-…`, source="fixed" (미저장 가상).
+ */
+export function getMonthScheduleView(month: string): ScheduleEntry[] {
+  const explicit: ScheduleEntry[] = getMonthSchedules(month).map((e) => ({
+    ...e,
+    source: "manual",
+  }));
+  const explicitKeys = new Set(explicit.map((e) => `${e.date}|${e.crewId}`));
+  const fixed = getStore().fixedShifts;
+  const derived: ScheduleEntry[] = [];
+  if (fixed.length > 0) {
+    for (const date of buildMonthGrid(month)) {
+      if (!date) continue;
+      const dayType = getDayType(date);
+      for (const fs of fixed) {
+        if (fs.dayType !== dayType) continue;
+        if (explicitKeys.has(`${date}|${fs.crewId}`)) continue;
+        derived.push({
+          id: `fixed-${fs.crewId}-${date}`,
+          date,
+          crewId: fs.crewId,
+          startTime: fs.startTime,
+          endTime: fs.endTime,
+          createdBy: "fixed",
+          source: "fixed",
+        });
+      }
+    }
+  }
+  return [...explicit, ...derived].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.crewId.localeCompare(b.crewId),
+  );
 }

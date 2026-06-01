@@ -37,6 +37,7 @@ export function ScheduleCalendar({
         name: c?.name ?? e.crewId,
         avatarInitial: c?.avatarInitial ?? "?",
         off: e.off === true,
+        fixed: e.source === "fixed",
       });
       m.set(e.date, list);
     }

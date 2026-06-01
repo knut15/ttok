@@ -12,13 +12,16 @@ export interface ScheduleCellView {
 const MAX_AVATARS = 3;
 
 function Avatar({ a }: { a: ScheduleAssignee }) {
-  // 그레이스케일 원형(이미지처럼). 휴무자는 흰색 배경(+테두리)로 구분. ring 으로 겹침 경계 분리.
+  // 그레이스케일 원형(이미지처럼). 휴무=흰색, 고정근무=옅은 회색, 명시 배정=짙은 회색. ring 으로 겹침 분리.
+  const tone = a.off
+    ? "border border-black/15 bg-white text-muted"
+    : a.fixed
+      ? "bg-neutral-300 text-neutral-700"
+      : "bg-neutral-600 text-white";
   return (
     <span
-      title={`${a.name}${a.off ? " (휴무)" : ""}`}
-      className={`grid h-5 w-5 place-items-center rounded-full text-[8px] font-bold ring-2 ring-surface ${
-        a.off ? "border border-black/15 bg-white text-muted" : "bg-neutral-600 text-white"
-      }`}
+      title={`${a.name}${a.off ? " (휴무)" : a.fixed ? " (고정)" : ""}`}
+      className={`grid h-5 w-5 place-items-center rounded-full text-[8px] font-bold ring-2 ring-surface ${tone}`}
     >
       {a.avatarInitial}
     </span>

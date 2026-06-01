@@ -3,7 +3,13 @@
 // 스케쥴 훅(T19). GET /api/schedule(월간 entries + canWrite) + /api/crews(근무자 메타).
 // 작성/삭제는 POST/DELETE 경유 후 reload. client 는 store 직접 import 금지 → route 경유.
 import { useCallback, useEffect, useState } from "react";
-import type { Crew, ScheduleEntry, ScheduleResponse } from "@/types";
+import type {
+  Crew,
+  DayType,
+  FixedShift,
+  ScheduleEntry,
+  ScheduleResponse,
+} from "@/types";
 import {
   authHeaders,
   useCurrentUser,
@@ -19,10 +25,18 @@ export interface SaveScheduleInput {
   off?: boolean;
 }
 
+export interface SaveFixedInput {
+  crewId: string;
+  dayType: DayType;
+  startTime: string;
+  endTime: string;
+}
+
 export function useSchedule(month: string) {
   const { user } = useCurrentUser();
   const crewId = user.crewId ?? user.id;
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
+  const [fixedShifts, setFixedShifts] = useState<FixedShift[]>([]);
   const [canWrite, setCanWrite] = useState(false);
   const [crews, setCrews] = useState<Crew[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +56,7 @@ export function useSchedule(month: string) {
     ]).then(([sch, cr]) => {
       if (!active) return;
       setEntries(sch?.entries ?? []);
+      setFixedShifts(sch?.fixedShifts ?? []);
       setCanWrite(sch?.canWrite ?? false);
       setCrews(cr ?? []);
       setLoading(false);
@@ -79,5 +94,44 @@ export function useSchedule(month: string) {
     [user, reload],
   );
 
-  return { entries, canWrite, crews, loading, reload, save, remove };
+  const saveFixed = useCallback(
+    async (input: SaveFixedInput): Promise<boolean> => {
+      const res = await fetch(`/api/schedule/fixed`, {
+        ...NO_STORE,
+        method: "POST",
+        headers: { ...authHeaders(user), "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (res.ok) reload();
+      return res.ok;
+    },
+    [user, reload],
+  );
+
+  const removeFixed = useCallback(
+    async (crewId: string, dayType: DayType): Promise<boolean> => {
+      const res = await fetch(`/api/schedule/fixed`, {
+        ...NO_STORE,
+        method: "DELETE",
+        headers: { ...authHeaders(user), "Content-Type": "application/json" },
+        body: JSON.stringify({ crewId, dayType }),
+      });
+      if (res.ok) reload();
+      return res.ok;
+    },
+    [user, reload],
+  );
+
+  return {
+    entries,
+    fixedShifts,
+    canWrite,
+    crews,
+    loading,
+    reload,
+    save,
+    remove,
+    saveFixed,
+    removeFixed,
+  };
 }

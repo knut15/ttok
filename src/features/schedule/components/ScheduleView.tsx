@@ -14,6 +14,7 @@ import { ScheduleCalendar } from "./ScheduleCalendar";
 import { ScheduleGrid } from "./ScheduleGrid";
 import { ScheduleDaySheet } from "./ScheduleDaySheet";
 import { ScheduleManagerSheet } from "./ScheduleManagerSheet";
+import { ScheduleFixedSheet } from "./ScheduleFixedSheet";
 import { SEED_MONTH } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
 
@@ -33,8 +34,43 @@ export function ScheduleView() {
   const [selected, setSelected] = useState<string | null>(null);
   const [managerSheetOpen, setManagerSheetOpen] = useState(false);
   const [managerBusyId, setManagerBusyId] = useState<string | null>(null);
-  const { entries, canWrite, crews, loading, reload, save, remove } =
-    useSchedule(month);
+  const [fixedSheetOpen, setFixedSheetOpen] = useState(false);
+  const [fixedBusy, setFixedBusy] = useState(false);
+  const {
+    entries,
+    fixedShifts,
+    canWrite,
+    crews,
+    loading,
+    reload,
+    save,
+    remove,
+    saveFixed,
+    removeFixed,
+  } = useSchedule(month);
+
+  const saveFixedShift = useCallback(
+    async (input: Parameters<typeof saveFixed>[0]) => {
+      setFixedBusy(true);
+      try {
+        return await saveFixed(input);
+      } finally {
+        setFixedBusy(false);
+      }
+    },
+    [saveFixed],
+  );
+  const removeFixedShift = useCallback(
+    async (crewId: string, dayType: Parameters<typeof removeFixed>[1]) => {
+      setFixedBusy(true);
+      try {
+        return await removeFixed(crewId, dayType);
+      } finally {
+        setFixedBusy(false);
+      }
+    },
+    [removeFixed],
+  );
 
   const dayEntries = selected ? entries.filter((e) => e.date === selected) : [];
 
@@ -81,17 +117,6 @@ export function ScheduleView() {
             </button>
           </span>
         }
-        right={
-          isMaster ? (
-            <button
-              type="button"
-              onClick={() => setManagerSheetOpen(true)}
-              className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold"
-            >
-              매니저 지정
-            </button>
-          ) : undefined
-        }
       />
       <div className="flex items-center justify-between px-5 pb-3">
         <p className="text-sm text-muted">
@@ -114,6 +139,26 @@ export function ScheduleView() {
           ))}
         </div>
       </div>
+      {canWrite ? (
+        <div className="flex items-center justify-end gap-2 px-5 pb-3">
+          <button
+            type="button"
+            onClick={() => setFixedSheetOpen(true)}
+            className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold"
+          >
+            고정 근무
+          </button>
+          {isMaster ? (
+            <button
+              type="button"
+              onClick={() => setManagerSheetOpen(true)}
+              className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold"
+            >
+              매니저 지정
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {view === "calendar" ? (
         <ScheduleCalendar
           month={month}
@@ -149,6 +194,16 @@ export function ScheduleView() {
           busyId={managerBusyId}
           onClose={() => setManagerSheetOpen(false)}
           onToggle={toggleManager}
+        />
+      ) : null}
+      {fixedSheetOpen ? (
+        <ScheduleFixedSheet
+          crews={crews}
+          fixedShifts={fixedShifts}
+          busy={fixedBusy}
+          onClose={() => setFixedSheetOpen(false)}
+          onSave={saveFixedShift}
+          onRemove={removeFixedShift}
         />
       ) : null}
     </div>

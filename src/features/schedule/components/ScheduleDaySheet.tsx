@@ -94,7 +94,14 @@ export function ScheduleDaySheet({
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                     {c.avatarInitial}
                   </span>
-                  <span className="flex-1 font-semibold">{c.name}</span>
+                  <span className="flex flex-1 items-center gap-1.5 font-semibold">
+                    {c.name}
+                    {e.source === "fixed" ? (
+                      <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
+                        고정
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="text-sm text-muted">
                     {e.off ? "휴무" : `${e.startTime}–${e.endTime}`}
                   </span>
@@ -116,13 +123,22 @@ export function ScheduleDaySheet({
         {crewList.map((c) => {
           const d = drafts[c.id] ?? DEFAULT_DRAFT;
           const existing = byCrew.get(c.id);
+          const isManual = existing != null && existing.source !== "fixed";
+          const isFixed = existing?.source === "fixed";
           return (
             <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
               <div className="flex items-center gap-2">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                   {c.avatarInitial}
                 </span>
-                <span className="flex-1 font-semibold">{c.name}</span>
+                <span className="flex flex-1 items-center gap-1.5 font-semibold">
+                  {c.name}
+                  {isFixed ? (
+                    <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
+                      고정
+                    </span>
+                  ) : null}
+                </span>
                 <label className="flex items-center gap-1 text-xs text-muted">
                   <input
                     type="checkbox"
@@ -150,11 +166,11 @@ export function ScheduleDaySheet({
                 />
               </div>
               <div className="mt-2 flex items-center justify-end gap-2">
-                {existing ? (
+                {isManual ? (
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => remove(existing.id)}
+                    onClick={() => remove(existing!.id)}
                     aria-label={`${c.name} 배정 삭제`}
                     className="rounded-full bg-black/[0.06] px-4 py-1.5 text-xs font-semibold text-muted disabled:opacity-50"
                   >
@@ -167,7 +183,7 @@ export function ScheduleDaySheet({
                   onClick={() => save(c.id)}
                   className="rounded-full bg-coral px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                 >
-                  {existing ? "저장" : "추가"}
+                  {isManual ? "저장" : isFixed ? "변동 저장" : "추가"}
                 </button>
               </div>
             </li>

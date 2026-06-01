@@ -192,6 +192,21 @@ export interface ScheduleEntry {
   endTime: string; // "HH:MM"
   off?: boolean; // 휴무
   createdBy: string; // 작성자(master/manager) id
+  source?: "manual" | "fixed"; // 출처. fixed=고정근무 자동적용(미저장 가상), 기본 manual.
+}
+
+/** 요일 유형 — 고정근무 적용 단위. */
+export type DayType = "weekday" | "weekend";
+
+/**
+ * 크루별 고정 근무(요일유형별 기본 시프트). (crewId, dayType) 당 1건.
+ * 스케쥴표는 명시 배정이 없으면 이 고정값을 자동 적용 → 변동만 기록.
+ */
+export interface FixedShift {
+  crewId: string;
+  dayType: DayType;
+  startTime: string; // "HH:MM" (운영시간 내)
+  endTime: string; // "HH:MM"
 }
 
 /** 달력 셀 아바타용 경량 배정 정보(crew 메타 조인). */
@@ -200,11 +215,13 @@ export interface ScheduleAssignee {
   name: string;
   avatarInitial: string;
   off: boolean;
+  fixed: boolean; // 고정근무 자동적용분(명시 배정 아님)
 }
 
 /** GET /api/schedule 응답(월간). canWrite 로 클라가 작성 UI 노출 여부 결정(서버 판정). */
 export interface ScheduleResponse {
   month: string; // "YYYY-MM"
-  entries: ScheduleEntry[];
+  entries: ScheduleEntry[]; // 명시 배정 + 고정근무 자동적용(source 로 구분)
+  fixedShifts: FixedShift[]; // 크루별 고정근무 설정(관리 UI용)
   canWrite: boolean; // 요청자(master/매니저) 작성 권한
 }

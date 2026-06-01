@@ -6,8 +6,9 @@
 import { NextResponse } from "next/server";
 import {
   canWriteSchedule,
-  getMonthSchedules,
+  getMonthScheduleView,
   listCrews,
+  listFixedShifts,
   upsertSchedule,
 } from "@/lib/store";
 import { readScope } from "@/lib/scope";
@@ -22,7 +23,8 @@ export async function GET(request: Request): Promise<Response> {
   const month = new URL(request.url).searchParams.get("month") ?? SEED_MONTH;
   const payload: ScheduleResponse = {
     month,
-    entries: getMonthSchedules(month),
+    entries: getMonthScheduleView(month), // 명시 배정 + 고정근무 자동적용
+    fixedShifts: listFixedShifts(),
     canWrite: canWriteSchedule(readScope(request)),
   };
   return NextResponse.json(payload, { headers: NO_STORE });

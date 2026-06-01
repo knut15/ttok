@@ -5,6 +5,7 @@
 import type {
   AttendanceRecord,
   Crew,
+  FixedShift,
   Invite,
   PayItem,
   ScheduleEntry,
@@ -188,6 +189,17 @@ export function buildSeedRecordsByCrew(): Map<string, Map<string, AttendanceReco
 /** 초대 시드(mock). 초기 빈 배열 — 마스터가 런타임에 생성. */
 export function buildSeedInvites(): Invite[] {
   return [];
+}
+
+/**
+ * 고정 근무 시드(예시). 운영시간 내 요일유형별 기본 시프트.
+ * 김민정=평일 오전 08:00~11:00, 이서연=주말 오후 11:00~17:00.
+ */
+export function buildSeedFixedShifts(): FixedShift[] {
+  return [
+    { crewId: DEFAULT_CREW_ID, dayType: "weekday", startTime: "08:00", endTime: "11:00" },
+    { crewId: "crew-2", dayType: "weekend", startTime: "11:00", endTime: "17:00" },
+  ];
 }
 
 // === T16/T20 스케쥴 시드. 5월 샘플 + 6월 랜덤 채움. 작성자=마스터. ===
