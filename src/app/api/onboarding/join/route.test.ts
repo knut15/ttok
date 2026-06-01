@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // guard(→@/auth) 와 repo(→prisma) 를 모킹 → next-auth/prisma 실제 로드 회피.
 const { getSessionUser } = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
-const { joinByInviteCode } = vi.hoisted(() => ({ joinByInviteCode: vi.fn() }));
+const { joinByInviteCode, userExists } = vi.hoisted(() => ({
+  joinByInviteCode: vi.fn(),
+  userExists: vi.fn(),
+}));
 vi.mock("@/lib/guard", () => ({ getSessionUser }));
-vi.mock("@/lib/identity-repo", () => ({ joinByInviteCode }));
+vi.mock("@/lib/identity-repo", () => ({ joinByInviteCode, userExists }));
 
 import { POST } from "./route";
 
@@ -20,6 +23,8 @@ describe("POST /api/onboarding/join", () => {
   beforeEach(() => {
     getSessionUser.mockReset();
     getSessionUser.mockResolvedValue({ id: "u1" });
+    userExists.mockReset();
+    userExists.mockResolvedValue(true);
     joinByInviteCode.mockReset();
     joinByInviteCode.mockResolvedValue(null);
   });

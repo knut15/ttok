@@ -2,7 +2,7 @@
 // 없는 코드 400 / 사용된 코드 409 / 이미 그 매장 멤버 409. 성공 시 crew Membership 생성.
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/guard";
-import { joinByInviteCode } from "@/lib/identity-repo";
+import { joinByInviteCode, userExists } from "@/lib/identity-repo";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -10,6 +10,12 @@ export async function POST(request: Request): Promise<Response> {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401, headers: NO_STORE });
+  }
+  if (!(await userExists(user.id))) {
+    return NextResponse.json(
+      { error: "세션이 만료되었습니다. 다시 로그인해 주세요." },
+      { status: 401, headers: NO_STORE },
+    );
   }
 
   const body = (await request.json().catch(() => null)) as { code?: string } | null;

@@ -3,7 +3,11 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/guard";
 import { validateBizNumber } from "@/lib/biz-number";
-import { createStoreWithMaster, findActiveMembership } from "@/lib/identity-repo";
+import {
+  createStoreWithMaster,
+  findActiveMembership,
+  userExists,
+} from "@/lib/identity-repo";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -11,6 +15,13 @@ export async function POST(request: Request): Promise<Response> {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401, headers: NO_STORE });
+  }
+  // 유령/만료 세션 방어(예: DB 리셋) → FK 500 대신 재로그인 유도.
+  if (!(await userExists(user.id))) {
+    return NextResponse.json(
+      { error: "세션이 만료되었습니다. 다시 로그인해 주세요." },
+      { status: 401, headers: NO_STORE },
+    );
   }
   if (await findActiveMembership(user.id)) {
     return NextResponse.json(

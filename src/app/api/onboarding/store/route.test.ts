@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const { getSessionUser } = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
-const { findActiveMembership, createStoreWithMaster } = vi.hoisted(() => ({
+const { findActiveMembership, createStoreWithMaster, userExists } = vi.hoisted(() => ({
   findActiveMembership: vi.fn(),
   createStoreWithMaster: vi.fn(),
+  userExists: vi.fn(),
 }));
 vi.mock("@/lib/guard", () => ({ getSessionUser }));
-vi.mock("@/lib/identity-repo", () => ({ findActiveMembership, createStoreWithMaster }));
+vi.mock("@/lib/identity-repo", () => ({
+  findActiveMembership,
+  createStoreWithMaster,
+  userExists,
+}));
 
 import { POST } from "./route";
 
@@ -22,6 +27,8 @@ describe("POST /api/onboarding/store", () => {
   beforeEach(() => {
     getSessionUser.mockReset();
     getSessionUser.mockResolvedValue({ id: "u1" });
+    userExists.mockReset();
+    userExists.mockResolvedValue(true);
     findActiveMembership.mockReset();
     findActiveMembership.mockResolvedValue(null);
     createStoreWithMaster.mockReset();

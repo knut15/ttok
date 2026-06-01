@@ -9,6 +9,12 @@ import {
   INVITE_TTL_DAYS,
 } from "@/lib/constants";
 
+/** 세션 user 가 DB 에 실존하는지(유령/만료 세션 방어 — 예: DB 리셋 후 옛 쿠키). */
+export async function userExists(userId: string): Promise<boolean> {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  return u !== null;
+}
+
 /** 현재 사용자의 활성 멤버십(가장 오래된 것 우선 — 단일 매장 전제). */
 export function findActiveMembership(userId: string) {
   return prisma.membership.findFirst({

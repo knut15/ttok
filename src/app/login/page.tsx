@@ -2,6 +2,7 @@
 // 합류 링크(?invite=CODE)로 들어오면 코드를 온보딩까지 전달.
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { userExists } from "@/lib/identity-repo";
 import { LoginButtons } from "@/features/auth/components/LoginButtons";
 
 export default async function LoginPage({
@@ -11,8 +12,8 @@ export default async function LoginPage({
 }) {
   const { invite } = await searchParams;
   const session = await auth();
-  if (session?.user?.id) {
-    // 로그인 상태 → 초대코드 있으면 온보딩(join)으로, 없으면 홈(가드가 분기).
+  // 유효한 세션(DB에 user 실존)만 리다이렉트. 유령/만료 세션이면 로그인 버튼 노출(재로그인).
+  if (session?.user?.id && (await userExists(session.user.id))) {
     redirect(invite ? `/onboarding?invite=${encodeURIComponent(invite)}` : "/");
   }
 

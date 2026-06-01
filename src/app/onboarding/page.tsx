@@ -2,7 +2,7 @@
 // 합류 링크(?invite=CODE)로 오면 join 탭 + 코드 자동입력.
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { findActiveMembership } from "@/lib/identity-repo";
+import { findActiveMembership, userExists } from "@/lib/identity-repo";
 import { OnboardingForm } from "@/features/auth/components/OnboardingForm";
 
 export default async function OnboardingPage({
@@ -12,6 +12,7 @@ export default async function OnboardingPage({
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  if (!(await userExists(session.user.id))) redirect("/login"); // 유령/만료 세션
   if (await findActiveMembership(session.user.id)) redirect("/");
 
   const { invite } = await searchParams;
