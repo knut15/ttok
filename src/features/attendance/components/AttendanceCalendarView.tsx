@@ -6,7 +6,7 @@ import { useState, useSyncExternalStore } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { MonthlyCalendar } from "./MonthlyCalendar";
-import { MonthPickerSheet } from "./MonthPickerSheet";
+import { MonthPickerSheet } from "@/components/MonthPickerSheet";
 import { STORE_NAME, SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
 

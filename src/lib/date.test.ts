@@ -133,3 +133,18 @@ describe("buildMonthGrid", () => {
     expect(cells.length % 7).toBe(0);
   });
 });
+
+import { shortMonthLabel, payPeriodLabel } from "./date";
+
+describe("shortMonthLabel — 급여 카드 짧은 월 라벨", () => {
+  it("2026-06 → 6월", () => expect(shortMonthLabel("2026-06")).toBe("6월"));
+  it("2026-05 → 5월", () => expect(shortMonthLabel("2026-05")).toBe("5월"));
+  it("2026-12 → 12월", () => expect(shortMonthLabel("2026-12")).toBe("12월"));
+});
+
+describe("payPeriodLabel — 급여 기간(1일~말일)", () => {
+  it("2026-06 → 06.01 ~ 06.30 (30일)", () => expect(payPeriodLabel("2026-06")).toBe("06.01 ~ 06.30"));
+  it("2026-05 → 05.01 ~ 05.31 (31일)", () => expect(payPeriodLabel("2026-05")).toBe("05.01 ~ 05.31"));
+  it("2026-02 → 02.01 ~ 02.28 (평년)", () => expect(payPeriodLabel("2026-02")).toBe("02.01 ~ 02.28"));
+  it("2028-02 → 02.01 ~ 02.29 (윤년)", () => expect(payPeriodLabel("2028-02")).toBe("02.01 ~ 02.29"));
+})

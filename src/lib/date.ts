@@ -47,6 +47,20 @@ export function formatMonthLabel(month: string): string {
   return `${y}년 ${m}월`;
 }
 
+/** "2026-06" → "6월" (급여 카드 제목용 짧은 월 라벨). */
+export function shortMonthLabel(month: string): string {
+  const m = Number(month.split("-")[1]);
+  return `${m}월`;
+}
+
+/** "2026-06" → "06.01 ~ 06.30" (급여 기간 라벨, 해당 월 1일~말일). */
+export function payPeriodLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  const last = new Date(y, m, 0).getDate(); // m 은 1-index → (y, m, 0) = 그 달 말일
+  const mm = String(m).padStart(2, "0");
+  return `${mm}.01 ~ ${mm}.${String(last).padStart(2, "0")}`;
+}
+
 /** 현재 시각 → "HH:MM" (쟁점 C, client). */
 export function nowHHMM(now: Date = new Date()): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;

@@ -6,9 +6,11 @@ import type { PaySummary } from "@/types";
 
 export function PaySummaryCard({
   summary,
+  monthLabel,
   rangeLabel,
 }: {
   summary: PaySummary;
+  monthLabel: string;
   rangeLabel: string;
 }) {
   return (
@@ -16,7 +18,7 @@ export function PaySummaryCard({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-muted">
-            <span className="font-semibold text-foreground">5월 급여</span>{" "}
+            <span className="font-semibold text-foreground">{monthLabel} 급여</span>{" "}
             {rangeLabel}
           </p>
           <p className="mt-1 text-2xl font-extrabold">

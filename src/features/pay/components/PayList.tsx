@@ -7,7 +7,7 @@ import {
   overtimeLabel,
   isVacationItem,
 } from "@/features/pay/domain";
-import { formatPayRowDate } from "@/lib/date";
+import { formatPayRowDate, shortMonthLabel, payPeriodLabel } from "@/lib/date";
 import { PaySummaryCard } from "./PaySummaryCard";
 
 // 급여 메인 리스트(AC-17): 요약카드 + 일별 행(휴가0원/연장표기/주휴 블루행).
@@ -27,7 +27,11 @@ export function PayList({ month }: { month: string }) {
 
   return (
     <div className="px-5">
-      <PaySummaryCard summary={data.summary} rangeLabel="05.01 ~ 05.29" />
+      <PaySummaryCard
+        summary={data.summary}
+        monthLabel={shortMonthLabel(month)}
+        rangeLabel={payPeriodLabel(month)}
+      />
 
       <ul className="mt-2 divide-y divide-black/5">
         {data.items.map((item, i) => {

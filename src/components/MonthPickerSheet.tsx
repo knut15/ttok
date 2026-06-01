@@ -1,14 +1,14 @@
 "use client";
 
-// 월 선택 시트(S3, AC-12~15). BottomSheet 셸 재사용 + 입사월~현재월 목록(Q1).
-// 범위 계산이 입사월 의미를 가지므로 attendance 도메인 종속(설계 §1.2). 선택 콜백만 담당.
+// 월 선택 시트(공용 — 출퇴근 캘린더/급여 공유). BottomSheet 셸 재사용 + 범위 목록.
+// 범위(입사월~현재월)는 호출자가 joinMonth/currentMonth 로 주입 → 도메인 비종속 presentational.
 import { BottomSheet } from "@/components/BottomSheet";
 import { formatMonthLabel, monthsBetween } from "@/lib/date";
 
 interface MonthPickerSheetProps {
   open: boolean;
   current: string; // "YYYY-MM" 현재 선택월(강조)
-  joinMonth: string; // "YYYY-MM" 입사월
+  joinMonth: string; // "YYYY-MM" 입사월(범위 하한)
   currentMonth: string; // "YYYY-MM" 현재월(범위 상한)
   onSelect: (month: string) => void; // 선택 시 "YYYY-MM"
   onClose: () => void;
