@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 
 type Tab = "create" | "join";
 
-export function OnboardingForm() {
+export function OnboardingForm({ initialCode }: { initialCode?: string }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("create");
+  // 합류 링크로 온 경우(initialCode) join 탭 + 코드 자동입력.
+  const [tab, setTab] = useState<Tab>(initialCode ? "join" : "create");
   const [storeName, setStoreName] = useState("");
   const [bizNumber, setBizNumber] = useState("");
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 

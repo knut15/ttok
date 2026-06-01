@@ -10,21 +10,30 @@ const DEMO_PERSONAS = [
   { email: "seoyeon@crewmon.local", label: "이서연 (멤버)" },
 ];
 
-export function LoginButtons({ devEnabled }: { devEnabled: boolean }) {
+export function LoginButtons({
+  devEnabled,
+  invite,
+}: {
+  devEnabled: boolean;
+  invite?: string;
+}) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // 합류 링크로 들어온 경우 로그인 후 온보딩 join 탭(코드 자동입력)으로 보낸다.
+  const dest = invite ? `/onboarding?invite=${encodeURIComponent(invite)}` : "/";
 
   const devLogin = (addr: string) => {
     if (!addr) return;
     setBusy(true);
-    void signIn("dev", { email: addr, redirectTo: "/" });
+    void signIn("dev", { email: addr, redirectTo: dest });
   };
 
   return (
     <div className="flex flex-col gap-3">
       <button
         type="button"
-        onClick={() => signIn("google", { redirectTo: "/" })}
+        onClick={() => signIn("google", { redirectTo: dest })}
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-surface px-4 py-3 font-semibold text-foreground"
       >
         <span className="text-lg">G</span> 구글로 로그인
