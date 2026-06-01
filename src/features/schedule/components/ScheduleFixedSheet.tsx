@@ -81,7 +81,10 @@ export function ScheduleFixedSheet({
   onUpdate: (input: UpdateFixedInput) => Promise<boolean>;
   onRemove: (id: string) => Promise<boolean>;
 }) {
-  const crewList = crews.filter((c) => c.role === "crew");
+  // 매니저 최상단 정렬.
+  const crewList = crews
+    .filter((c) => c.role === "crew")
+    .sort((a, b) => (a.isManager ? 0 : 1) - (b.isManager ? 0 : 1) || a.id.localeCompare(b.id));
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() => {
     const init: Record<string, Draft> = {};
     for (const c of crewList) init[c.id] = { ...NEW_DRAFT };

@@ -43,6 +43,7 @@ export function MyPageView() {
           <ProfileSummary
             name={data.profile.name}
             avatarInitial={data.profile.avatarInitial}
+            isManager={data.isManager}
           />
           <StoreCard store={data.store} />
           <DocumentBox />

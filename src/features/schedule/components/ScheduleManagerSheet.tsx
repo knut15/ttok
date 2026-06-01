@@ -16,7 +16,10 @@ export function ScheduleManagerSheet({
   onClose: () => void;
   onToggle: (crewId: string, on: boolean) => void;
 }) {
-  const crewList = crews.filter((c) => c.role === "crew");
+  // 매니저 최상단 정렬.
+  const crewList = crews
+    .filter((c) => c.role === "crew")
+    .sort((a, b) => (a.isManager ? 0 : 1) - (b.isManager ? 0 : 1) || a.id.localeCompare(b.id));
   return (
     <BottomSheet open onClose={onClose} title="매니저 지정">
       <p className="pb-3 text-xs text-muted">

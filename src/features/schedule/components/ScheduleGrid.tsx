@@ -19,7 +19,14 @@ export function ScheduleGrid({
   loading: boolean;
   onSelectDate: (date: string) => void;
 }) {
-  const crewList = useMemo(() => crews.filter((c) => c.role === "crew"), [crews]);
+  // 매니저 최상단 정렬.
+  const crewList = useMemo(
+    () =>
+      crews
+        .filter((c) => c.role === "crew")
+        .sort((a, b) => (a.isManager ? 0 : 1) - (b.isManager ? 0 : 1) || a.id.localeCompare(b.id)),
+    [crews],
+  );
   const dates = useMemo(
     () => buildMonthGrid(month).filter((d): d is string => d !== null),
     [month],

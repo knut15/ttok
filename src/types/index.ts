@@ -101,6 +101,7 @@ export interface StoreInfo {
 export interface ProfileResponse {
   profile: UserProfile;
   store: StoreInfo;
+  isManager: boolean; // 현재 사용자가 매니저인지(마이페이지 표기용)
 }
 
 /** PATCH 허용 필드 — 휴대폰/이메일만. name/birthDate는 타입상 표현 불가(컴파일 방어). */

@@ -48,8 +48,9 @@ export async function PATCH(request: Request): Promise<Response> {
 
   // 3) 머지 후 200 + 갱신 profile 반환 (AC-5/6/7)
   const updated = updateProfile(patch, scoped);
+  const { store, isManager } = getProfile(scoped);
   return NextResponse.json(
-    { profile: updated, store: getProfile(scoped).store },
+    { profile: updated, store, isManager },
     { headers: NO_STORE },
   );
 }

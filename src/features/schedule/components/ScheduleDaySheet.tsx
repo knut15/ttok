@@ -85,8 +85,10 @@ export function ScheduleDaySheet({
   type CrewState = keyof typeof STATE_ORDER;
   const stateOf = (e: ScheduleEntry | undefined): CrewState =>
     !e ? "비번" : e.off ? "휴무" : "근무";
+  // 매니저 최상단 → 근무상태(근무→비번→휴무) → id 순.
   const sortedCrew = [...crewList].sort(
     (a, b) =>
+      (a.isManager ? 0 : 1) - (b.isManager ? 0 : 1) ||
       STATE_ORDER[stateOf(byCrew.get(a.id))] - STATE_ORDER[stateOf(byCrew.get(b.id))] ||
       a.id.localeCompare(b.id),
   );

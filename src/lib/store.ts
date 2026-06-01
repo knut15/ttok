@@ -461,7 +461,7 @@ function crewProfile(store: StoreShape, crewId: string): UserProfile {
 /** 프로필+매장 조회. O(1). crewId 생략 → 김민정(회귀, AC-1/AC-4/AC-R2). */
 export function getProfile(crewId: string = DEFAULT_CREW_ID): ProfileResponse {
   const s = getStore();
-  return { profile: crewProfile(s, crewId), store: s.storeInfo };
+  return { profile: crewProfile(s, crewId), store: s.storeInfo, isManager: isManagerCrew(crewId) };
 }
 
 /**
