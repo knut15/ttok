@@ -10,7 +10,7 @@ export function BackButton() {
       type="button"
       aria-label="뒤로가기"
       onClick={() => router.back()}
-      className="text-2xl text-foreground"
+      className="grid h-8 w-8 place-items-center text-2xl leading-none text-foreground"
     >
       ‹
     </button>

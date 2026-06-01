@@ -162,3 +162,15 @@ export interface JoinResult {
   crew: Crew;
   ok: true;
 }
+
+// === FR-2 마스터 수정요청 컨펌 (append-only, leaf) ===
+
+/** 마스터 수정요청 목록 행 — EditRequest + 크루명(서버 조인, 폴백 crewId). */
+export interface MasterRequestRow extends EditRequest {
+  crewName: string;
+}
+
+/** GET /api/master/requests 응답. listRequests 최신순 계승. */
+export interface MasterRequestsResponse {
+  requests: MasterRequestRow[];
+}

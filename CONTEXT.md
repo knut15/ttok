@@ -33,6 +33,8 @@
 | **현재 사용자 전달** (헤더 scope) | 클라이언트가 현재 사용자를 fetch 헤더 `x-crew-id`/`x-role`로 API에 전달한다(`HEADER_CREW_ID`/`HEADER_ROLE`). URL은 불변이라 기존 테스트에 무영향(회귀 0). 헤더 부재 → `role=crew`, `crewId=crew-minjung` 폴백. `readScope(req)`(`src/lib/scope.ts`)가 추출. |
 | **읽기 스코프 강제** (enforceReadScope) | `enforceReadScope(scope, requested?)`: **크루는 requested를 무시하고 본인 crewId를 강제**(타인 데이터 노출 0), **마스터는 requested(쿼리 `?crewId=` 또는 헤더) 허용, 없으면 self**. API GET/PATCH(attendance·pay·profile)가 store 호출 전 적용. 수정요청 생성(POST)은 항상 생성자 본인 crewId로 태그. |
 | **수락 마스터 게이트** | `POST /api/attendance/requests/approve`는 `readScope(req).role !== "master"` 이면 **403 + store 불변**(`approveRequest` 미호출). UI는 `EditRequestList`의 `canApprove`(=`role==="master"`) prop으로 수락 버튼을 숨긴다. UI 숨김 + API 403 이중 방어. |
+| **마스터 수정요청 컨펌** | 마스터가 전체 크루의 `EditRequest`를 `GET /api/master/requests`(마스터 게이트 role≠master→403, `api/master/crews` 게이트 복제)로 조회하고 `POST /api/attendance/requests/approve`로 수락하는 경로. 응답은 `MasterRequestsResponse{requests: MasterRequestRow[]}`로, `listRequests()`(전체 최신순) ⨝ `listCrews()`(crewId→name) **서버 조인**으로 `crewName`(폴백 crewId)을 포함한다(클라 2-fetch 회피, ADR 0006). UI는 `/master` 집계뷰 아래 "수정요청 컨펌" 섹션(`MasterRequestList` presentational, 대기 요청에만 수락 버튼·E-3). 크루는 본인 요청만 조회(403 격리). 수락 시 `req.crewId` 레코드에 `after` 반영·`대기→수락` 전이 후 목록 reload. |
+| **홈 토글 스코프** | `ClockToggle`(홈 출퇴근 토글)도 `authHeaders(user)` + `crewId`(= `user.crewId ?? user.id`) effect 의존성으로 본인 스코프를 강제한다(FR-1 이전 김민정 폴백 누수 교정). 전환 시 `setRecord(null)` 동기 리셋 + 재fetch로 stale 0(useAttendance 패턴). |
 | **현재 사용자 컨텍스트** (CurrentUserProvider) | `"use client"` Context. 초기 state는 항상 김민정(`crew-minjung`, role crew) → SSR/CSR 1차 렌더 동일(하이드레이션 mismatch 0). `localStorage`(`crewmon.currentUser`)는 **mount 후 useEffect에서만** 읽어 복원(초기 useState 미참조). `setCurrentUser`가 state+localStorage 갱신. `useCurrentUser()` 소비, `authHeaders(user)` → `{x-crew-id, x-role}`. |
 | **역할전환** (RoleSwitcher) | 마이페이지의 mock 계정 전환 UI. `GET /api/crews`(→ `listCrews()`) 목록에서 선택 시 `setCurrentUser`. 전환 시 데이터 훅들이 `crewId`를 effect 의존성으로 두어 재fetch·무효화한다(stale은 active cleanup으로 차단). 마스터 선택 시 마이페이지에 `/master` 진입 링크 노출. |
 | **마스터 집계뷰** (MasterView / `/master`) | 마스터 전용 집계 화면. `app/master/page.tsx`(RSC 셸) → `MasterView`(`"use client"`). role 진실원이 클라 컨텍스트(localStorage)라 SSR 가드 불가 → **client 가드**: mount 후(역할 복원 완료) role≠master 면 `router.replace("/")`. **mount 전(role 미확정)에는 섣부른 리다이렉트 금지**(로딩 가드, `useSyncExternalStore` mount 게이트). 월 선택(`MonthSelector` + ‹ › 이동) + `useMasterSummary(month)`(→ `GET /api/master/crews`) → `CrewSummaryList`. 빈 크루/없는 월은 0 graceful(E-5). |
@@ -45,6 +47,7 @@
 - 캘린더 배지: 그린 `+N분` = 정규 초과 연장분, `-N분` = 정규 대비 부족분. `+0분`은 숨김(노이즈 제거).
 - 휴가일: 일급 0원, 캘린더 `휴가` 라벨.
 - 메인 컬러: 코랄/오렌지 `#F26B4D` (1차 액션·강조).
+- 아이콘 버튼 규격: 아이콘 전용(텍스트 없는) **클릭 가능** 버튼의 터치 타겟은 32×32(`grid h-8 w-8 place-items-center leading-none` + 중앙정렬)로 통일. 대상은 월/일자 네비 `‹ ›`·뒤로 `‹`·프로필 `📷`. 비클릭 장식 span(`🔔`/`⤓`)·텍스트 버튼(상태변경/수락/급여명세서 등)은 대상 아님(FR-3, ADR 0006).
 
 ## 시드 불변식 (자의적 구성 금지 — `src/lib/seed.test.ts`가 강제)
 

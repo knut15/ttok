@@ -137,4 +137,42 @@ describe("PATCH /api/attendance", () => {
     expect(res.status).toBe(200);
     expect((await res.json()).clockIn).toBe("09:00");
   });
+
+  // FR-1 / AC-1 / AC-4: 크루별 출근 격리. 크루A(crew-2) 출근 토글(x-crew-id 헤더)이
+  // crew-2 레코드에만 기록되고, 크루B(crew-3) GET 에는 반영되지 않는다(누수 0).
+  it("크루A 출근 토글은 본인(crew-2) 레코드에만 기록되고 크루B(crew-3)에는 미반영된다", async () => {
+    // 크루A(crew-2) 출근
+    const patched = await PATCH(
+      req("/api/attendance?date=2026-06-01", {
+        method: "PATCH",
+        headers: { "x-role": "crew", "x-crew-id": "crew-2" },
+        body: JSON.stringify({ field: "clockIn", time: "09:00" }),
+      }),
+    );
+    expect(patched.status).toBe(200);
+    expect((await patched.json()).clockIn).toBe("09:00");
+
+    // 크루A(crew-2) GET 에는 반영
+    const gotA = await GET(
+      req("/api/attendance?month=2026-06", {
+        headers: { "x-role": "crew", "x-crew-id": "crew-2" },
+      }),
+    );
+    const bodyA = (await gotA.json()) as { date: string; clockIn: string }[];
+    expect(bodyA.find((r) => r.date === "2026-06-01")?.clockIn).toBe("09:00");
+
+    // 크루B(crew-3) GET 에는 미반영(격리)
+    const gotB = await GET(
+      req("/api/attendance?month=2026-06", {
+        headers: { "x-role": "crew", "x-crew-id": "crew-3" },
+      }),
+    );
+    const bodyB = (await gotB.json()) as { date: string }[];
+    expect(bodyB.some((r) => r.date === "2026-06-01")).toBe(false);
+
+    // 헤더 부재(기본 김민정 폴백) GET 에도 미반영 — 폴백 보존 회귀 확인
+    const gotDefault = await GET(req("/api/attendance?month=2026-06"));
+    const bodyDefault = (await gotDefault.json()) as { date: string }[];
+    expect(bodyDefault.some((r) => r.date === "2026-06-01")).toBe(false);
+  });
 });

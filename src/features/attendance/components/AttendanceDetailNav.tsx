@@ -18,7 +18,7 @@ export function AttendanceDetailNav({ date }: { date: string }) {
           type="button"
           aria-label="뒤로"
           onClick={() => router.push("/attendance")}
-          className="text-2xl leading-none text-muted"
+          className="grid h-8 w-8 place-items-center text-2xl leading-none text-muted"
         >
           ‹
         </button>
@@ -31,7 +31,7 @@ export function AttendanceDetailNav({ date }: { date: string }) {
               type="button"
               aria-label="이전 날"
               onClick={() => router.push(`/attendance/${shiftDay(date, -1)}`)}
-              className="text-2xl leading-none text-muted"
+              className="grid h-8 w-8 place-items-center text-2xl leading-none text-muted"
             >
               ‹
             </button>
@@ -39,7 +39,7 @@ export function AttendanceDetailNav({ date }: { date: string }) {
               type="button"
               aria-label="다음 날"
               onClick={() => router.push(`/attendance/${shiftDay(date, 1)}`)}
-              className="text-2xl leading-none text-muted"
+              className="grid h-8 w-8 place-items-center text-2xl leading-none text-muted"
             >
               ›
             </button>

@@ -9,7 +9,9 @@ import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { useMasterSummary } from "@/features/accounts/hooks/useMasterSummary";
+import { useMasterRequests } from "@/features/accounts/hooks/useMasterRequests";
 import { CrewSummaryList } from "./CrewSummaryList";
+import { MasterRequestList } from "./MasterRequestList";
 import { SEED_MONTH } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth } from "@/lib/date";
 
@@ -27,6 +29,11 @@ export function MasterView() {
   const { user } = useCurrentUser();
   const [month, setMonth] = useState(SEED_MONTH);
   const { crews, loading } = useMasterSummary(month);
+  const {
+    requests,
+    loading: requestsLoading,
+    approve,
+  } = useMasterRequests();
 
   // 가드: mount 후(role 확정) 크루면 홈으로. mount 전엔 리다이렉트 금지(role 미확정).
   useEffect(() => {
@@ -53,7 +60,7 @@ export function MasterView() {
               type="button"
               aria-label="이전 달"
               onClick={() => setMonth(shiftMonth(month, -1))}
-              className="text-muted"
+              className="grid h-8 w-8 place-items-center leading-none text-muted"
             >
               ‹
             </button>
@@ -62,7 +69,7 @@ export function MasterView() {
               type="button"
               aria-label="다음 달"
               onClick={() => setMonth(shiftMonth(month, 1))}
-              className="text-muted"
+              className="grid h-8 w-8 place-items-center leading-none text-muted"
             >
               ›
             </button>
@@ -77,6 +84,18 @@ export function MasterView() {
       ) : (
         <CrewSummaryList crews={crews} />
       )}
+
+      {/* FR-2: 마스터 수정요청 컨펌 섹션(가드 하위). 전체 크루 요청 조회·수락. */}
+      <section className="pt-8">
+        <h2 className="px-5 pb-3 text-lg font-bold">수정요청 컨펌</h2>
+        {requestsLoading ? (
+          <p className="px-5 pt-2 text-center text-sm text-muted">
+            수정요청 불러오는 중…
+          </p>
+        ) : (
+          <MasterRequestList requests={requests} onApprove={approve} />
+        )}
+      </section>
     </div>
   );
 }

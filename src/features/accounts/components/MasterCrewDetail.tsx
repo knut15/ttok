@@ -75,7 +75,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
               type="button"
               aria-label="이전 달"
               onClick={() => setMonth(shiftMonth(month, -1))}
-              className="text-muted"
+              className="grid h-8 w-8 place-items-center leading-none text-muted"
             >
               ‹
             </button>
@@ -84,7 +84,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
               type="button"
               aria-label="다음 달"
               onClick={() => setMonth(shiftMonth(month, 1))}
-              className="text-muted"
+              className="grid h-8 w-8 place-items-center leading-none text-muted"
             >
               ›
             </button>
