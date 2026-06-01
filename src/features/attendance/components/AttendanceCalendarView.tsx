@@ -3,13 +3,12 @@
 // 월 이동 client 래퍼(AC-10/11): month useState + ‹ 라벨 › 화살표 + 매장명 + 캘린더.
 // page(RSC) 셸은 보존하고 월 상태를 이 경계로 지역화(architect §2.3).
 import { useState, useSyncExternalStore } from "react";
-import { AppHeader } from "@/components/AppHeader";
-import { MonthSelector } from "@/components/MonthSelector";
+import { MonthBar } from "@/components/MonthBar";
 import { MonthlyCalendar } from "./MonthlyCalendar";
 import { ClockFab } from "./ClockFab";
 import { MonthPickerSheet } from "@/components/MonthPickerSheet";
 import { STORE_NAME, SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
-import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
+import { todayMonth } from "@/lib/date";
 
 // 마운트 여부 구독(HomeToday 동일 패턴, AC-T6-7). 서버/첫CSR 스냅샷 false →
 // SSR·하이드레이션은 SEED_MONTH 중립 스냅샷, 마운트 후 실제 현재월로 초기화.
@@ -33,33 +32,7 @@ export function AttendanceCalendarView() {
 
   return (
     <div>
-      <AppHeader
-        title={
-          <span className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="이전 달"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ‹
-            </button>
-            <MonthSelector
-              label={formatMonthLabel(month)}
-              onClick={() => setPickerOpen(true)}
-            />
-            <button
-              type="button"
-              aria-label="다음 달"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ›
-            </button>
-          </span>
-        }
-        right={<span className="text-muted">⤓</span>}
-      />
+      <MonthBar month={month} onChange={setMonth} onPick={() => setPickerOpen(true)} />
       <div className="flex items-center gap-2 px-5 pb-3 text-sm font-semibold">
         <span aria-hidden>🏪</span>
         <span className="truncate">{STORE_NAME}</span>

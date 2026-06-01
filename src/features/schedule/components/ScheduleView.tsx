@@ -3,8 +3,7 @@
 // 스케쥴 호스트 뷰(T19). 월 이동 + 캘린더 + 날짜 편집 시트.
 // 읽기는 전원, 작성(추가/수정/삭제)은 canWrite(master/매니저)만 — 시트가 분기 처리.
 import { useCallback, useState, useSyncExternalStore } from "react";
-import { AppHeader } from "@/components/AppHeader";
-import { MonthSelector } from "@/components/MonthSelector";
+import { MonthBar } from "@/components/MonthBar";
 import { useSchedule } from "@/features/schedule/hooks/useSchedule";
 import {
   authHeaders,
@@ -16,7 +15,7 @@ import { ScheduleDaySheet } from "./ScheduleDaySheet";
 import { ScheduleManagerSheet } from "./ScheduleManagerSheet";
 import { ScheduleFixedSheet } from "./ScheduleFixedSheet";
 import { SEED_MONTH } from "@/lib/constants";
-import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
+import { todayMonth } from "@/lib/date";
 
 type ViewMode = "calendar" | "grid";
 
@@ -111,29 +110,7 @@ export function ScheduleView() {
 
   return (
     <div className="pb-24">
-      <AppHeader
-        title={
-          <span className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="이전 달"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ‹
-            </button>
-            <MonthSelector label={formatMonthLabel(month)} />
-            <button
-              type="button"
-              aria-label="다음 달"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ›
-            </button>
-          </span>
-        }
-      />
+      <MonthBar month={month} onChange={setMonth} />
       <div className="flex items-center justify-between px-5 pb-3">
         <p className="text-sm text-muted">
           근무 스케쥴{canWrite ? " · 탭하여 근무자 배정" : ""}

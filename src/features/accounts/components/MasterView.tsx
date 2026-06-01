@@ -5,8 +5,7 @@
 // 하이드레이션 안전: mount 전(localStorage 복원 전)에는 섣부른 리다이렉트 금지(로딩 가드).
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { AppHeader } from "@/components/AppHeader";
-import { MonthSelector } from "@/components/MonthSelector";
+import { MonthBar } from "@/components/MonthBar";
 import {
   authHeaders,
   useCurrentUser,
@@ -17,10 +16,8 @@ import { useMasterSubstitutes } from "@/features/accounts/hooks/useMasterSubstit
 import { CrewSummaryList } from "./CrewSummaryList";
 import { CrewWorkChart } from "./CrewWorkChart";
 import { MasterRequestList } from "./MasterRequestList";
-import { NotificationBell } from "@/components/NotificationBell";
 import { formatPayRowDate } from "@/lib/date";
 import { SEED_MONTH } from "@/lib/constants";
-import { formatMonthLabel, shiftMonth } from "@/lib/date";
 
 // 마운트 여부 구독(AttendanceCalendarView 동일 패턴). 서버/첫CSR false →
 // 마운트 후 localStorage 역할 복원이 끝난 시점에서만 가드 판정.
@@ -82,30 +79,7 @@ export function MasterView() {
 
   return (
     <div className="pb-24">
-      <AppHeader
-        title={
-          <span className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="이전 달"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ‹
-            </button>
-            <MonthSelector label={formatMonthLabel(month)} />
-            <button
-              type="button"
-              aria-label="다음 달"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ›
-            </button>
-          </span>
-        }
-        right={<NotificationBell />}
-      />
+      <MonthBar month={month} onChange={setMonth} />
       <p className="px-5 pb-4 text-sm text-muted">전체 멤버 근무 집계</p>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">

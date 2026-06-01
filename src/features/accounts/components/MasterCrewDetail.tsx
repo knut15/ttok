@@ -7,9 +7,7 @@
 // 멤버가 이 경로 접근 시 가드(router.replace("/")). 빈 멤버 graceful.
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { AppHeader } from "@/components/AppHeader";
-import { MonthSelector } from "@/components/MonthSelector";
+import { MonthBar } from "@/components/MonthBar";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { useMonthAttendance } from "@/features/attendance/hooks/useAttendance";
 import {
@@ -18,12 +16,7 @@ import {
 } from "@/features/attendance/domain";
 import { SEED_MONTH } from "@/lib/constants";
 import type { Tone } from "@/lib/constants";
-import {
-  formatDotDate,
-  formatMonthLabel,
-  shiftMonth,
-  weekdayKo,
-} from "@/lib/date";
+import { formatDotDate, weekdayKo } from "@/lib/date";
 
 const emptySubscribe = () => () => {};
 
@@ -68,34 +61,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
 
   return (
     <div className="pb-24">
-      <AppHeader
-        title={
-          <span className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="이전 달"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ‹
-            </button>
-            <MonthSelector label={formatMonthLabel(month)} />
-            <button
-              type="button"
-              aria-label="다음 달"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-              className="grid h-8 w-8 place-items-center leading-none text-muted"
-            >
-              ›
-            </button>
-          </span>
-        }
-        right={
-          <Link href="/master" aria-label="집계로 돌아가기" className="text-muted">
-            집계 ›
-          </Link>
-        }
-      />
+      <MonthBar month={month} onChange={setMonth} />
       <p className="px-5 pb-4 text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">

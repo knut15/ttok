@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { AppHeader } from "@/components/AppHeader";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { RoleSwitcher } from "@/features/accounts/components/RoleSwitcher";
@@ -18,22 +17,7 @@ export function MyPageView() {
   const { user } = useCurrentUser();
 
   return (
-    <div className="pb-24">
-      <AppHeader
-        title=""
-        right={
-          <span className="relative inline-block" aria-label="알림">
-            <span aria-hidden className="text-2xl text-foreground">
-              🔔
-            </span>
-            <span
-              aria-hidden
-              className="absolute right-0 top-0 h-2 w-2 rounded-full bg-coral"
-            />
-          </span>
-        }
-      />
-
+    <div className="pb-24 pt-3">
       {loading || !data ? (
         <div className="px-5 pt-10 text-center text-sm text-muted">
           불러오는 중…

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import { GlobalHeader } from "@/components/GlobalHeader";
 import { CurrentUserProvider } from "@/features/accounts/context/CurrentUserProvider";
 
 const geistSans = Geist({
@@ -28,6 +29,7 @@ export default function RootLayout({
       <body className="bg-background">
         <CurrentUserProvider>
           <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
+            <GlobalHeader />
             <main className="flex-1 pb-24">{children}</main>
             <BottomNav />
           </div>
