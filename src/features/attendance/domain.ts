@@ -41,6 +41,15 @@ export function clockPhase(record: AttendanceRecord | null): ClockPhase {
 }
 
 /**
+ * 홈 진행바 우측 % 라벨 노출 여부.
+ *  - done(퇴근 완료) → true
+ *  - before / working → false(미출근·근무중에는 % 숨김)
+ */
+export function shouldShowPercent(phase: ClockPhase): boolean {
+  return phase === "done";
+}
+
+/**
  * 홈 진행바 좌측 라벨(T13). 실제 출퇴근 시각으로 표기.
  *  - before / clockIn 없음 → 정규시간 placeholder("08:00 ~ 15:00")
  *  - working(clockIn O, clockOut X) → "${clockIn} ~"(퇴근 미정)

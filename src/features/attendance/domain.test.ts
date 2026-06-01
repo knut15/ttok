@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { formatBadge, clockPhase, clockRangeLabel } from "./domain";
+import {
+  formatBadge,
+  clockPhase,
+  clockRangeLabel,
+  shouldShowPercent,
+} from "./domain";
 import type { AttendanceRecord } from "@/types";
 
 function rec(p: Partial<AttendanceRecord>): AttendanceRecord {
@@ -83,5 +88,19 @@ describe("clockRangeLabel (T13: 홈 진행바 좌측 라벨)", () => {
     expect(
       clockRangeLabel(rec({ clockIn: "14:30", clockOut: "15:30" }), "done"),
     ).toBe("14:30 ~ 15:30");
+  });
+});
+
+describe("shouldShowPercent (홈 진행바 우측 % 라벨: 퇴근 완료 후에만)", () => {
+  it("done(퇴근 완료)이면 % 라벨 노출", () => {
+    expect(shouldShowPercent("done")).toBe(true);
+  });
+
+  it("before(미출근)이면 % 라벨 미노출", () => {
+    expect(shouldShowPercent("before")).toBe(false);
+  });
+
+  it("working(근무중)이면 % 라벨 미노출", () => {
+    expect(shouldShowPercent("working")).toBe(false);
   });
 });
