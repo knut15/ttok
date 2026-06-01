@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, POST } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 
 function post(body: unknown) {
   return new Request("http://localhost/api/attendance/requests", {
@@ -11,7 +11,9 @@ function post(body: unknown) {
 const getReq = new Request("http://localhost/api/attendance/requests");
 
 describe("/api/attendance/requests", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-9
   it("POST 로 요청을 저장하면 GET 이 status:대기 로 포함한다", async () => {

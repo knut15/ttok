@@ -21,7 +21,7 @@ export async function GET(request: Request): Promise<Response> {
     await resolveScope(request),
     url.searchParams.get("crewId") ?? undefined,
   );
-  const records = getMonthRecords(month, scoped);
+  const records = await getMonthRecords(month, scoped);
   return NextResponse.json(records, { headers: NO_STORE });
 }
 
@@ -53,7 +53,7 @@ export async function PATCH(request: Request): Promise<Response> {
         { status: 400, headers: NO_STORE },
       );
     }
-    const next = upsertTodayClock(date, body.field, body.time, scoped);
+    const next = await upsertTodayClock(date, body.field, body.time, scoped);
     return NextResponse.json(next, { headers: NO_STORE });
   }
 
@@ -63,7 +63,7 @@ export async function PATCH(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  const updated = updateStatus(date, body.status, scoped);
+  const updated = await updateStatus(date, body.status, scoped);
   if (!updated) {
     return NextResponse.json(
       { error: "해당 날짜 레코드가 없습니다." },

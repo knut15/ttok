@@ -1,6 +1,7 @@
 // GET 수정요청 내역 / POST 수정요청 생성(AC-9). 빈 사유 400(엣지#6).
 import { NextResponse } from "next/server";
 import { addRequest, listRequests } from "@/lib/store";
+import { DEFAULT_CREW_ID } from "@/lib/constants";
 import { WORK_STATUSES } from "@/lib/constants";
 import { parseHHMM } from "@/lib/time";
 import { todayDate } from "@/lib/date";
@@ -11,19 +12,15 @@ import type { EditRequestChange, WorkStatus } from "@/types";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request?: Request): Promise<Response> {
-  // T8-4: 헤더 없으면(기존 테스트) listRequests() 전체 — 회귀 0. 헤더 있으면 scope 적용.
-  if (!request) return NextResponse.json(listRequests(), { headers: NO_STORE });
-  const scope = (await resolveScope(request));
+  // 본인(또는 마스터의 ?crewId 대상) 수정요청만. 마스터 전체 열람은 /api/master/requests.
+  if (!request) {
+    return NextResponse.json(await listRequests(DEFAULT_CREW_ID), { headers: NO_STORE });
+  }
   const scoped = enforceReadScope(
-    scope,
+    await resolveScope(request),
     new URL(request.url).searchParams.get("crewId") ?? undefined,
   );
-  // 마스터(scoped 미지정 = self master)는 전체 열람, 멤버는 본인 태그만.
-  const list =
-    scope.role === "master" && !new URL(request.url).searchParams.get("crewId")
-      ? listRequests()
-      : listRequests(scoped);
-  return NextResponse.json(list, { headers: NO_STORE });
+  return NextResponse.json(await listRequests(scoped), { headers: NO_STORE });
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -114,7 +111,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // AC-9: 요청은 항상 생성자 본인 crewId 로 태그(scope.crewId, 헤더 없으면 김민정).
-  const created = addRequest({
+  const created = await addRequest({
     date: body.date,
     reason: body.reason.trim().slice(0, 100),
     after: body.after,

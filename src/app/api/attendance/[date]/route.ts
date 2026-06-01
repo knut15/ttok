@@ -26,6 +26,6 @@ export async function GET(
     new URL(request.url).searchParams.get("crewId") ?? undefined,
   );
   // AC-2(T12): 유효 날짜인데 기록 없음 → 200 + null(클라가 record 없음으로 처리).
-  const record = getRecord(date, scoped);
+  const record = await getRecord(date, scoped);
   return NextResponse.json(record, { headers: NO_STORE });
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 
 function ctx(date: string) {
   return { params: Promise.resolve({ date }) };
@@ -8,7 +8,9 @@ function ctx(date: string) {
 const req = new Request("http://localhost/api/pay/x");
 
 describe("GET /api/pay/[date]", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-18: amount === paidMinutes × wage 검산
   // AC-T3-6: 5/28 실근무 392분 인정 반영(67080→67424 의도적 갱신).

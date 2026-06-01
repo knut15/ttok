@@ -17,7 +17,7 @@ export async function GET(request: Request): Promise<Response> {
     (await resolveScope(request)),
     url.searchParams.get("crewId") ?? undefined,
   );
-  const records = getMonthRecords(month, scoped);
+  const records = await getMonthRecords(month, scoped);
   const items = buildPayItems(records);
   const deductMinutes = records.reduce((s, r) => s + r.deductMinutes, 0);
   const summary = buildPaySummary(items, { deductMinutes });

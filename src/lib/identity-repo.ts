@@ -15,6 +15,23 @@ export async function userExists(userId: string): Promise<boolean> {
   return u !== null;
 }
 
+/** scope 의 매장 id 해석: 세션 storeId 우선, 없으면(헤더/테스트) crewId 로 조회. */
+export async function resolveStoreId(scope: {
+  storeId?: string;
+  crewId: string;
+}): Promise<string | null> {
+  return scope.storeId ?? storeIdForCrew(scope.crewId);
+}
+
+/** crewId(operationalId 또는 membershipId)가 속한 매장 id. 운영행 생성/스코프용. 없으면 null. */
+export async function storeIdForCrew(crewId: string): Promise<string | null> {
+  const m = await prisma.membership.findFirst({
+    where: { OR: [{ operationalId: crewId }, { id: crewId }] },
+    select: { storeId: true },
+  });
+  return m?.storeId ?? null;
+}
+
 /** 현재 사용자의 활성 멤버십(가장 오래된 것 우선 — 단일 매장 전제). */
 export function findActiveMembership(userId: string) {
   return prisma.membership.findFirst({

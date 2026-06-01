@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, PATCH } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 
 function req(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
 }
 
 describe("GET /api/attendance", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-6
   it("월간 레코드 배열을 반환하고 각 레코드가 계약 필드를 가진다", async () => {
@@ -65,7 +67,9 @@ describe("GET /api/attendance", () => {
 });
 
 describe("PATCH /api/attendance", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-8: status 변경 후 GET 시 반영
   it("status 를 연장으로 변경하면 응답과 직후 조회에 반영된다", async () => {

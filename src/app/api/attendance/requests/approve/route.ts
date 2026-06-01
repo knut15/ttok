@@ -24,7 +24,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const result = approveRequest(body.id);
+  const result = await approveRequest(body.id);
   if (!result) {
     return NextResponse.json(
       { error: "존재하지 않는 요청입니다." },

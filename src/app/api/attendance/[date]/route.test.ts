@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 
 function ctx(date: string) {
   return { params: Promise.resolve({ date }) };
@@ -8,7 +8,9 @@ function ctx(date: string) {
 const req = new Request("http://localhost/api/attendance/x");
 
 describe("GET /api/attendance/[date]", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-7
   it("존재하는 날짜는 단일 상세를 200으로 반환한다", async () => {

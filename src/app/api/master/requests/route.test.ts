@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
-import { __resetStore, addRequest } from "@/lib/store";
+import { addRequest } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID } from "@/lib/constants";
 import type { MasterRequestsResponse } from "@/types";
 
@@ -11,17 +12,19 @@ function get(headers?: Record<string, string>) {
 const MASTER = { "x-role": "master", "x-crew-id": MASTER_ID } as const;
 
 describe("GET /api/master/requests — 마스터 수정요청 조회 (FR-2)", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-5/AC-6: 마스터는 전체 멤버 요청을 200·최신순·멤버명 매핑으로 받는다.
   it("마스터는 전체 멤버의 요청을 200·멤버명 포함으로 반환한다", async () => {
-    addRequest({
+    await addRequest({
       date: "2026-05-04",
       reason: "정정A",
       after: { status: "정상", clockIn: "08:00", clockOut: "15:00" },
       crewId: "crew-2",
     });
-    addRequest({
+    await addRequest({
       date: "2026-05-05",
       reason: "정정B",
       after: { status: "연장", clockIn: "08:00", clockOut: "15:34" },

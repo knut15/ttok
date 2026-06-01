@@ -4,37 +4,38 @@ import {
   getMonthRecords,
   getProfile,
   listCrews,
-  getCrewSummaries,
   createInvite,
   joinByInvite,
   isMaster,
 } from "./store";
+import { getStoreCrewSummaries } from "./master-summary";
+import { resetDb } from "./db-seed";
 import { buildSeedRecords } from "./seed";
 import { DEFAULT_CREW_ID, MASTER_ID, SEED_MONTH } from "./constants";
 
-beforeEach(() => {
-  __resetStore();
+let storeId: string;
+beforeEach(async () => {
+  __resetStore(); // 인메모리(프로필/crews/invites) — 미이관 도메인
+  storeId = await resetDb(); // DB(출퇴근/집계) — 이관 도메인
 });
 
 describe("getMonthRecords — crewId 스코프 (AC-2 / AC-3 / AC-R2)", () => {
-  it("인자 생략 시 김민정(DEFAULT_CREW_ID) 데이터를 반환한다 (회귀, AC-R2)", () => {
-    const records = getMonthRecords(SEED_MONTH);
+  it("인자 생략 시 김민정(DEFAULT_CREW_ID) 데이터를 반환한다 (회귀, AC-R2)", async () => {
+    const records = await getMonthRecords(SEED_MONTH);
     const expected = buildSeedRecords();
     expect(records).toHaveLength(expected.length);
-    // 기존 시드와 동일 날짜 집합
     expect(records.map((r) => r.date)).toEqual(expected.map((r) => r.date).sort());
   });
 
-  it("crewId='crew-2' 지정 시 멤버2 데이터를 반환한다 (AC-3)", () => {
-    const records = getMonthRecords(SEED_MONTH, "crew-2");
+  it("crewId='crew-2' 지정 시 멤버2 데이터를 반환한다 (AC-3)", async () => {
+    const records = await getMonthRecords(SEED_MONTH, "crew-2");
     expect(records.length).toBeGreaterThan(0);
-    // 김민정과 다른 데이터(본인 격리)
-    const minjung = getMonthRecords(SEED_MONTH, DEFAULT_CREW_ID);
+    const minjung = await getMonthRecords(SEED_MONTH, DEFAULT_CREW_ID);
     expect(JSON.stringify(records)).not.toBe(JSON.stringify(minjung));
   });
 
-  it("등록되지 않은 crewId 는 빈 배열을 반환한다 (NaN/crash 방어, E-5)", () => {
-    expect(getMonthRecords(SEED_MONTH, "crew-nonexistent")).toEqual([]);
+  it("등록되지 않은 crewId 는 빈 배열을 반환한다 (NaN/crash 방어, E-5)", async () => {
+    expect(await getMonthRecords(SEED_MONTH, "crew-nonexistent")).toEqual([]);
   });
 });
 
@@ -53,25 +54,23 @@ describe("listCrews — mock 계정 목록 (AC-1)", () => {
   });
 });
 
-describe("getCrewSummaries — 마스터 집계 (AC-10 / AC-11)", () => {
-  it("멤버 4명의 근무/연장/휴가 요약을 반환한다(마스터 제외)", () => {
-    const summaries = getCrewSummaries(SEED_MONTH);
+describe("getStoreCrewSummaries — 마스터 집계(Prisma) (AC-10 / AC-11)", () => {
+  it("멤버 4명의 근무/연장/휴가 요약을 반환한다(마스터 제외)", async () => {
+    const summaries = await getStoreCrewSummaries(storeId, SEED_MONTH);
     expect(summaries).toHaveLength(4);
-    // 마스터는 집계 대상이 아니다
     expect(summaries.some((s) => s.crewId === MASTER_ID)).toBe(false);
     const minjung = summaries.find((s) => s.crewId === DEFAULT_CREW_ID)!;
     expect(minjung.name).toBe("김민정");
-    // 김민정 5월 근무시간 합계 > 0
     expect(minjung.workMinutes).toBeGreaterThan(0);
   });
 
-  it("멤버2 의 휴가일 수를 정확히 집계한다(휴가 1건)", () => {
-    const crew2 = getCrewSummaries(SEED_MONTH).find((s) => s.crewId === "crew-2")!;
+  it("멤버2 의 휴가일 수를 정확히 집계한다(휴가 1건)", async () => {
+    const crew2 = (await getStoreCrewSummaries(storeId, SEED_MONTH)).find((s) => s.crewId === "crew-2")!;
     expect(crew2.vacationDays).toBe(1);
   });
 
-  it("데이터 없는 월은 0 집계(NaN 방어, E-5/E-6)", () => {
-    const summaries = getCrewSummaries("2099-01");
+  it("데이터 없는 월은 0 집계(NaN 방어, E-5/E-6)", async () => {
+    const summaries = await getStoreCrewSummaries(storeId, "2099-01");
     for (const s of summaries) {
       expect(s.workMinutes).toBe(0);
       expect(s.overtimeMinutes).toBe(0);
@@ -80,7 +79,7 @@ describe("getCrewSummaries — 마스터 집계 (AC-10 / AC-11)", () => {
   });
 });
 
-describe("createInvite / joinByInvite — 초대 플로우 (AC-13 / AC-14 / E-2 / E-2b)", () => {
+describe("createInvite / joinByInvite — 레거시 인메모리 초대 플로우", () => {
   it("createInvite 는 대기 상태의 고유 코드를 발급한다 (AC-13)", () => {
     const invite = createInvite(MASTER_ID);
     expect(invite.code).toBeTruthy();
@@ -122,22 +121,8 @@ describe("isMaster — 역할 판정", () => {
   });
 });
 
-// dev HMR 잔존 store 형태 가드 — T8 store 스키마 변경 후 옛 store(globalThis)가 살아남아
-// recordsByCrew 가 undefined 이면 전 API 500 나던 버그. getStore 가드가 자동 재생성해야 한다.
+// 프로필(인메모리)은 옛 형태 store 주입 시에도 가드가 재생성한다.
 describe("getStore 형태 가드 (HMR stale store 자동 재생성)", () => {
-  it("옛 형태(records Map만, recordsByCrew 부재) 주입 시 getMonthRecords 가 throw 없이 재생성·동작", () => {
-    // T8 이전 형태를 globalThis 에 강제 주입(HMR 잔존 시뮬레이션).
-    (globalThis as unknown as { __crewmonStore: unknown }).__crewmonStore = {
-      records: new Map(),
-      requests: [],
-      seq: 1,
-    };
-    // 가드가 형태 불일치를 감지하고 createStore() 로 재생성 → 김민정 시드 반환.
-    const recs = getMonthRecords(SEED_MONTH);
-    expect(Array.isArray(recs)).toBe(true);
-    expect(recs.length).toBeGreaterThan(0);
-  });
-
   it("프로필 접근도 옛 형태에서 재생성되어 동작(profilesByCrew 부재 방어)", () => {
     (globalThis as unknown as { __crewmonStore: unknown }).__crewmonStore = {
       records: new Map(),

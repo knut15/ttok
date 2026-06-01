@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 
 function req(url: string) {
   return new Request(`http://localhost${url}`);
 }
 
 describe("GET /api/pay", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-10
   it("{summary, items} 형태를 반환하고 totalPay === Σ items.amount", async () => {

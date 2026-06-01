@@ -1,26 +1,26 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  __resetStore,
   getRecord,
   updateStatus,
   upsertTodayClock,
   addRequest,
   approveRequest,
 } from "./store";
+import { resetDb } from "./db-seed";
 import { calcPaidMinutes, calcDailyPay } from "./pay";
 import { HOURLY_WAGE, DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";
 import type { EditRequestChange } from "@/types";
 
 const VACATION_DATE = "2026-05-29"; // 시드상 휴가
 
-beforeEach(() => {
-  __resetStore();
+beforeEach(async () => {
+  await resetDb();
 });
 
 describe("upsertTodayClock — 휴가일 토글(버그1)", () => {
-  it("휴가일에 clockIn/clockOut 기록 시 status가 '정상'으로 전환되고 급여가 0원이 아니다", () => {
-    upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
-    const rec = upsertTodayClock(VACATION_DATE, "clockOut", "15:00");
+  it("휴가일에 clockIn/clockOut 기록 시 status가 '정상'으로 전환되고 급여가 0원이 아니다", async () => {
+    await upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
+    const rec = await upsertTodayClock(VACATION_DATE, "clockOut", "15:00");
 
     expect(rec.status).toBe("정상");
     expect(rec.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
@@ -36,17 +36,17 @@ describe("upsertTodayClock — 휴가일 토글(버그1)", () => {
     expect(pay).toBeGreaterThan(0);
   });
 
-  it("clockIn 기록만으로도 휴가 status가 '정상'으로 전환되고 휴게가 정상화된다", () => {
-    const rec = upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
+  it("clockIn 기록만으로도 휴가 status가 '정상'으로 전환되고 휴게가 정상화된다", async () => {
+    const rec = await upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
     expect(rec.status).toBe("정상");
     expect(rec.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
   });
 });
 
 describe("updateStatus — 상태 전환 시 연산 필드 재계산(버그2)", () => {
-  it("'정상'→'휴가' 전환 시 work/overtime/deduct 모두 0", () => {
+  it("'정상'→'휴가' 전환 시 work/overtime/deduct 모두 0", async () => {
     const target = "2026-05-26"; // 시드 정상 390분
-    const rec = updateStatus(target, "휴가");
+    const rec = await updateStatus(target, "휴가");
     expect(rec).not.toBeNull();
     expect(rec!.status).toBe("휴가");
     expect(rec!.workMinutes).toBe(0);
@@ -54,77 +54,70 @@ describe("updateStatus — 상태 전환 시 연산 필드 재계산(버그2)", 
     expect(rec!.deductMinutes).toBe(0);
   });
 
-  // AC-T3-1: 결근 = 정규 전액 차감. deduct=REGULAR_MINUTES(390), work/overtime/break=0, clock 보존.
-  it("'결근'으로 전환 시 정규 전액 차감(deduct=390)·work/overtime/break=0·clock 보존", () => {
-    const target = "2026-05-26"; // 시드 정상 08:00~15:00
-    const rec = updateStatus(target, "결근");
+  it("'결근'으로 전환 시 정규 전액 차감(deduct=390)·work/overtime/break=0·clock 보존", async () => {
+    const target = "2026-05-26";
+    const rec = await updateStatus(target, "결근");
     expect(rec!.status).toBe("결근");
-    expect(rec!.deductMinutes).toBe(REGULAR_MINUTES); // 390 전액 차감
+    expect(rec!.deductMinutes).toBe(REGULAR_MINUTES);
     expect(rec!.workMinutes).toBe(0);
     expect(rec!.overtimeMinutes).toBe(0);
     expect(rec!.breakMinutes).toBe(0);
-    expect(rec!.clockIn).toBe("08:00"); // 보존
-    expect(rec!.clockOut).toBe("15:00"); // 보존
+    expect(rec!.clockIn).toBe("08:00");
+    expect(rec!.clockOut).toBe("15:00");
   });
 
-  it("'휴가'→'정상'(clock 존재) 전환 시 workMinutes/overtime 재계산", () => {
-    // 5/29 휴가일에 토글로 clock 부여 후 휴가로 되돌렸다가 다시 정상으로
-    upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
-    upsertTodayClock(VACATION_DATE, "clockOut", "17:00");
-    updateStatus(VACATION_DATE, "휴가"); // 인정시간 0으로
-    expect(getRecord(VACATION_DATE)!.workMinutes).toBe(0);
+  it("'휴가'→'정상'(clock 존재) 전환 시 workMinutes/overtime 재계산", async () => {
+    await upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
+    await upsertTodayClock(VACATION_DATE, "clockOut", "17:00");
+    await updateStatus(VACATION_DATE, "휴가");
+    expect((await getRecord(VACATION_DATE))!.workMinutes).toBe(0);
 
-    const rec = updateStatus(VACATION_DATE, "정상");
+    const rec = await updateStatus(VACATION_DATE, "정상");
     expect(rec!.workMinutes).toBe(510); // 08:00~17:00 - 30
     expect(rec!.overtimeMinutes).toBe(120);
   });
 
-  it("'지각'→'지각'(상태 유지 재계산) 시 deductMinutes는 기존값 보존(임의추정 금지)", () => {
+  it("'지각'→'지각'(상태 유지 재계산) 시 deductMinutes는 기존값 보존(임의추정 금지)", async () => {
     const target = "2026-05-13"; // 시드 지각, deduct 50
-    // 지각 상태를 유지한 채 재계산해도 기존 deduct(50) 보존.
-    const rec = updateStatus(target, "지각");
+    const rec = await updateStatus(target, "지각");
     expect(rec!.deductMinutes).toBe(50);
   });
 
-  it("없는 날짜는 null", () => {
-    expect(updateStatus("2099-01-01", "정상")).toBeNull();
+  it("없는 날짜는 null", async () => {
+    expect(await updateStatus("2099-01-01", "정상")).toBeNull();
   });
 
-  // REWORK v3 #2: 지각(deduct>0)→정상 전환 시 차감 해소
-  it("'지각'(deduct=90)→'정상' 전환 시 deductMinutes가 0으로 해소된다", () => {
+  it("'지각'(deduct=90)→'정상' 전환 시 deductMinutes가 0으로 해소된다", async () => {
     const target = "2026-05-05"; // 시드 지각, deduct 90
-    expect(getRecord(target)!.deductMinutes).toBe(90);
-    const rec = updateStatus(target, "정상");
+    expect((await getRecord(target))!.deductMinutes).toBe(90);
+    const rec = await updateStatus(target, "정상");
     expect(rec!.status).toBe("정상");
     expect(rec!.deductMinutes).toBe(0);
   });
 
-  it("'지각'(deduct=90)→'연장' 전환 시에도 deductMinutes가 0", () => {
-    const rec = updateStatus("2026-05-05", "연장");
+  it("'지각'(deduct=90)→'연장' 전환 시에도 deductMinutes가 0", async () => {
+    const rec = await updateStatus("2026-05-05", "연장");
     expect(rec!.deductMinutes).toBe(0);
   });
 
-  // REWORK v3 #3: 휴가/결근 전환 시 breakMinutes 초기화
-  it("'정상'→'휴가' 전환 시 breakMinutes가 0으로 초기화된다", () => {
-    const target = "2026-05-26"; // 시드 정상, break 30
-    expect(getRecord(target)!.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
-    const rec = updateStatus(target, "휴가");
+  it("'정상'→'휴가' 전환 시 breakMinutes가 0으로 초기화된다", async () => {
+    const target = "2026-05-26";
+    expect((await getRecord(target))!.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
+    const rec = await updateStatus(target, "휴가");
     expect(rec!.breakMinutes).toBe(0);
   });
 
-  it("'정상'→'결근' 전환 시에도 breakMinutes가 0", () => {
-    const rec = updateStatus("2026-05-26", "결근");
+  it("'정상'→'결근' 전환 시에도 breakMinutes가 0", async () => {
+    const rec = await updateStatus("2026-05-26", "결근");
     expect(rec!.breakMinutes).toBe(0);
   });
 
-  // REWORK v3 #3: 휴가→정상 역전환 시 break 복원 + work 재계산(과대산정 방지)
-  it("'휴가'→'정상'(clock 존재) 역전환 시 breakMinutes가 복원되고 work가 과대산정되지 않는다", () => {
+  it("'휴가'→'정상'(clock 존재) 역전환 시 breakMinutes가 복원되고 work가 과대산정되지 않는다", async () => {
     const target = "2026-05-26"; // 08:00~15:00, work 390, break 30
-    updateStatus(target, "휴가"); // break=0, work=0
-    expect(getRecord(target)!.breakMinutes).toBe(0);
+    await updateStatus(target, "휴가");
+    expect((await getRecord(target))!.breakMinutes).toBe(0);
 
-    const rec = updateStatus(target, "정상");
-    // break 가 복원되지 않으면 work=420(과대), 복원되면 390.
+    const rec = await updateStatus(target, "정상");
     expect(rec!.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
     expect(rec!.workMinutes).toBe(390);
     expect(rec!.overtimeMinutes).toBe(0);
@@ -137,82 +130,47 @@ function pending(date: string, after: EditRequestChange) {
 }
 
 describe("approveRequest — 수락 반영", () => {
-  // AC-1 / AC-2 / AC-3: after 반영 + status 전이 + work/overtime 재계산
-  it("대기 요청 수락 시 레코드에 after 가 반영되고 status가 대기→수락으로 전이한다", () => {
+  it("대기 요청 수락 시 레코드에 after 가 반영되고 status가 대기→수락으로 전이한다", async () => {
     const date = "2026-05-04";
-    const req = pending(date, {
-      status: "연장",
-      clockIn: "07:26",
-      clockOut: "15:34",
-    });
-    const result = approveRequest(req.id);
+    const req = await pending(date, { status: "연장", clockIn: "07:26", clockOut: "15:34" });
+    const result = await approveRequest(req.id);
 
     expect(result).not.toBeNull();
-    // AC-2: 요청 status 전이
     expect(result!.request.status).toBe("수락");
-    // AC-1: 레코드 after 반영
     expect(result!.record.status).toBe("연장");
     expect(result!.record.clockIn).toBe("07:26");
     expect(result!.record.clockOut).toBe("15:34");
-    // store 진실원에도 반영
-    expect(getRecord(date)!.clockOut).toBe("15:34");
+    expect((await getRecord(date))!.clockOut).toBe("15:34");
   });
 
-  // AC-3 / AC-7: workMinutes 재계산 + 연장 정합(clockOut 15:34 → 34)
-  it("정상/연장 after 는 workMinutes 재계산 + overtime=clockOut 초과분(15:34→34)", () => {
-    const req = pending("2026-05-04", {
-      status: "연장",
-      clockIn: "07:26",
-      clockOut: "15:34",
-    });
-    const { record } = approveRequest(req.id)!;
-    // 07:26~15:34 - 30 = 488 - 30 = 458
+  it("정상/연장 after 는 workMinutes 재계산 + overtime=clockOut 초과분(15:34→34)", async () => {
+    const req = await pending("2026-05-04", { status: "연장", clockIn: "07:26", clockOut: "15:34" });
+    const { record } = (await approveRequest(req.id))!;
     expect(record.workMinutes).toBe(458);
     expect(record.overtimeMinutes).toBe(34);
   });
 
-  // AC-5 / 연장 정합: 조기출근·정시퇴근(07:58~15:00) → work 392여도 overtime 0
-  it("조기출근·정시퇴근(07:58~15:00) 수락 시 work 392·overtime 0 (조기출근 연장 아님)", () => {
-    const req = pending("2026-05-28", {
-      status: "정상",
-      clockIn: "07:58",
-      clockOut: "15:00",
-    });
-    const { record } = approveRequest(req.id)!;
-    expect(record.workMinutes).toBe(392); // 07:58~15:00 - 30
+  it("조기출근·정시퇴근(07:58~15:00) 수락 시 work 392·overtime 0 (조기출근 연장 아님)", async () => {
+    const req = await pending("2026-05-28", { status: "정상", clockIn: "07:58", clockOut: "15:00" });
+    const { record } = (await approveRequest(req.id))!;
+    expect(record.workMinutes).toBe(392);
     expect(record.overtimeMinutes).toBe(0);
   });
 
-  // AC-2: 다른 요청은 불변
-  it("수락 시 다른 대기 요청의 status는 불변", () => {
-    const a = pending("2026-05-04", {
-      status: "정상",
-      clockIn: "08:00",
-      clockOut: "15:00",
-    });
-    const b = pending("2026-05-06", {
-      status: "정상",
-      clockIn: "08:00",
-      clockOut: "15:00",
-    });
-    approveRequest(a.id);
-    // b 는 store 에서 여전히 대기
-    expect(approveRequest(b.id)!.request.id).toBe(b.id);
+  it("수락 시 다른 대기 요청의 status는 불변", async () => {
+    const a = await pending("2026-05-04", { status: "정상", clockIn: "08:00", clockOut: "15:00" });
+    const b = await pending("2026-05-06", { status: "정상", clockIn: "08:00", clockOut: "15:00" });
+    await approveRequest(a.id);
+    expect((await approveRequest(b.id))!.request.id).toBe(b.id);
   });
 
-  // E-1: 없는 id → null
-  it("존재하지 않는 요청 id 는 null 을 반환하고 store 를 변경하지 않는다", () => {
-    expect(approveRequest("req-999")).toBeNull();
+  it("존재하지 않는 요청 id 는 null 을 반환하고 store 를 변경하지 않는다", async () => {
+    expect(await approveRequest("req-999")).toBeNull();
   });
 
-  // AC-4: 결근 after → deduct=390, work/overtime/break=0
-  it("after.status=결근 수락 시 결근 차감 정책(deduct=390·work/overtime/break=0) 적용", () => {
-    const req = pending("2026-05-26", {
-      status: "결근",
-      clockIn: "08:00",
-      clockOut: "15:00",
-    });
-    const { record } = approveRequest(req.id)!;
+  it("after.status=결근 수락 시 결근 차감 정책(deduct=390·work/overtime/break=0) 적용", async () => {
+    const req = await pending("2026-05-26", { status: "결근", clockIn: "08:00", clockOut: "15:00" });
+    const { record } = (await approveRequest(req.id))!;
     expect(record.status).toBe("결근");
     expect(record.deductMinutes).toBe(REGULAR_MINUTES);
     expect(record.workMinutes).toBe(0);
@@ -220,14 +178,9 @@ describe("approveRequest — 수락 반영", () => {
     expect(record.breakMinutes).toBe(0);
   });
 
-  // AC-4: 휴가 after → deduct=0, work/overtime/break=0
-  it("after.status=휴가 수락 시 휴가 차감 정책(deduct=0·work/overtime/break=0) 적용", () => {
-    const req = pending("2026-05-26", {
-      status: "휴가",
-      clockIn: null,
-      clockOut: null,
-    });
-    const { record } = approveRequest(req.id)!;
+  it("after.status=휴가 수락 시 휴가 차감 정책(deduct=0·work/overtime/break=0) 적용", async () => {
+    const req = await pending("2026-05-26", { status: "휴가", clockIn: null, clockOut: null });
+    const { record } = (await approveRequest(req.id))!;
     expect(record.status).toBe("휴가");
     expect(record.deductMinutes).toBe(0);
     expect(record.workMinutes).toBe(0);
@@ -235,125 +188,94 @@ describe("approveRequest — 수락 반영", () => {
     expect(record.breakMinutes).toBe(0);
   });
 
-  // E-2: 멱등 no-op — 이미 수락이면 재반영 안 함
-  it("이미 수락된 요청 재수락은 멱등 no-op(레코드 불변·status 수락 유지)", () => {
+  it("이미 수락된 요청 재수락은 멱등 no-op(레코드 불변·status 수락 유지)", async () => {
     const date = "2026-05-04";
-    const req = pending(date, {
-      status: "연장",
-      clockIn: "07:26",
-      clockOut: "15:34",
-    });
-    approveRequest(req.id);
-    const after1 = getRecord(date)!;
-    const result2 = approveRequest(req.id)!;
+    const req = await pending(date, { status: "연장", clockIn: "07:26", clockOut: "15:34" });
+    await approveRequest(req.id);
+    const after1 = (await getRecord(date))!;
+    const result2 = (await approveRequest(req.id))!;
     expect(result2.request.status).toBe("수락");
-    // 레코드 재반영(이중계산) 없음 — work/overtime 동일
     expect(result2.record.workMinutes).toBe(after1.workMinutes);
     expect(result2.record.overtimeMinutes).toBe(after1.overtimeMinutes);
   });
 
-  // v3 P1/P2: clock 필드가 undefined 인 손상 after 는 fail-closed — store 에 미반영.
-  // (route 가 400 으로 차단하나, 손상 데이터가 들어와도 record 오염을 막는 이중 안전)
-  it("after.clockOut 가 undefined 인 손상 요청 수락 시 레코드를 오염시키지 않는다(fail-closed)", () => {
+  it("after.clockOut 가 undefined 인 손상 요청 수락 시 레코드를 오염시키지 않는다(fail-closed)", async () => {
     const date = "2026-08-20"; // 시드 외
-    const req = pending(date, {
+    const req = await pending(date, {
       status: "정상",
-      // 타입 계약 위반(undefined) 을 의도적으로 주입 — 손상 데이터 시뮬레이션
       clockIn: "08:00",
       clockOut: undefined as unknown as string,
     });
-    const { request, record } = approveRequest(req.id)!;
-    // 손상 after 는 store 에 persist 되지 않는다
-    expect(getRecord(date)).toBeNull();
-    // 반환 레코드도 undefined clockOut 으로 오염되지 않는다(string|null 보장)
-    expect(record.clockOut === null || typeof record.clockOut === "string").toBe(
-      true,
-    );
-    // 멱등하지 않게 status 도 전이되지 않는다(미반영)
+    const { request, record } = (await approveRequest(req.id))!;
+    expect(await getRecord(date)).toBeNull();
+    expect(record.clockOut === null || typeof record.clockOut === "string").toBe(true);
     expect(request.status).toBe("대기");
   });
 
-  // === T7: 휴게 범위 편집 / 퇴근시각 편집 수락 반영 ===
-
-  // AC-3: 휴게 범위 변경 수락 → breakMinutes 파생 + work 재계산. clockIn 불변(AC-8).
-  it("휴게 범위(11:30~13:00) 변경 수락 시 breakMinutes=90 파생 + work 재계산, clockIn 불변", () => {
-    const date = "2026-05-26"; // 시드 정상 08:00~15:00, work 390, break 30
-    const before = getRecord(date)!;
-    const req = pending(date, {
+  it("휴게 범위(11:30~13:00) 변경 수락 시 breakMinutes=90 파생 + work 재계산, clockIn 불변", async () => {
+    const date = "2026-05-26";
+    const before = (await getRecord(date))!;
+    const req = await pending(date, {
       status: "정상",
-      clockIn: before.clockIn, // 불변
-      clockOut: before.clockOut, // 불변
+      clockIn: before.clockIn,
+      clockOut: before.clockOut,
       breakStart: "11:30",
-      breakEnd: "13:00", // 90분
+      breakEnd: "13:00",
     });
-    const { record } = approveRequest(req.id)!;
+    const { record } = (await approveRequest(req.id))!;
     expect(record.breakStart).toBe("11:30");
     expect(record.breakEnd).toBe("13:00");
     expect(record.breakMinutes).toBe(90);
-    // 08:00~15:00 = 420 − 90 = 330
     expect(record.workMinutes).toBe(330);
-    expect(record.clockIn).toBe(before.clockIn); // AC-8 불변
+    expect(record.clockIn).toBe(before.clockIn);
   });
 
-  // R1 case①: 범위 명시이고 동일시각(파생 0) → 0 존중(DEFAULT 복원 우회)
-  it("휴게 범위 동일시각(12:00~12:00, 파생 0) 명시 수락 시 breakMinutes=0 존중(복원 안 함)", () => {
+  it("휴게 범위 동일시각(12:00~12:00, 파생 0) 명시 수락 시 breakMinutes=0 존중(복원 안 함)", async () => {
     const date = "2026-05-26";
-    const req = pending(date, {
+    const req = await pending(date, {
       status: "정상",
       clockIn: "08:00",
       clockOut: "15:00",
       breakStart: "12:00",
-      breakEnd: "12:00", // 파생 0
+      breakEnd: "12:00",
     });
-    const { record } = approveRequest(req.id)!;
-    expect(record.breakMinutes).toBe(0); // DEFAULT(30) 복원 안 됨
-    expect(record.workMinutes).toBe(420); // 420 − 0
+    const { record } = (await approveRequest(req.id))!;
+    expect(record.breakMinutes).toBe(0);
+    expect(record.workMinutes).toBe(420);
   });
 
-  // AC-6: 퇴근시각 변경 수락 → clockOut + overtime + work 재계산. clockIn 불변(AC-8).
-  it("퇴근시각 변경(16:30) 수락 시 clockOut/overtime/work 재계산, clockIn 불변(범위 미명시=기존 휴게)", () => {
-    const date = "2026-05-26"; // 08:00~15:00, break 30
-    const before = getRecord(date)!;
-    const req = pending(date, {
+  it("퇴근시각 변경(16:30) 수락 시 clockOut/overtime/work 재계산, clockIn 불변(범위 미명시=기존 휴게)", async () => {
+    const date = "2026-05-26";
+    const before = (await getRecord(date))!;
+    const req = await pending(date, {
       status: "연장",
-      clockIn: before.clockIn, // 불변
+      clockIn: before.clockIn,
       clockOut: "16:30",
-      // break 범위 미명시 → 기존 휴게 유지
     });
-    const { record } = approveRequest(req.id)!;
-    expect(record.clockIn).toBe(before.clockIn); // AC-8 불변
+    const { record } = (await approveRequest(req.id))!;
+    expect(record.clockIn).toBe(before.clockIn);
     expect(record.clockOut).toBe("16:30");
-    expect(record.workMinutes).toBe(480); // 08:00~16:30 − 30
-    expect(record.overtimeMinutes).toBe(90); // 990 − 900
+    expect(record.workMinutes).toBe(480);
+    expect(record.overtimeMinutes).toBe(90);
   });
 
-  // AC-7: 범위 미명시 수락 = 기존 동작(회귀). break===30 보존, 복원 분기 영향 없음.
-  it("휴게 범위 미명시 요청 수락은 기존 동작과 동일(멱등·회귀 0)", () => {
+  it("휴게 범위 미명시 요청 수락은 기존 동작과 동일(멱등·회귀 0)", async () => {
     const date = "2026-05-04";
-    const req = pending(date, {
-      status: "연장",
-      clockIn: "07:26",
-      clockOut: "15:34",
-    });
-    const { record } = approveRequest(req.id)!;
+    const req = await pending(date, { status: "연장", clockIn: "07:26", clockOut: "15:34" });
+    const { record } = (await approveRequest(req.id))!;
     expect(record.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
-    expect(record.workMinutes).toBe(458); // 07:26~15:34 − 30
+    expect(record.workMinutes).toBe(458);
     expect(record.overtimeMinutes).toBe(34);
   });
 
-  // E-3 / Q1: 레코드 없는 날 수락 → after 로 신규 레코드 생성(upsert)
-  it("레코드 없는 날(시드 외) 수락 시 after 로 신규 레코드를 생성한다(upsert)", () => {
-    const date = "2026-07-15"; // 시드 외
-    expect(getRecord(date)).toBeNull();
-    const req = pending(date, {
-      status: "정상",
-      clockIn: "08:00",
-      clockOut: "16:30",
-    });
-    const { record } = approveRequest(req.id)!;
-    expect(getRecord(date)).not.toBeNull();
+  it("레코드 없는 날(시드 외) 수락 시 after 로 신규 레코드를 생성한다(upsert)", async () => {
+    const date = "2026-07-15";
+    expect(await getRecord(date)).toBeNull();
+    const req = await pending(date, { status: "정상", clockIn: "08:00", clockOut: "16:30" });
+    const { record } = (await approveRequest(req.id))!;
+    expect(await getRecord(date)).not.toBeNull();
     expect(record.clockOut).toBe("16:30");
-    expect(record.workMinutes).toBe(480); // 08:00~16:30 - 30
-    expect(record.overtimeMinutes).toBe(90); // 16:30 → 990−900
+    expect(record.workMinutes).toBe(480);
+    expect(record.overtimeMinutes).toBe(90);
   });
 });

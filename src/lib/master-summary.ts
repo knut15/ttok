@@ -9,15 +9,17 @@ export async function getStoreCrewSummaries(
   month: string,
 ): Promise<CrewSummary[]> {
   const members = await getStoreMembers(storeId);
-  return members.map((m) => {
-    const crewId = m.operationalId ?? m.id;
-    const name = m.user?.name ?? "멤버";
-    return {
-      crewId,
-      name,
-      avatarInitial: name.charAt(0) || "?",
-      isManager: m.isManager,
-      ...getCrewAggregate(crewId, month),
-    };
-  });
+  return Promise.all(
+    members.map(async (m) => {
+      const crewId = m.operationalId ?? m.id;
+      const name = m.user?.name ?? "멤버";
+      return {
+        crewId,
+        name,
+        avatarInitial: name.charAt(0) || "?",
+        isManager: m.isManager,
+        ...(await getCrewAggregate(crewId, month)),
+      };
+    }),
+  );
 }

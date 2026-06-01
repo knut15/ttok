@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
-import { __resetStore } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, SEED_MONTH, DEFAULT_CREW_ID } from "@/lib/constants";
 
 function get(month: string, headers?: Record<string, string>) {
@@ -12,7 +12,9 @@ function get(month: string, headers?: Record<string, string>) {
 const MASTER = { "x-role": "master", "x-crew-id": MASTER_ID } as const;
 
 describe("GET /api/master/crews — 마스터 집계 (T8-5 / AC-10 / AC-11 / AC-12)", () => {
-  beforeEach(() => __resetStore());
+  beforeEach(async () => {
+    await resetDb();
+  });
 
   // AC-10/AC-11: 마스터는 멤버 4명의 월 집계를 받는다(신규입사자 포함)
   it("마스터는 200 과 MasterSummaryResponse(멤버 4명 집계) 를 반환한다", async () => {

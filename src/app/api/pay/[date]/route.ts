@@ -19,7 +19,7 @@ export async function GET(
     (await resolveScope(request)),
     new URL(request.url).searchParams.get("crewId") ?? undefined,
   );
-  const record = getRecord(date, scoped);
+  const record = await getRecord(date, scoped);
   if (!record) {
     return NextResponse.json(
       { error: "해당 날짜 레코드가 없습니다." },
