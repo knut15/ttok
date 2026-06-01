@@ -1,6 +1,6 @@
 "use client";
 
-// 현재 사용자(크루) 알림 훅. GET /api/notifications 폴링(대타 승인 등 실시간 감지) + 읽음 처리.
+// 현재 사용자(멤버) 알림 훅. GET /api/notifications 폴링(대타 승인 등 실시간 감지) + 읽음 처리.
 import { useCallback, useEffect, useState } from "react";
 import type { Notification, NotificationsResponse } from "@/types";
 import {

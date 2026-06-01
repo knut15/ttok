@@ -17,8 +17,8 @@ const headers = (h: Record<string, string>) =>
 
 beforeEach(() => __resetStore());
 
-describe("대타 승인 시 크루 알림 (요구사항 1)", () => {
-  it("매니저 대타 → 마스터 승인 → 해당 크루에 알림 생성", async () => {
+describe("대타 승인 시 멤버 알림 (요구사항 1)", () => {
+  it("매니저 대타 → 마스터 승인 → 해당 멤버에 알림 생성", async () => {
     // 김민정(매니저)이 금요일 본인 대타 배정 → 대기
     await CREATE(
       new Request("http://localhost/api/schedule", {
@@ -69,7 +69,7 @@ describe("대타 승인 시 크루 알림 (요구사항 1)", () => {
     expect(body.items.length).toBe(1); // 목록엔 남고 읽음만 처리
   });
 
-  it("다른 크루에게는 알림이 가지 않는다", async () => {
+  it("다른 멤버에게는 알림이 가지 않는다", async () => {
     await CREATE(
       new Request("http://localhost/api/schedule", {
         method: "POST",

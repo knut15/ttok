@@ -1,6 +1,6 @@
 "use client";
 
-// 마스터 집계: 크루별 근무/연장 시간 막대 차트(chart.js + react-chartjs-2).
+// 마스터 집계: 멤버별 근무/연장 시간 막대 차트(chart.js + react-chartjs-2).
 // MasterView 가드 하위(mount 후·로딩 완료)에서만 렌더 → 사실상 클라이언트 전용(SSR canvas 이슈 회피).
 import {
   Chart as ChartJS,
@@ -60,7 +60,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
 
   return (
     <div className="mx-5 mb-4 rounded-2xl border border-black/5 bg-surface p-4">
-      <h3 className="pb-2 text-sm font-bold">크루별 근무시간</h3>
+      <h3 className="pb-2 text-sm font-bold">멤버별 근무시간</h3>
       <div className="h-56">
         <Bar data={data} options={options} />
       </div>

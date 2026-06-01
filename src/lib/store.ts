@@ -78,16 +78,16 @@ function recalcClockFields(rec: AttendanceRecord): AttendanceRecord {
   return { ...rec, workMinutes: 0, overtimeMinutes: 0 };
 }
 
-// T8: 멀티크루 내부 표현(architect §2.2). 계약은 trailing crewId fallback 으로 단일사용자 흐름 보존.
+// T8: 멀티멤버 내부 표현(architect §2.2). 계약은 trailing crewId fallback 으로 단일사용자 흐름 보존.
 interface StoreShape {
-  crews: Crew[]; // 마스터1 + 크루3
+  crews: Crew[]; // 마스터1 + 멤버3
   recordsByCrew: Map<string, Map<string, AttendanceRecord>>; // crewId → date → rec
   requests: EditRequest[]; // crewId 태그(append)
   invites: Invite[];
   profilesByCrew: Map<string, UserProfile>; // crewId → profile
   schedulesByDate: Map<string, ScheduleEntry[]>; // T16: date → 배정 목록
-  fixedShifts: FixedShift[]; // 크루별 고정근무 블록(여러 개 가능)
-  notifications: Notification[]; // 크루 알림(대타 승인 등)
+  fixedShifts: FixedShift[]; // 멤버별 고정근무 블록(여러 개 가능)
+  notifications: Notification[]; // 멤버 알림(대타 승인 등)
   storeInfo: StoreInfo; // 단일 매장 유지
   seq: number;
 }
@@ -151,7 +151,7 @@ export function __resetStore(): void {
   globalThis.__crewmonStore = createStore();
 }
 
-/** 해당 월("YYYY-MM") 레코드 배열. 날짜 오름차순. 빈 달/없는 크루 → []. crewId 생략 → 김민정(회귀). */
+/** 해당 월("YYYY-MM") 레코드 배열. 날짜 오름차순. 빈 달/없는 멤버 → []. crewId 생략 → 김민정(회귀). */
 export function getMonthRecords(
   month: string,
   crewId: string = DEFAULT_CREW_ID,
@@ -275,7 +275,7 @@ export function upsertTodayClock(
   return next;
 }
 
-/** 수정요청 목록(최신순). crewId 지정 → 해당 크루 태그만, 생략 → 전체(마스터/기존 테스트). */
+/** 수정요청 목록(최신순). crewId 지정 → 해당 멤버 태그만, 생략 → 전체(마스터/기존 테스트). */
 export function listRequests(crewId?: string): EditRequest[] {
   const all = getStore().requests;
   const scoped =
@@ -335,7 +335,7 @@ export function approveRequest(id: string): ApproveResult | null {
   const req = store.requests.find((r) => r.id === id);
   if (!req) return null; // E-1 → 404
 
-  // T8: 요청에 태그된 크루의 records Map 에 반영(미지정 → 김민정, 회귀). 게이트는 route 책임.
+  // T8: 요청에 태그된 멤버의 records Map 에 반영(미지정 → 김민정, 회귀). 게이트는 route 책임.
   const records = crewRecords(store, req.crewId ?? DEFAULT_CREW_ID);
 
   // Q2 멱등 no-op: 이미 수락이면 레코드 재반영 없이 현재 상태 반환.
@@ -441,7 +441,7 @@ function newRecordFrom(
 
 // === 마이페이지/프로필 접근자 (append) ===
 
-/** crewId 의 프로필 반환(없으면 해당 크루 정보로 파생 + 등록). 내부 헬퍼. */
+/** crewId 의 프로필 반환(없으면 해당 멤버 정보로 파생 + 등록). 내부 헬퍼. */
 function crewProfile(store: StoreShape, crewId: string): UserProfile {
   let p = store.profilesByCrew.get(crewId);
   if (!p) {
@@ -483,7 +483,7 @@ export function updateProfile(
   return next;
 }
 
-// === T8 신규 store 함수: 크루 목록 / 집계 / 초대 / 역할 (architect §2.3, §3) ===
+// === T8 신규 store 함수: 멤버 목록 / 집계 / 초대 / 역할 (architect §2.3, §3) ===
 
 /** mock 계정 목록(마스터 포함). 역할전환 UI용. (AC-1) */
 export function listCrews(): Crew[] {
@@ -496,8 +496,8 @@ export function isMaster(id: string): boolean {
 }
 
 /**
- * 마스터 집계: 크루(role=crew)별 month 근무/연장/휴가 요약. 마스터 제외.
- * 빈 크루/없는 월 → 0(NaN 방어, E-5/E-6). O(C·d). (AC-10/AC-11)
+ * 마스터 집계: 멤버(role=crew)별 month 근무/연장/휴가 요약. 마스터 제외.
+ * 빈 멤버/없는 월 → 0(NaN 방어, E-5/E-6). O(C·d). (AC-10/AC-11)
  */
 export function getCrewSummaries(month: string): CrewSummary[] {
   const store = getStore();
@@ -552,7 +552,7 @@ export function createInvite(masterId: string): Invite {
 }
 
 /**
- * 코드 합류(mock). 유효 미사용 코드 → 크루 active=true + 코드 사용됨, JoinResult 반환.
+ * 코드 합류(mock). 유효 미사용 코드 → 멤버 active=true + 코드 사용됨, JoinResult 반환.
  * 없는 코드 → null(400 의미, E-2). 이미 사용된 코드 → "used"(409 의미, E-2b).
  * (AC-14)
  */
@@ -638,7 +638,7 @@ export interface NewSchedule {
   autoApprove?: boolean; // 마스터 작성 시 대타 자동 승인
 }
 
-/** 해당 날짜·크루가 대타(고정 요일 아닌 근무) 인지. off 면 false. */
+/** 해당 날짜·멤버가 대타(고정 요일 아닌 근무) 인지. off 면 false. */
 function isSubstituteAssignment(
   store: StoreShape,
   date: string,
@@ -691,7 +691,7 @@ export function upsertSchedule(input: NewSchedule): ScheduleEntry {
   return created;
 }
 
-/** 마스터 대타 승인. id 의 대타 entry approval → "수락" + 해당 크루에게 알림. 없으면 null. */
+/** 마스터 대타 승인. id 의 대타 entry approval → "수락" + 해당 멤버에게 알림. 없으면 null. */
 export function approveSubstitute(id: string): ScheduleEntry | null {
   const store = getStore();
   for (const list of store.schedulesByDate.values()) {
@@ -699,7 +699,7 @@ export function approveSubstitute(id: string): ScheduleEntry | null {
     if (e) {
       if (e.approval !== "수락") {
         e.approval = "수락";
-        // 대타 승인 시 해당 크루 + 마스터 양쪽에 알림.
+        // 대타 승인 시 해당 멤버 + 마스터 양쪽에 알림.
         const crewName = store.crews.find((c) => c.id === e.crewId)?.name ?? e.crewId;
         pushNotification(e.crewId, `대타 근무(${e.date} ${e.startTime}~${e.endTime})가 승인되었습니다.`);
         pushNotification(
@@ -715,7 +715,7 @@ export function approveSubstitute(id: string): ScheduleEntry | null {
 
 // === 알림(Notification) ===
 
-/** 크루에게 알림 추가(미읽음). */
+/** 멤버에게 알림 추가(미읽음). */
 export function pushNotification(crewId: string, message: string): Notification {
   const store = getStore();
   const n: Notification = {
@@ -729,19 +729,19 @@ export function pushNotification(crewId: string, message: string): Notification 
   return n;
 }
 
-/** 크루 알림 목록(최신순). */
+/** 멤버 알림 목록(최신순). */
 export function listNotifications(crewId: string): Notification[] {
   return getStore()
     .notifications.filter((n) => n.crewId === crewId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-/** 크루 미읽음 알림 수. */
+/** 멤버 미읽음 알림 수. */
 export function unreadNotificationCount(crewId: string): number {
   return getStore().notifications.filter((n) => n.crewId === crewId && !n.read).length;
 }
 
-/** 크루 알림 전부 읽음 처리. 처리 건수 반환. */
+/** 멤버 알림 전부 읽음 처리. 처리 건수 반환. */
 export function markNotificationsRead(crewId: string): number {
   let n = 0;
   for (const noti of getStore().notifications) {
@@ -777,14 +777,14 @@ export function removeSchedule(id: string): boolean {
 
 // === 고정 근무(FixedShift) + 병합 뷰 ===
 
-/** 고정근무 블록 목록(crewId, 시작요일 순). 크루당 여러 블록 가능. */
+/** 고정근무 블록 목록(crewId, 시작요일 순). 멤버당 여러 블록 가능. */
 export function listFixedShifts(): FixedShift[] {
   return [...getStore().fixedShifts].sort(
     (a, b) => a.crewId.localeCompare(b.crewId) || (a.weekdays[0] ?? 0) - (b.weekdays[0] ?? 0),
   );
 }
 
-/** 크루가 이미 사용 중인 요일 집합(블록 추가 시 중복 방지용). */
+/** 멤버가 이미 사용 중인 요일 집합(블록 추가 시 중복 방지용). */
 export function crewFixedWeekdays(crewId: string): Set<number> {
   const set = new Set<number>();
   for (const f of getStore().fixedShifts) {
@@ -847,7 +847,7 @@ export function updateFixedShift(id: string, patch: FixedShiftPatch): FixedShift
  */
 export function getMonthScheduleView(month: string): ScheduleEntry[] {
   const fixed = getStore().fixedShifts;
-  // 해당 날짜 요일에 크루의 고정근무 블록이 하나라도 적용되는가(대타 판정용).
+  // 해당 날짜 요일에 멤버의 고정근무 블록이 하나라도 적용되는가(대타 판정용).
   const hasFixedOn = (crewId: string, date: string) => {
     const w = getWeekdayIndex(date);
     return fixed.some((f) => f.crewId === crewId && f.weekdays.includes(w));

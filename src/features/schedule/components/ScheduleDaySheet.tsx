@@ -1,7 +1,7 @@
 "use client";
 
 // 날짜 탭 → 스케쥴 편집 시트(T19, 요구사항 3-A). 근무자별 시간/휴무 배정.
-// canWrite=false(일반 크루) → 읽기전용(배정 현황만). master/매니저 → 추가·수정·삭제.
+// canWrite=false(일반 멤버) → 읽기전용(배정 현황만). master/매니저 → 추가·수정·삭제.
 // 부모가 key={date} 로 날짜별 리마운트 → drafts 는 useState 초기화로 동기화(effct setState 회피).
 import { useState } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
@@ -132,12 +132,12 @@ export function ScheduleDaySheet({
 
   const title = formatLongDate(date); // 요일 포함
 
-  // 읽기전용(일반 크루): 전체 명단. 비근무자(비번/휴무)는 opacity 60%, 근무→비번→휴무 순.
+  // 읽기전용(일반 멤버): 전체 명단. 비근무자(비번/휴무)는 opacity 60%, 근무→비번→휴무 순.
   if (!canWrite) {
     return (
       <BottomSheet open onClose={onClose} title={title}>
         {sortedCrew.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted">크루가 없습니다.</p>
+          <p className="py-6 text-center text-sm text-muted">멤버가 없습니다.</p>
         ) : (
           <ul className="space-y-2">
             {sortedCrew.map((c) => {
@@ -162,7 +162,7 @@ export function ScheduleDaySheet({
                     {c.name}
                     {c.isManager ? (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                        크루(매니저)
+                        멤버(매니저)
                       </span>
                     ) : null}
                     <Chips kinds={chipsFor(e, fixedMap.get(c.id))} />
@@ -208,7 +208,7 @@ export function ScheduleDaySheet({
                   {c.name}
                   {c.isManager ? (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                      크루(매니저)
+                      멤버(매니저)
                     </span>
                   ) : null}
                   {working ? (

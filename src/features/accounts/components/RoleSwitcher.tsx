@@ -61,7 +61,11 @@ export function RoleSwitcher() {
                 <span className="flex-1">
                   <span className="block font-semibold">{crew.name}</span>
                   <span className="block text-sm text-muted">
-                    {crew.role === "master" ? "마스터(점주)" : "크루"}
+                    {crew.role === "master"
+                      ? "마스터(점주)"
+                      : crew.isManager
+                        ? "멤버(매니저)"
+                        : "멤버"}
                   </span>
                 </span>
                 {selected && (

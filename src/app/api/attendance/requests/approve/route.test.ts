@@ -59,8 +59,8 @@ describe("/api/attendance/requests/approve", () => {
     expect((await res2.json()).request.status).toBe("수락");
   });
 
-  // T8-7 / AC-18: 크루(x-role:crew)는 수락 불가 → 403 + store 불변
-  it("크루 역할은 수락 시 403 을 반환하고 store 에 반영하지 않는다", async () => {
+  // T8-7 / AC-18: 멤버(x-role:crew)는 수락 불가 → 403 + store 불변
+  it("멤버 역할은 수락 시 403 을 반환하고 store 에 반영하지 않는다", async () => {
     const req = addRequest({
       date: "2026-05-04",
       reason: "정정",

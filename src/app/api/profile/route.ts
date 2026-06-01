@@ -8,7 +8,7 @@ import type { ProfilePatch } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-/** T8-4: 요청 헤더 scope → 본인 강제(크루)/마스터 target(?crewId). */
+/** T8-4: 요청 헤더 scope → 본인 강제(멤버)/마스터 target(?crewId). */
 function scopeOf(request: Request): string {
   return enforceReadScope(
     readScope(request),

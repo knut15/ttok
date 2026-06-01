@@ -1,5 +1,5 @@
 // POST /api/invites/join body{code, crewId} → 200 JoinResult (T8-6, AC-14).
-// 없는 코드 → 400(E-2), 이미 사용된 코드 → 409(E-2b). 성공 시 크루 active=true.
+// 없는 코드 → 400(E-2), 이미 사용된 코드 → 409(E-2b). 성공 시 멤버 active=true.
 import { NextResponse } from "next/server";
 import { joinByInvite } from "@/lib/store";
 

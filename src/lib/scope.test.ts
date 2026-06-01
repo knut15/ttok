@@ -21,8 +21,8 @@ describe("readScope", () => {
 });
 
 describe("enforceReadScope", () => {
-  // AC-8: 크루는 requested 를 무시하고 본인 강제
-  it("크루는 requested 를 무시하고 본인 crewId 를 강제한다", () => {
+  // AC-8: 멤버는 requested 를 무시하고 본인 강제
+  it("멤버는 requested 를 무시하고 본인 crewId 를 강제한다", () => {
     const scope = { crewId: "crew-2", role: "crew" as const };
     expect(enforceReadScope(scope, "crew-3")).toBe("crew-2");
     expect(enforceReadScope(scope)).toBe("crew-2");

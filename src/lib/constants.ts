@@ -45,13 +45,13 @@ export type Tone = "coral" | "green" | "blue" | "gray" | "neutral";
 
 // === T8 계정/권한 분리 상수 (append-only, architect §1.2) ===
 
-/** 기본 크루(김민정). store/API 인자·헤더 생략 시 fallback → 단일사용자 흐름 보존. */
+/** 기본 멤버(김민정). store/API 인자·헤더 생략 시 fallback → 단일사용자 흐름 보존. */
 export const DEFAULT_CREW_ID = "crew-minjung";
 
 /** 마스터(점주) 계정 id. 본인 근무기록 없음(E-4). */
 export const MASTER_ID = "master-1";
 
-/** 시드 크루 id 목록(마스터 제외). 김민정 + 크루2/3 + 신규입사자(crew-4). */
+/** 시드 멤버 id 목록(마스터 제외). 김민정 + 멤버2/3 + 신규입사자(crew-4). */
 export const CREW_IDS: readonly string[] = ["crew-minjung", "crew-2", "crew-3", "crew-4"] as const;
 
 // === 운영시간(매장 영업시간) — 근무시간(개별 시프트)과 구분. 매니저/마스터가 이 범위 내에서 개별 등록. ===

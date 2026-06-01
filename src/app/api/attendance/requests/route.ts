@@ -17,7 +17,7 @@ export async function GET(request?: Request): Promise<Response> {
     scope,
     new URL(request.url).searchParams.get("crewId") ?? undefined,
   );
-  // 마스터(scoped 미지정 = self master)는 전체 열람, 크루는 본인 태그만.
+  // 마스터(scoped 미지정 = self master)는 전체 열람, 멤버는 본인 태그만.
   const list =
     scope.role === "master" && !new URL(request.url).searchParams.get("crewId")
       ? listRequests()

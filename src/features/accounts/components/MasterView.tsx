@@ -55,7 +55,7 @@ export function MasterView() {
     loading: requestsLoading,
     approve,
   } = useMasterRequests();
-  // 대기(미승인) 수정요청 = 크루 근태변경 승인 알림 건수.
+  // 대기(미승인) 수정요청 = 멤버 근태변경 승인 알림 건수.
   const pendingCount = requests.filter((r) => r.status === "대기").length;
   // 대타 승인 대기.
   const {
@@ -64,14 +64,14 @@ export function MasterView() {
     approve: approveSubstitute,
   } = useMasterSubstitutes();
 
-  // 가드: mount 후(role 확정) 크루면 홈으로. mount 전엔 리다이렉트 금지(role 미확정).
+  // 가드: mount 후(role 확정) 멤버면 홈으로. mount 전엔 리다이렉트 금지(role 미확정).
   useEffect(() => {
     if (mounted && user.role !== "master") {
       router.replace("/");
     }
   }, [mounted, user.role, router]);
 
-  // role 미확정(mount 전) 또는 크루(리다이렉트 진행 중) → 로딩 가드(빈 화면).
+  // role 미확정(mount 전) 또는 멤버(리다이렉트 진행 중) → 로딩 가드(빈 화면).
   if (!mounted || user.role !== "master") {
     return (
       <div className="px-5 pt-10 text-center text-sm text-muted">
@@ -106,7 +106,7 @@ export function MasterView() {
         }
         right={<NotificationBell />}
       />
-      <p className="px-5 pb-4 text-sm text-muted">전체 크루 근무 집계</p>
+      <p className="px-5 pb-4 text-sm text-muted">전체 멤버 근무 집계</p>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">
           집계 불러오는 중…
@@ -118,7 +118,7 @@ export function MasterView() {
         </>
       )}
 
-      {/* FR-2: 마스터 수정요청 컨펌 섹션(가드 하위). 전체 크루 요청 조회·수락. */}
+      {/* FR-2: 마스터 수정요청 컨펌 섹션(가드 하위). 전체 멤버 요청 조회·수락. */}
       <section className="pt-8">
         <h2 className="flex items-center gap-2 px-5 pb-3 text-lg font-bold">
           수정요청 컨펌
@@ -133,7 +133,7 @@ export function MasterView() {
         </h2>
         {pendingCount > 0 ? (
           <p className="mx-5 mb-3 rounded-xl bg-coral/10 px-3 py-2 text-sm font-medium text-coral">
-            크루의 근태변경 승인 요청 {pendingCount}건이 대기 중입니다.
+            멤버의 근태변경 승인 요청 {pendingCount}건이 대기 중입니다.
           </p>
         ) : null}
         {requestsLoading ? (

@@ -15,7 +15,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const month = url.searchParams.get("month") ?? "";
-  // T8-4: 헤더 scope → 크루 본인 강제, 마스터는 ?crewId 허용.
+  // T8-4: 헤더 scope → 멤버 본인 강제, 마스터는 ?crewId 허용.
   const scoped = enforceReadScope(
     readScope(request),
     url.searchParams.get("crewId") ?? undefined,
@@ -27,7 +27,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function PATCH(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const date = url.searchParams.get("date");
-  // T8-4: 변경 대상도 본인 강제(크루)/마스터 target.
+  // T8-4: 변경 대상도 본인 강제(멤버)/마스터 target.
   const scoped = enforceReadScope(
     readScope(request),
     url.searchParams.get("crewId") ?? undefined,

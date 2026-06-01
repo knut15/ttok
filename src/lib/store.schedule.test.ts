@@ -20,7 +20,7 @@ describe("T16 매니저 권한 (isManager)", () => {
     expect(isManagerCrew(DEFAULT_CREW_ID)).toBe(true);
   });
 
-  it("일반 크루는 매니저가 아니다", () => {
+  it("일반 멤버는 매니저가 아니다", () => {
     expect(isManagerCrew("crew-2")).toBe(false);
   });
 

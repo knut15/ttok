@@ -14,7 +14,7 @@ export interface AttendanceRecord {
   workMinutes: number; // = clockOut - clockIn - break (휴가 0)
   overtimeMinutes: number; // 정규(390) 초과분, 없으면 0
   deductMinutes: number; // 급여차감(지각·결근분), 기본 0
-  crewId?: string; // T8: 멀티크루 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
+  crewId?: string; // T8: 멀티멤버 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
 }
 
 export type EditRequestStatus = "대기" | "수락";
@@ -35,7 +35,7 @@ export interface EditRequest {
   after: EditRequestChange;
   status: EditRequestStatus; // 생성 시 "대기"
   createdAt: string; // ISO
-  crewId?: string; // T8: 멀티크루 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
+  crewId?: string; // T8: 멀티멤버 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
 }
 
 /** 수락 API 응답 결합형(architect §2.2). status "수락" 전이 요청 + 재계산된 레코드. */
@@ -107,7 +107,7 @@ export interface ProfileResponse {
 /** PATCH 허용 필드 — 휴대폰/이메일만. name/birthDate는 타입상 표현 불가(컴파일 방어). */
 export type ProfilePatch = Partial<Pick<UserProfile, "phone" | "email">>;
 
-// === T8 계정/권한 분리 (마스터·크루) — append-only, leaf 단일출처 (architect §2.1) ===
+// === T8 계정/권한 분리 (마스터·멤버) — append-only, leaf 단일출처 (architect §2.1) ===
 
 /** 역할 2종. master=점주(전체 조회+수락), crew=근무자(본인 스코프). */
 export type Role = "master" | "crew";
@@ -143,7 +143,7 @@ export interface Invite {
   createdAt: string; // ISO
 }
 
-/** 마스터 집계 행 — 크루별 근무/연장/휴가 요약. */
+/** 마스터 집계 행 — 멤버별 근무/연장/휴가 요약. */
 export interface CrewSummary {
   crewId: string;
   name: string;
@@ -168,7 +168,7 @@ export interface JoinResult {
 
 // === FR-2 마스터 수정요청 컨펌 (append-only, leaf) ===
 
-/** 마스터 수정요청 목록 행 — EditRequest + 크루명(서버 조인, 폴백 crewId). */
+/** 마스터 수정요청 목록 행 — EditRequest + 멤버명(서버 조인, 폴백 crewId). */
 export interface MasterRequestRow extends EditRequest {
   crewName: string;
 }
@@ -198,7 +198,7 @@ export interface ScheduleEntry {
   approval?: "대기" | "수락"; // 대타 배정의 마스터 승인 상태(대타 entry 에만 존재)
 }
 
-/** 마스터 대타 승인 목록 행 — ScheduleEntry + 크루명(서버 조인). */
+/** 마스터 대타 승인 목록 행 — ScheduleEntry + 멤버명(서버 조인). */
 export interface MasterSubstituteRow extends ScheduleEntry {
   crewName: string;
 }
@@ -208,10 +208,10 @@ export interface MasterSubstitutesResponse {
   substitutes: MasterSubstituteRow[];
 }
 
-/** 크루 알림 1건(예: 대타 승인). */
+/** 멤버 알림 1건(예: 대타 승인). */
 export interface Notification {
   id: string;
-  crewId: string; // 수신 크루
+  crewId: string; // 수신 멤버
   message: string;
   createdAt: string; // ISO
   read: boolean;
@@ -227,9 +227,9 @@ export interface NotificationsResponse {
 export type DayType = "weekday" | "weekend";
 
 /**
- * 크루별 고정 근무 블록. crewId 당 여러 블록 가능(요일셋+시간 세트).
+ * 멤버별 고정 근무 블록. crewId 당 여러 블록 가능(요일셋+시간 세트).
  * 예) 월~목 08:00~15:00 블록 + 일 10:00~14:00 블록(시간 다름).
- * 한 크루의 블록들은 요일이 겹치지 않는다(요일당 최대 1블록). 명시 배정 없으면 자동 적용.
+ * 한 멤버의 블록들은 요일이 겹치지 않는다(요일당 최대 1블록). 명시 배정 없으면 자동 적용.
  */
 export interface FixedShift {
   id: string;
@@ -254,6 +254,6 @@ export interface ScheduleAssignee {
 export interface ScheduleResponse {
   month: string; // "YYYY-MM"
   entries: ScheduleEntry[]; // 명시 배정 + 고정근무 자동적용(source 로 구분)
-  fixedShifts: FixedShift[]; // 크루별 고정근무 설정(관리 UI용)
+  fixedShifts: FixedShift[]; // 멤버별 고정근무 설정(관리 UI용)
   canWrite: boolean; // 요청자(master/매니저) 작성 권한
 }

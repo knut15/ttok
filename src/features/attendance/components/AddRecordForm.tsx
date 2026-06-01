@@ -7,7 +7,7 @@ import type { WorkStatus } from "@/types";
 
 const MAX = 100;
 
-// T15(S1): 레코드 없는 과거/오늘 날짜의 "근무 추가" 폼(크루 본인).
+// T15(S1): 레코드 없는 과거/오늘 날짜의 "근무 추가" 폼(멤버 본인).
 // 입력: 상태 라디오 5종(기본 정상) + 출근시각(필수 HH:MM) + 퇴근시각(선택 null 허용) + 사유(EditRequestForm 패턴).
 // 로컬 검증(canSubmitAddRecord): 출근 미입력/형식불량 또는 (둘 다 있고 퇴근<=출근) → 제출 비활성(Q5/AC-11).
 // store/fetch 비접근 — onSubmit 으로 상위(AttendanceDetail)가 useEditRequests.submit 재사용.

@@ -1,10 +1,10 @@
 "use client";
 
-// REWORK v2 / P1-2 / AC-11: 마스터 크루 드릴다운 상세.
+// REWORK v2 / P1-2 / AC-11: 마스터 멤버 드릴다운 상세.
 // MasterView 와 동일한 mount-gate 마스터 가드(role 진실원=localStorage → client 가드).
-// useMonthAttendance(month, crewId) 로 대상 크루의 월간 근무/휴일을 읽기 전용 표시.
+// useMonthAttendance(month, crewId) 로 대상 멤버의 월간 근무/휴일을 읽기 전용 표시.
 // 마스터는 enforceReadScope 상 ?crewId= requested 허용(scope.ts) → 헤더(master)+쿼리(대상)로 fetch.
-// 크루가 이 경로 접근 시 가드(router.replace("/")). 빈 크루 graceful.
+// 멤버가 이 경로 접근 시 가드(router.replace("/")). 빈 멤버 graceful.
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -45,10 +45,10 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
   const router = useRouter();
   const { user } = useCurrentUser();
   const [month, setMonth] = useState(SEED_MONTH);
-  // 마스터일 때만 대상 크루 fetch. 크루(가드 진행 중)는 빈 인자로 호출 안 함.
+  // 마스터일 때만 대상 멤버 fetch. 멤버(가드 진행 중)는 빈 인자로 호출 안 함.
   const { records, loading } = useMonthAttendance(month, crewId);
 
-  // 가드: mount 후(role 확정) 크루면 홈으로. mount 전엔 리다이렉트 금지.
+  // 가드: mount 후(role 확정) 멤버면 홈으로. mount 전엔 리다이렉트 금지.
   useEffect(() => {
     if (mounted && user.role !== "master") {
       router.replace("/");
@@ -96,7 +96,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
           </Link>
         }
       />
-      <p className="px-5 pb-4 text-sm text-muted">크루 근무·휴일 상세 (읽기)</p>
+      <p className="px-5 pb-4 text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">
           불러오는 중…

@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<Response> {
   const scope = readScope(request);
   const canWrite = canWriteSchedule(scope);
 
-  // 권한 스코프: master/매니저(canWrite)는 전체, 일반 크루는 본인 것만(요구사항).
+  // 권한 스코프: master/매니저(canWrite)는 전체, 일반 멤버는 본인 것만(요구사항).
   const entries = getMonthScheduleView(month);
   const fixedShifts = listFixedShifts();
   const payload: ScheduleResponse = {

@@ -19,7 +19,7 @@ function ctx(id: string) {
 describe("PATCH /api/master/crews/[id]/manager (T17)", () => {
   beforeEach(() => __resetStore());
 
-  it("마스터가 일반 크루를 매니저로 지정한다 → 200 + isManager 반영", async () => {
+  it("마스터가 일반 멤버를 매니저로 지정한다 → 200 + isManager 반영", async () => {
     const res = await PATCH(patch("crew-2", { on: true }), ctx("crew-2"));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -33,7 +33,7 @@ describe("PATCH /api/master/crews/[id]/manager (T17)", () => {
     expect(isManagerCrew(DEFAULT_CREW_ID)).toBe(false);
   });
 
-  it("크루 역할은 토글 불가 → 403", async () => {
+  it("멤버 역할은 토글 불가 → 403", async () => {
     const res = await PATCH(
       patch("crew-2", { on: true }, { "x-role": "crew", "x-crew-id": "crew-2", "Content-Type": "application/json" }),
       ctx("crew-2"),
@@ -46,7 +46,7 @@ describe("PATCH /api/master/crews/[id]/manager (T17)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("없는 크루 / master 대상 → 404", async () => {
+  it("없는 멤버 / master 대상 → 404", async () => {
     expect((await PATCH(patch("nope", { on: true }), ctx("nope"))).status).toBe(404);
     expect((await PATCH(patch(MASTER_ID, { on: true }), ctx(MASTER_ID))).status).toBe(404);
   });

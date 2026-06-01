@@ -118,10 +118,10 @@ export function buildSeedRecords(): AttendanceRecord[] {
   }));
 }
 
-// === T8 멀티크루 시드 (append-only). 김민정 외 크루는 불변식 강제 없음(AC-3: 0건 이상 + 본인 격리). ===
+// === T8 멀티멤버 시드 (append-only). 김민정 외 멤버는 불변식 강제 없음(AC-3: 0건 이상 + 본인 격리). ===
 
 /**
- * mock 계정 시드: 마스터 1 + 크루 4(김민정=DEFAULT_CREW_ID 포함). architect §2.1.
+ * mock 계정 시드: 마스터 1 + 멤버 4(김민정=DEFAULT_CREW_ID 포함). architect §2.1.
  * T16: 김민정을 매니저로 지정(isManager) — 스케쥴 작성권한 시연용 시드.
  * 신규입사자(crew-4=최유진, 2026-06 입사): 근무기록 없음(0건), 6월 스케쥴부터 배정.
  */
@@ -135,7 +135,7 @@ export function buildSeedCrews(): Crew[] {
   ];
 }
 
-// 크루2/3 간단 mock 근무기록(각자 다른 데이터, 불변식 강제 없음).
+// 멤버2/3 간단 mock 근무기록(각자 다른 데이터, 불변식 강제 없음).
 const CREW_2_ROWS: SeedRow[] = [
   { day: "07", status: "정상", clockIn: "09:00", clockOut: "18:00", workMinutes: 510, overtimeMinutes: 0, deductMinutes: 0 },
   { day: "08", status: "정상", clockIn: "09:00", clockOut: "18:00", workMinutes: 510, overtimeMinutes: 0, deductMinutes: 0 },
@@ -173,8 +173,8 @@ function rowsToMap(rows: SeedRow[], crewId: string): Map<string, AttendanceRecor
 }
 
 /**
- * 크루별 records Map. 김민정은 기존 buildSeedRecords() 재사용(바이트 동일, 회귀 0 — AC-2).
- * 크루2/3 는 간단 mock(다른 데이터, AC-3). architect §2.2.
+ * 멤버별 records Map. 김민정은 기존 buildSeedRecords() 재사용(바이트 동일, 회귀 0 — AC-2).
+ * 멤버2/3 는 간단 mock(다른 데이터, AC-3). architect §2.2.
  */
 export function buildSeedRecordsByCrew(): Map<string, Map<string, AttendanceRecord>> {
   const byCrew = new Map<string, Map<string, AttendanceRecord>>();
@@ -192,7 +192,7 @@ export function buildSeedInvites(): Invite[] {
 }
 
 /**
- * 고정 근무 시드(예시). 크루당 여러 (요일셋+시간) 블록 가능.
+ * 고정 근무 시드(예시). 멤버당 여러 (요일셋+시간) 블록 가능.
  * 김민정 = 월~목 08:00~11:00 + 일 10:00~14:00(시간 다름), 이서연 = 금·토 11:00~17:00.
  */
 export function buildSeedFixedShifts(): FixedShift[] {

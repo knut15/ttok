@@ -1,7 +1,7 @@
 "use client";
 
 // 스케쥴 화면에서 매니저 지정/해제 시트(마스터 전용). MasterView 토글과 동일 API 재사용.
-// 매니저 = 스케쥴 작성권한 보유 크루. 토글은 PATCH /api/master/crews/[id]/manager.
+// 매니저 = 스케쥴 작성권한 보유 멤버. 토글은 PATCH /api/master/crews/[id]/manager.
 import { BottomSheet } from "@/components/BottomSheet";
 import type { Crew } from "@/types";
 
@@ -46,7 +46,7 @@ export function ScheduleManagerSheet({
               {c.name}
               {c.isManager ? (
                 <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                  크루(매니저)
+                  멤버(매니저)
                 </span>
               ) : null}
             </span>

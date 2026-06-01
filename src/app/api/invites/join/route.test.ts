@@ -13,8 +13,8 @@ function post(body: unknown) {
 describe("POST /api/invites/join — 코드 합류 (T8-6 / AC-14 / E-2 / E-2b)", () => {
   beforeEach(() => __resetStore());
 
-  // AC-14: 유효 미사용 코드 → 200 JoinResult, 크루 active=true
-  it("유효 미사용 코드 합류 시 200 과 JoinResult(크루 active=true) 를 반환한다", async () => {
+  // AC-14: 유효 미사용 코드 → 200 JoinResult, 멤버 active=true
+  it("유효 미사용 코드 합류 시 200 과 JoinResult(멤버 active=true) 를 반환한다", async () => {
     const invite = createInvite(MASTER_ID);
     const res = await POST(post({ code: invite.code, crewId: "crew-2" }));
     expect(res.status).toBe(200);

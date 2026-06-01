@@ -20,7 +20,7 @@ export function readScope(req: Request): Scope {
 
 /**
  * 읽기 대상 crewId 결정(Q-C: 본인 데이터 강제 스코프).
- * - 크루: requested 무시, 본인(self) 강제(타인 노출 0, AC-8).
+ * - 멤버: requested 무시, 본인(self) 강제(타인 노출 0, AC-8).
  * - 마스터: requested 허용, 없으면 self.
  */
 export function enforceReadScope(scope: Scope, requested?: string): string {

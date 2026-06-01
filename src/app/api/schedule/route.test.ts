@@ -24,7 +24,7 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 beforeEach(() => __resetStore());
 
 describe("GET /api/schedule (T18)", () => {
-  it("월간 스케쥴을 인증 사용자(크루 포함)에게 반환한다", async () => {
+  it("월간 스케쥴을 인증 사용자(멤버 포함)에게 반환한다", async () => {
     const res = await GET(
       new Request(`http://localhost/api/schedule?month=${SEED_MONTH}`, { headers: PLAIN_CREW }),
     );
@@ -34,7 +34,7 @@ describe("GET /api/schedule (T18)", () => {
     expect(body.entries.length).toBeGreaterThan(0);
   });
 
-  it("일반 크루는 본인 스케줄만 받는다(권한 스코프)", async () => {
+  it("일반 멤버는 본인 스케줄만 받는다(권한 스코프)", async () => {
     const body = await (
       await GET(new Request(`http://localhost/api/schedule?month=2026-06`, { headers: PLAIN_CREW }))
     ).json();
@@ -44,7 +44,7 @@ describe("GET /api/schedule (T18)", () => {
     expect(body.fixedShifts.every((f: { crewId: string }) => f.crewId === "crew-2")).toBe(true);
   });
 
-  it("마스터는 전체 크루 스케줄을 받는다", async () => {
+  it("마스터는 전체 멤버 스케줄을 받는다", async () => {
     const body = await (
       await GET(new Request(`http://localhost/api/schedule?month=2026-06`, { headers: MASTER }))
     ).json();
@@ -53,7 +53,7 @@ describe("GET /api/schedule (T18)", () => {
     expect(crewIds.size).toBeGreaterThan(1);
   });
 
-  it("매니저는 전체 크루 스케줄을 받는다", async () => {
+  it("매니저는 전체 멤버 스케줄을 받는다", async () => {
     const body = await (
       await GET(new Request(`http://localhost/api/schedule?month=2026-06`, { headers: MANAGER }))
     ).json();
@@ -77,7 +77,7 @@ describe("POST /api/schedule — 작성 권한 (T18)", () => {
     expect(res.status).toBe(200);
   });
 
-  it("일반 크루는 작성 불가 → 403", async () => {
+  it("일반 멤버는 작성 불가 → 403", async () => {
     const res = await POST(post(VALID, PLAIN_CREW));
     expect(res.status).toBe(403);
   });
@@ -114,7 +114,7 @@ describe("DELETE /api/schedule/[id] (T18)", () => {
     expect(getDaySchedules(`${SEED_MONTH}-22`)).toEqual([]);
   });
 
-  it("일반 크루는 삭제 불가 → 403", async () => {
+  it("일반 멤버는 삭제 불가 → 403", async () => {
     const res = await DELETE(del("sch-seed-1", PLAIN_CREW), ctx("sch-seed-1"));
     expect(res.status).toBe(403);
   });

@@ -14,8 +14,8 @@ const NO_STORE: RequestInit = { cache: "no-store" };
 /**
  * 월간 레코드 fetch + 상태변경 mutate. (architect §4.1)
  * T8-4: authHeaders spread + crewId 를 effect 의존성에 추가(전환 시 무효화, active cleanup 유지).
- * REWORK v2 / P1-2 / AC-11: targetCrewId 제공 시 ?crewId= 로 전달 → 마스터 드릴다운(대상 크루 조회).
- *   크루는 서버 enforceReadScope 가 무시(본인 강제)하므로 안전. 미제공 시 본인 스코프(회귀 0).
+ * REWORK v2 / P1-2 / AC-11: targetCrewId 제공 시 ?crewId= 로 전달 → 마스터 드릴다운(대상 멤버 조회).
+ *   멤버는 서버 enforceReadScope 가 무시(본인 강제)하므로 안전. 미제공 시 본인 스코프(회귀 0).
  */
 export function useMonthAttendance(month: string, targetCrewId?: string) {
   const { user } = useCurrentUser();
@@ -23,7 +23,7 @@ export function useMonthAttendance(month: string, targetCrewId?: string) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 마스터 드릴다운 시 대상 크루를 쿼리로 부착(미제공 시 URL 불변 → 회귀 0).
+  // 마스터 드릴다운 시 대상 멤버를 쿼리로 부착(미제공 시 URL 불변 → 회귀 0).
   const query = targetCrewId
     ? `month=${month}&crewId=${targetCrewId}`
     : `month=${month}`;
@@ -139,7 +139,7 @@ export function useTodayClock(date: string): UseTodayClock {
 
   useEffect(() => {
     let active = true;
-    // 전환 시 이전 크루 레코드 즉시 리셋(stale 1프레임도 노출 금지). useAttendance/ClockToggle 동일 패턴.
+    // 전환 시 이전 멤버 레코드 즉시 리셋(stale 1프레임도 노출 금지). useAttendance/ClockToggle 동일 패턴.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecord(null);
     fetch(`/api/attendance/${date}`, {

@@ -26,11 +26,11 @@ describe("POST /api/schedule/fixed — 블록 추가", () => {
     expect((await POST(req("POST", { ...VALID, weekdays: [4, 5] }, MANAGER))).status).toBe(200);
   });
 
-  it("일반 크루는 추가 불가 → 403", async () => {
+  it("일반 멤버는 추가 불가 → 403", async () => {
     expect((await POST(req("POST", VALID, PLAIN_CREW))).status).toBe(403);
   });
 
-  it("같은 크루의 기존 요일과 겹치면 → 409", async () => {
+  it("같은 멤버의 기존 요일과 겹치면 → 409", async () => {
     // 김민정은 시드에 월~목 + 일 → 월(1) 겹침
     const res = await POST(req("POST", { crewId: DEFAULT_CREW_ID, weekdays: [1], startTime: "13:00", endTime: "18:00" }, MASTER));
     expect(res.status).toBe(409);
@@ -45,7 +45,7 @@ describe("POST /api/schedule/fixed — 블록 추가", () => {
     expect((await POST(req("POST", { ...VALID, startTime: "12:00", endTime: "09:00" }, MASTER))).status).toBe(400);
   });
 
-  it("크루당 여러 블록을 가질 수 있다", async () => {
+  it("멤버당 여러 블록을 가질 수 있다", async () => {
     await POST(req("POST", VALID, MASTER));
     await POST(req("POST", { ...VALID, weekdays: [5] }, MASTER));
     expect(listFixedShifts().filter((f) => f.crewId === "crew-3")).toHaveLength(2);
@@ -62,7 +62,7 @@ describe("PATCH /api/schedule/fixed — 블록 편집(id)", () => {
     expect(f.startTime).toBe("12:00");
   });
 
-  it("같은 크루 다른 블록 요일과 겹치면 → 409 (자기 자신 제외)", async () => {
+  it("같은 멤버 다른 블록 요일과 겹치면 → 409 (자기 자신 제외)", async () => {
     // 김민정: [1,2,3,4] 블록 + [0] 블록. [0] 블록을 [1] 로 바꾸면 다른 블록과 겹침
     const sun = listFixedShifts().find((f) => f.crewId === DEFAULT_CREW_ID && f.weekdays.includes(0))!;
     const res = await PATCH(req("PATCH", { id: sun.id, weekdays: [1], startTime: "10:00", endTime: "14:00" }, MASTER));
@@ -75,7 +75,7 @@ describe("PATCH /api/schedule/fixed — 블록 편집(id)", () => {
     expect(res.status).toBe(200);
   });
 
-  it("없는 id → 404, 일반 크루 → 403", async () => {
+  it("없는 id → 404, 일반 멤버 → 403", async () => {
     expect((await PATCH(req("PATCH", { id: "nope", weekdays: [1], startTime: "09:00", endTime: "12:00" }, MASTER))).status).toBe(404);
     const id = listFixedShifts()[0].id;
     expect((await PATCH(req("PATCH", { id, weekdays: [1], startTime: "09:00", endTime: "12:00" }, PLAIN_CREW))).status).toBe(403);
@@ -92,7 +92,7 @@ describe("DELETE /api/schedule/fixed — 블록 삭제(id)", () => {
     expect((await DELETE(req("DELETE", { id: "nope" }, MASTER))).status).toBe(404);
   });
 
-  it("일반 크루는 삭제 불가 → 403", async () => {
+  it("일반 멤버는 삭제 불가 → 403", async () => {
     const id = listFixedShifts()[0].id;
     expect((await DELETE(req("DELETE", { id }, PLAIN_CREW))).status).toBe(403);
   });

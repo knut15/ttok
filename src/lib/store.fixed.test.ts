@@ -13,7 +13,7 @@ import { getWeekdayIndex } from "./schedule";
 
 beforeEach(() => __resetStore());
 
-describe("고정 근무 블록 store 접근자 (크루당 여러 블록)", () => {
+describe("고정 근무 블록 store 접근자 (멤버당 여러 블록)", () => {
   it("시드: 김민정 2블록(월~목, 일), 이서연 1블록(금·토)", () => {
     const all = listFixedShifts();
     const minjung = all.filter((f) => f.crewId === DEFAULT_CREW_ID);
@@ -38,7 +38,7 @@ describe("고정 근무 블록 store 접근자 (크루당 여러 블록)", () =>
     expect(removeFixedShift("nope")).toBe(false);
   });
 
-  it("crewFixedWeekdays: 크루의 전 블록 요일 합집합", () => {
+  it("crewFixedWeekdays: 멤버의 전 블록 요일 합집합", () => {
     expect([...crewFixedWeekdays(DEFAULT_CREW_ID)].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
   });
 });

@@ -31,7 +31,7 @@ describe("T15 과거 누락 근무기록 추가 (add → approve → upsert)", (
     // 사전 조건: 해당 날짜 레코드 없음
     expect(getRecord("2026-05-04", "crew-2")).toBeNull();
 
-    // 추가요청 제출(크루B 본인 스코프)
+    // 추가요청 제출(멤버B 본인 스코프)
     const created = await submitRequest(
       submit(
         {

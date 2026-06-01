@@ -60,7 +60,7 @@ describe("대타 승인 알림 (요구사항 1)", () => {
     expect(body.substitutes.length).toBe(0);
   });
 
-  it("크루/비마스터는 대타 목록·승인 불가 → 403", async () => {
+  it("멤버/비마스터는 대타 목록·승인 불가 → 403", async () => {
     expect((await GET(get({ "x-role": "crew", "x-crew-id": "crew-2" }))).status).toBe(403);
     expect((await APPROVE(approveReq("x", { "x-role": "crew", "x-crew-id": "crew-2", ...JSON_H }))).status).toBe(403);
   });

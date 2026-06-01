@@ -1,6 +1,6 @@
-// 마스터 집계 행 목록(presentational, T8-5). 크루별 근무합계·연장·휴일수.
-// 빈 크루는 0 으로 graceful 표기(E-5, NaN/crash 방어).
-// REWORK v2 / P1-2 / AC-11: 각 행을 /master/[crewId] 드릴다운 링크로 → 해당 크루 근무/휴일 상세.
+// 마스터 집계 행 목록(presentational, T8-5). 멤버별 근무합계·연장·휴일수.
+// 빈 멤버는 0 으로 graceful 표기(E-5, NaN/crash 방어).
+// REWORK v2 / P1-2 / AC-11: 각 행을 /master/[crewId] 드릴다운 링크로 → 해당 멤버 근무/휴일 상세.
 import Link from "next/link";
 import type { CrewSummary } from "@/types";
 
@@ -24,7 +24,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
   if (crews.length === 0) {
     return (
       <p className="px-5 pt-10 text-center text-sm text-muted">
-        집계할 크루가 없습니다.
+        집계할 멤버가 없습니다.
       </p>
     );
   }
@@ -59,7 +59,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
                 {c.name}
                 {c.isManager ? (
                   <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                    크루(매니저)
+                    멤버(매니저)
                   </span>
                 ) : null}
               </p>

@@ -25,14 +25,14 @@ describe("POST /api/invites — 초대 생성 (T8-6 / AC-13 / AC-15)", () => {
     expect(body.createdBy).toBe(MASTER_ID);
   });
 
-  // AC-15: 크루는 초대 생성 불가 → 403
-  it("크루 역할은 초대 생성 시 403 을 반환한다", async () => {
+  // AC-15: 멤버는 초대 생성 불가 → 403
+  it("멤버 역할은 초대 생성 시 403 을 반환한다", async () => {
     const res = await POST(post({ "x-role": "crew", "x-crew-id": "crew-2" }));
     expect(res.status).toBe(403);
   });
 
-  // 헤더 부재(기본 크루 폴백) → 403
-  it("역할 헤더 부재 시 403 을 반환한다(기본 크루 폴백)", async () => {
+  // 헤더 부재(기본 멤버 폴백) → 403
+  it("역할 헤더 부재 시 403 을 반환한다(기본 멤버 폴백)", async () => {
     const res = await POST(post());
     expect(res.status).toBe(403);
   });

@@ -25,7 +25,7 @@ describe("getMonthRecords — crewId 스코프 (AC-2 / AC-3 / AC-R2)", () => {
     expect(records.map((r) => r.date)).toEqual(expected.map((r) => r.date).sort());
   });
 
-  it("crewId='crew-2' 지정 시 크루2 데이터를 반환한다 (AC-3)", () => {
+  it("crewId='crew-2' 지정 시 멤버2 데이터를 반환한다 (AC-3)", () => {
     const records = getMonthRecords(SEED_MONTH, "crew-2");
     expect(records.length).toBeGreaterThan(0);
     // 김민정과 다른 데이터(본인 격리)
@@ -45,7 +45,7 @@ describe("getProfile — crewId 스코프 (AC-R2)", () => {
 });
 
 describe("listCrews — mock 계정 목록 (AC-1)", () => {
-  it("마스터 1 + 크루 4 = 5 계정을 반환한다", () => {
+  it("마스터 1 + 멤버 4 = 5 계정을 반환한다", () => {
     const crews = listCrews();
     expect(crews).toHaveLength(5);
     expect(crews.some((c) => c.id === MASTER_ID && c.role === "master")).toBe(true);
@@ -54,7 +54,7 @@ describe("listCrews — mock 계정 목록 (AC-1)", () => {
 });
 
 describe("getCrewSummaries — 마스터 집계 (AC-10 / AC-11)", () => {
-  it("크루 4명의 근무/연장/휴가 요약을 반환한다(마스터 제외)", () => {
+  it("멤버 4명의 근무/연장/휴가 요약을 반환한다(마스터 제외)", () => {
     const summaries = getCrewSummaries(SEED_MONTH);
     expect(summaries).toHaveLength(4);
     // 마스터는 집계 대상이 아니다
@@ -65,7 +65,7 @@ describe("getCrewSummaries — 마스터 집계 (AC-10 / AC-11)", () => {
     expect(minjung.workMinutes).toBeGreaterThan(0);
   });
 
-  it("크루2 의 휴가일 수를 정확히 집계한다(휴가 1건)", () => {
+  it("멤버2 의 휴가일 수를 정확히 집계한다(휴가 1건)", () => {
     const crew2 = getCrewSummaries(SEED_MONTH).find((s) => s.crewId === "crew-2")!;
     expect(crew2.vacationDays).toBe(1);
   });
@@ -88,7 +88,7 @@ describe("createInvite / joinByInvite — 초대 플로우 (AC-13 / AC-14 / E-2 
     expect(invite.createdBy).toBe(MASTER_ID);
   });
 
-  it("joinByInvite 유효 미사용 코드 → 크루 active=true, 코드 사용됨 (AC-14)", () => {
+  it("joinByInvite 유효 미사용 코드 → 멤버 active=true, 코드 사용됨 (AC-14)", () => {
     const invite = createInvite(MASTER_ID);
     const result = joinByInvite(invite.code, "crew-2");
     expect(result).not.toBeNull();
@@ -114,7 +114,7 @@ describe("isMaster — 역할 판정", () => {
   it("MASTER_ID 는 마스터다", () => {
     expect(isMaster(MASTER_ID)).toBe(true);
   });
-  it("크루 id 는 마스터가 아니다", () => {
+  it("멤버 id 는 마스터가 아니다", () => {
     expect(isMaster(DEFAULT_CREW_ID)).toBe(false);
   });
   it("없는 id 는 마스터가 아니다", () => {

@@ -1,7 +1,7 @@
 "use client";
 
-// 크루별 고정 근무 등록 시트(canWrite). 크루당 (요일셋+시간) 블록을 여러 개 추가/편집/삭제.
-// 예) 월~목 08:00~15:00 + 일 10:00~14:00(시간 다름). 한 크루의 요일은 블록 간 겹치지 않음.
+// 멤버별 고정 근무 등록 시트(canWrite). 멤버당 (요일셋+시간) 블록을 여러 개 추가/편집/삭제.
+// 예) 월~목 08:00~15:00 + 일 10:00~14:00(시간 다름). 한 멤버의 요일은 블록 간 겹치지 않음.
 // 부모가 key 로 마운트해 useState 초기화(effect setState 회피).
 import { useState } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
@@ -124,7 +124,7 @@ export function ScheduleFixedSheet({
   return (
     <BottomSheet open onClose={onClose} title="고정 근무 등록">
       <p className="pb-3 text-xs text-muted">
-        크루별 근무 요일·시간을 추가하세요. 요일별로 시간이 다르면 블록을 나눠 등록할 수 있습니다.
+        멤버별 근무 요일·시간을 추가하세요. 요일별로 시간이 다르면 블록을 나눠 등록할 수 있습니다.
       </p>
       <ul className="max-h-[60vh] space-y-3 overflow-y-auto">
         {crewList.map((c) => {
@@ -141,7 +141,7 @@ export function ScheduleFixedSheet({
                   {c.name}
                   {c.isManager ? (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                      크루(매니저)
+                      멤버(매니저)
                     </span>
                   ) : null}
                 </span>
@@ -155,7 +155,7 @@ export function ScheduleFixedSheet({
                       <li key={b.id} className="rounded-lg border border-coral/30 bg-coral/[0.04] px-2.5 py-2">
                         <DayToggles
                           selected={editDraft.weekdays}
-                          // 같은 크루의 다른 블록 요일은 비활성(자기 자신 제외).
+                          // 같은 멤버의 다른 블록 요일은 비활성(자기 자신 제외).
                           disabled={new Set(blocks.filter((x) => x.id !== b.id).flatMap((x) => x.weekdays))}
                           onToggle={(w) => setEditDraft((s) => ({ ...s, weekdays: toggleInList(s.weekdays, w) }))}
                         />

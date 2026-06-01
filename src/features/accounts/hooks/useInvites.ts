@@ -1,6 +1,6 @@
 "use client";
 
-// 초대 플로우 훅(T8-6). 마스터=생성 / 크루=합류. authHeaders 로 현재 사용자 전달.
+// 초대 플로우 훅(T8-6). 마스터=생성 / 멤버=합류. authHeaders 로 현재 사용자 전달.
 // client 는 store 직접 import 금지 → route 경유(/api/invites, /api/invites/join).
 import { useState } from "react";
 import type { Invite, JoinResult } from "@/types";
@@ -14,7 +14,7 @@ const NO_STORE: RequestInit = { cache: "no-store" };
 export interface UseInvitesResult {
   /** 마스터: 초대 생성 → 발급된 코드(state). */
   createdCode: string | null;
-  /** 크루: 합류 결과(성공 메시지/에러). */
+  /** 멤버: 합류 결과(성공 메시지/에러). */
   joinMessage: string | null;
   joinOk: boolean;
   loading: boolean;

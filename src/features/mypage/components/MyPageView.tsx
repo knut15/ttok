@@ -44,7 +44,7 @@ export function MyPageView() {
             name={data.profile.name}
             avatarInitial={data.profile.avatarInitial}
             roleLabel={
-              user.role === "master" ? "마스터" : data.isManager ? "크루(매니저)" : null
+              user.role === "master" ? "마스터" : data.isManager ? "멤버(매니저)" : null
             }
           />
           <StoreCard store={data.store} />
@@ -60,7 +60,7 @@ export function MyPageView() {
               </Link>
             </section>
           )}
-          {/* T8-6: role 별 초대 섹션(마스터=생성 / 크루=합류). */}
+          {/* T8-6: role 별 초대 섹션(마스터=생성 / 멤버=합류). */}
           <InvitePanel />
           <RoleSwitcher />
         </>

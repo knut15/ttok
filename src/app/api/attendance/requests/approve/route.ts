@@ -1,5 +1,5 @@
 // POST 수정요청 수락(AC-8). body {id} → approveRequest → 200 {request,record} / 404 / 400.
-// T8-7: 수락은 마스터 전용(AC-18/19). 크루 → 403 + store 불변(approveRequest 미호출).
+// T8-7: 수락은 마스터 전용(AC-18/19). 멤버 → 403 + store 불변(approveRequest 미호출).
 import { NextResponse } from "next/server";
 import { approveRequest } from "@/lib/store";
 import { readScope } from "@/lib/scope";

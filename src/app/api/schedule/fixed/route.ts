@@ -1,6 +1,6 @@
-// /api/schedule/fixed — 크루별 고정 근무 블록 추가/삭제(크루당 여러 블록).
+// /api/schedule/fixed — 멤버별 고정 근무 블록 추가/삭제(멤버당 여러 블록).
 // canWrite(master/매니저)만. POST { crewId, weekdays:number[], startTime, endTime } 로 블록 추가
-// (한 크루 안에서 요일 중복 불가), DELETE { id } 로 블록 삭제.
+// (한 멤버 안에서 요일 중복 불가), DELETE { id } 로 블록 삭제.
 import { NextResponse } from "next/server";
 import {
   canWriteSchedule,
@@ -63,7 +63,7 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  // 같은 크루의 기존 블록과 요일이 겹치면 거부(요일당 1블록).
+  // 같은 멤버의 기존 블록과 요일이 겹치면 거부(요일당 1블록).
   const used = crewFixedWeekdays(crewId);
   if ((weekdays as number[]).some((w) => used.has(w))) {
     return NextResponse.json(
@@ -114,7 +114,7 @@ export async function PATCH(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  // 같은 크루의 '다른' 블록 요일과 겹치면 거부(자기 자신 제외).
+  // 같은 멤버의 '다른' 블록 요일과 겹치면 거부(자기 자신 제외).
   const usedByOthers = new Set(
     listFixedShifts()
       .filter((f) => f.crewId === target.crewId && f.id !== id)

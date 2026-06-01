@@ -9,7 +9,7 @@ import type { MasterSummaryResponse } from "@/types";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
-  // 마스터 게이트(AC-12). 크루/헤더 부재 → 403.
+  // 마스터 게이트(AC-12). 멤버/헤더 부재 → 403.
   if (readScope(request).role !== "master") {
     return NextResponse.json(
       { error: "집계 조회 권한이 없습니다." },

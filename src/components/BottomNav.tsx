@@ -7,7 +7,7 @@ import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { useMasterPendingCount } from "@/features/accounts/hooks/useMasterPendingCount";
 
 // 하단 고정 바텀탭(AC-19b, AC-20). T8-5: role 별 분기.
-// 크루 = 기존 4탭. 마스터 = 집계(/master) 진입 중심 탭.
+// 멤버 = 기존 4탭. 마스터 = 집계(/master) 진입 중심 탭.
 interface Tab {
   href: string;
   label: string;
@@ -15,7 +15,7 @@ interface Tab {
   disabled?: boolean;
 }
 
-// 크루 기본 4탭(회귀: 기존 구성 불변 — role 미확정 시에도 이 셋이 SSR/첫CSR 기본).
+// 멤버 기본 4탭(회귀: 기존 구성 불변 — role 미확정 시에도 이 셋이 SSR/첫CSR 기본).
 const CREW_TABS: Tab[] = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/attendance", label: "출퇴근", icon: "clock" },
@@ -31,7 +31,7 @@ const MASTER_TABS: Tab[] = [
   { href: "/mypage", label: "마이페이지", icon: "user" },
 ];
 
-// 마운트 여부 구독(하이드레이션 안전). 서버/첫CSR false → 기본 크루 4탭으로 1차 렌더.
+// 마운트 여부 구독(하이드레이션 안전). 서버/첫CSR false → 기본 멤버 4탭으로 1차 렌더.
 const emptySubscribe = () => () => {};
 
 function isActive(pathname: string, href: string): boolean {
@@ -94,14 +94,14 @@ function Icon({ name, active }: { name: string; active: boolean }) {
 export function BottomNav() {
   const pathname = usePathname();
   const { user } = useCurrentUser();
-  // mount 전(localStorage 역할 복원 전)은 항상 크루 4탭 → SSR/첫CSR 마크업 동일(mismatch 0).
+  // mount 전(localStorage 역할 복원 전)은 항상 멤버 4탭 → SSR/첫CSR 마크업 동일(mismatch 0).
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false,
   );
   const tabs = mounted && user.role === "master" ? MASTER_TABS : CREW_TABS;
-  // 마스터: 대기 수정요청(크루 근태변경 승인) 알림 배지 — 집계 탭에 표시.
+  // 마스터: 대기 수정요청(멤버 근태변경 승인) 알림 배지 — 집계 탭에 표시.
   const pending = useMasterPendingCount();
 
   return (

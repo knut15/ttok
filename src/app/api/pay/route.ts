@@ -11,7 +11,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const month = url.searchParams.get("month") ?? "";
-  // T8-4: 본인 강제(크루) / 마스터 target.
+  // T8-4: 본인 강제(멤버) / 마스터 target.
   const scoped = enforceReadScope(
     readScope(request),
     url.searchParams.get("crewId") ?? undefined,

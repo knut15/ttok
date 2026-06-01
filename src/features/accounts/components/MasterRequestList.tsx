@@ -1,4 +1,4 @@
-// 마스터 수정요청 목록(FR-2, presentational): 크루명 · 날짜 · 대기/수락 배지 · 수락 버튼.
+// 마스터 수정요청 목록(FR-2, presentational): 멤버명 · 날짜 · 대기/수락 배지 · 수락 버튼.
 // 대기 요청에만 수락 버튼(approveRequest 멱등이나 UI에서 재수락 노출 안 함, E-3).
 // 0건이면 빈 상태(E-2). props 는 types 만 의존(store/route 비접근).
 import { StatusBadge } from "@/components/StatusBadge";

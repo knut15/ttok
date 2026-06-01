@@ -12,7 +12,7 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  // 마스터 게이트. 크루/헤더 부재 → 403.
+  // 마스터 게이트. 멤버/헤더 부재 → 403.
   if (readScope(request).role !== "master") {
     return NextResponse.json(
       { error: "매니저 지정 권한이 없습니다." },
@@ -32,7 +32,7 @@ export async function PATCH(
   const crew: Crew | null = setManager(id, body.on);
   if (!crew) {
     return NextResponse.json(
-      { error: "대상 크루를 찾을 수 없습니다." },
+      { error: "대상 멤버를 찾을 수 없습니다." },
       { status: 404, headers: NO_STORE },
     );
   }

@@ -10,7 +10,7 @@ import type { MasterRequestRow, MasterRequestsResponse } from "@/types";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request): Promise<Response> {
-  // 마스터 게이트(AC-8). 크루/헤더 부재 → 403, store 불변.
+  // 마스터 게이트(AC-8). 멤버/헤더 부재 → 403, store 불변.
   if (readScope(request).role !== "master") {
     return NextResponse.json(
       { error: "수정요청 조회 권한이 없습니다." },

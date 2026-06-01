@@ -50,7 +50,7 @@ export function ScheduleView() {
     removeFixed,
   } = useSchedule(month);
 
-  // 일반 크루는 본인만, master/매니저(canWrite)는 전체 크루를 본다(요구사항).
+  // 일반 멤버는 본인만, master/매니저(canWrite)는 전체 멤버를 본다(요구사항).
   const myCrewId = user.crewId ?? user.id;
   const visibleCrews = canWrite ? crews : crews.filter((c) => c.id === myCrewId);
 

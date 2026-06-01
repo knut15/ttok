@@ -19,7 +19,7 @@ export async function GET(
       { status: 404, headers: NO_STORE },
     );
   }
-  // T8-4: 본인 강제(크루) / 마스터 target(?crewId).
+  // T8-4: 본인 강제(멤버) / 마스터 target(?crewId).
   const scoped = enforceReadScope(
     readScope(request),
     new URL(request.url).searchParams.get("crewId") ?? undefined,

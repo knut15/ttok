@@ -1,6 +1,6 @@
 "use client";
 
-// 초대 패널(T8-6). 마스터=초대 생성 버튼+코드 표시 / 크루=코드 입력+합류.
+// 초대 패널(T8-6). 마스터=초대 생성 버튼+코드 표시 / 멤버=코드 입력+합류.
 // role 별 분기. client 는 useInvites(route 경유)로만 store 접근.
 import { useState } from "react";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
@@ -21,7 +21,7 @@ export function InvitePanel() {
   if (user.role === "master") {
     return (
       <section className="px-5 pt-8">
-        <h2 className="mb-3 text-lg font-bold">크루 초대</h2>
+        <h2 className="mb-3 text-lg font-bold">멤버 초대</h2>
         <button
           type="button"
           onClick={() => void createInvite()}
@@ -42,7 +42,7 @@ export function InvitePanel() {
     );
   }
 
-  // 크루: 코드 입력 + 합류
+  // 멤버: 코드 입력 + 합류
   return (
     <section className="px-5 pt-8">
       <h2 className="mb-3 text-lg font-bold">매장 합류</h2>
