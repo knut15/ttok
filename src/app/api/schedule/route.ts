@@ -1,18 +1,16 @@
-// /api/schedule (T18) — 스케쥴 조회/작성.
-// GET ?month=YYYY-MM → 200 ScheduleResponse. 읽기는 인증 사용자 전원 허용(근무자도 본인 스케쥴 확인).
-// POST { date, crewId, startTime, endTime, off? } → 작성/수정. canWriteSchedule(master/매니저)만, 아니면 403.
-//   "근무자별 시간" 모델: (date, crewId) 당 1건 upsert. createdBy = 작성자 scope.crewId.
-// client 는 route 경유로만 store 접근.
+// /api/schedule — 스케쥴 조회/작성(Prisma).
+// GET ?month=YYYY-MM → 200 ScheduleResponse(매장 스코프). 읽기는 인증 사용자 전원(멤버는 본인 것만).
+// POST { date, crewId, startTime, endTime, off? } → 작성/수정. canWriteSchedule(master/매니저)만.
+//   배정 대상 crewId 는 요청자 매장의 멤버(crew)여야 함(실 멤버 배정 가능).
 import { NextResponse } from "next/server";
 import {
   canWriteSchedule,
   getMonthScheduleView,
-  listCrews,
   listFixedShifts,
   upsertSchedule,
 } from "@/lib/store";
 import { resolveScope } from "@/lib/session-scope";
-import { getStoreCrewIds } from "@/lib/identity-repo";
+import { resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
 import { isValidDateString } from "@/lib/date";
 import { parseHHMM } from "@/lib/time";
 import { SEED_MONTH } from "@/lib/constants";
@@ -24,16 +22,10 @@ export async function GET(request: Request): Promise<Response> {
   const month = new URL(request.url).searchParams.get("month") ?? SEED_MONTH;
   const scope = await resolveScope(request);
   const canWrite = canWriteSchedule(scope);
+  const storeId = await resolveStoreId(scope);
 
-  let entries = getMonthScheduleView(month);
-  let fixedShifts = listFixedShifts();
-
-  // 매장 스코프(세션): 자기 매장 멤버 crewId 만 — 실매장은 데모 시드(목 데이터) 미노출.
-  if (scope.storeId) {
-    const ids = new Set(await getStoreCrewIds(scope.storeId));
-    entries = entries.filter((e) => ids.has(e.crewId));
-    fixedShifts = fixedShifts.filter((f) => ids.has(f.crewId));
-  }
+  const entries = storeId ? await getMonthScheduleView(storeId, month) : [];
+  const fixedShifts = storeId ? await listFixedShifts(storeId) : [];
 
   // 권한 스코프: master/매니저(canWrite)는 매장 전체, 일반 멤버는 본인 것만.
   const payload: ScheduleResponse = {
@@ -54,8 +46,8 @@ interface PostBody {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const scope = (await resolveScope(request));
-  // 작성권한 게이트(서버 단일 진실원). master 또는 매니저 crew 만.
+  const scope = await resolveScope(request);
+  // 작성권한 게이트. master 또는 매니저 crew 만.
   if (!canWriteSchedule(scope)) {
     return NextResponse.json(
       { error: "스케쥴 작성 권한이 없습니다." },
@@ -76,11 +68,12 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  // 배정 대상은 실재하는 근무자(crew 역할)만.
-  if (
-    typeof crewId !== "string" ||
-    !listCrews().some((c) => c.id === crewId && c.role === "crew")
-  ) {
+  // 배정 대상은 요청자 매장의 멤버(crew)만.
+  const storeId = await resolveStoreId(scope);
+  const memberCrewIds = storeId
+    ? new Set((await getStoreMembers(storeId)).map((m) => m.operationalId ?? m.id))
+    : new Set<string>();
+  if (typeof crewId !== "string" || !memberCrewIds.has(crewId)) {
     return NextResponse.json(
       { error: "유효한 근무자(crewId)가 아닙니다." },
       { status: 400, headers: NO_STORE },
@@ -98,14 +91,14 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  const entry = upsertSchedule({
+  const entry = await upsertSchedule({
     date,
     crewId,
     startTime: off ? "00:00" : startTime,
     endTime: off ? "00:00" : endTime,
     off,
     createdBy: scope.crewId,
-    autoApprove: scope.role === "master", // 마스터 작성 대타는 즉시 승인
+    autoApprove: scope.role === "master",
   });
   return NextResponse.json(entry, { headers: NO_STORE });
 }

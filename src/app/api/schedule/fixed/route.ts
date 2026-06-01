@@ -1,10 +1,8 @@
-// /api/schedule/fixed — 멤버별 고정 근무 블록 추가/삭제(멤버당 여러 블록).
-// canWrite(master/매니저)만. POST { crewId, weekdays:number[], startTime, endTime } 로 블록 추가
-// (한 멤버 안에서 요일 중복 불가), DELETE { id } 로 블록 삭제.
+// /api/schedule/fixed — 멤버별 고정 근무 블록 추가/삭제/수정(Prisma). canWrite(master/매니저)만.
+// 배정 대상 crewId 는 요청자 매장의 멤버(crew)여야 함.
 import { NextResponse } from "next/server";
 import {
   canWriteSchedule,
-  listCrews,
   listFixedShifts,
   addFixedShift,
   removeFixedShift,
@@ -12,18 +10,24 @@ import {
   crewFixedWeekdays,
 } from "@/lib/store";
 import { resolveScope } from "@/lib/session-scope";
+import { resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
 import { parseHHMM } from "@/lib/time";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-async function gate(request: Request): Promise<Response | null> {
-  if (!canWriteSchedule(await resolveScope(request))) {
-    return NextResponse.json(
-      { error: "고정 근무 등록 권한이 없습니다." },
-      { status: 403, headers: NO_STORE },
-    );
+/** 게이트 통과 시 {storeId} 반환, 아니면 deny Response. */
+async function gate(request: Request): Promise<{ storeId: string | null; deny: Response | null }> {
+  const scope = await resolveScope(request);
+  if (!canWriteSchedule(scope)) {
+    return {
+      storeId: null,
+      deny: NextResponse.json(
+        { error: "고정 근무 등록 권한이 없습니다." },
+        { status: 403, headers: NO_STORE },
+      ),
+    };
   }
-  return null;
+  return { storeId: await resolveStoreId(scope), deny: null };
 }
 
 interface Body {
@@ -34,9 +38,17 @@ interface Body {
   endTime?: unknown;
 }
 
+function validWeekdays(weekdays: unknown): weekdays is number[] {
+  return (
+    Array.isArray(weekdays) &&
+    weekdays.length > 0 &&
+    weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+  );
+}
+
 export async function POST(request: Request): Promise<Response> {
-  const denied = await gate(request);
-  if (denied) return denied;
+  const { storeId, deny } = await gate(request);
+  if (deny) return deny;
 
   const body = (await request.json().catch(() => null)) as Body | null;
   const crewId = body?.crewId;
@@ -44,28 +56,23 @@ export async function POST(request: Request): Promise<Response> {
   const startTime = typeof body?.startTime === "string" ? body.startTime : "";
   const endTime = typeof body?.endTime === "string" ? body.endTime : "";
 
-  if (
-    typeof crewId !== "string" ||
-    !listCrews().some((c) => c.id === crewId && c.role === "crew")
-  ) {
+  const memberCrewIds = storeId
+    ? new Set((await getStoreMembers(storeId)).map((m) => m.operationalId ?? m.id))
+    : new Set<string>();
+  if (typeof crewId !== "string" || !memberCrewIds.has(crewId)) {
     return NextResponse.json(
       { error: "유효한 근무자(crewId)가 아닙니다." },
       { status: 400, headers: NO_STORE },
     );
   }
-  if (
-    !Array.isArray(weekdays) ||
-    weekdays.length === 0 ||
-    !weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)
-  ) {
+  if (!validWeekdays(weekdays)) {
     return NextResponse.json(
       { error: "근무 요일(weekdays, 0~6)을 1개 이상 선택해야 합니다." },
       { status: 400, headers: NO_STORE },
     );
   }
-  // 같은 멤버의 기존 블록과 요일이 겹치면 거부(요일당 1블록).
-  const used = crewFixedWeekdays(crewId);
-  if ((weekdays as number[]).some((w) => used.has(w))) {
+  const used = await crewFixedWeekdays(crewId);
+  if (weekdays.some((w) => used.has(w))) {
     return NextResponse.json(
       { error: "이미 고정 근무가 등록된 요일이 있습니다." },
       { status: 409, headers: NO_STORE },
@@ -80,13 +87,13 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const block = addFixedShift({ crewId, weekdays: weekdays as number[], startTime, endTime });
+  const block = await addFixedShift({ crewId, weekdays, startTime, endTime });
   return NextResponse.json(block, { headers: NO_STORE });
 }
 
 export async function PATCH(request: Request): Promise<Response> {
-  const denied = await gate(request);
-  if (denied) return denied;
+  const { storeId, deny } = await gate(request);
+  if (deny) return deny;
 
   const body = (await request.json().catch(() => null)) as Body | null;
   const id = body?.id;
@@ -97,18 +104,15 @@ export async function PATCH(request: Request): Promise<Response> {
   if (typeof id !== "string") {
     return NextResponse.json({ error: "id 가 필요합니다." }, { status: 400, headers: NO_STORE });
   }
-  const target = listFixedShifts().find((f) => f.id === id);
+  const blocks = storeId ? await listFixedShifts(storeId) : [];
+  const target = blocks.find((f) => f.id === id);
   if (!target) {
     return NextResponse.json(
       { error: "해당 고정 근무를 찾을 수 없습니다." },
       { status: 404, headers: NO_STORE },
     );
   }
-  if (
-    !Array.isArray(weekdays) ||
-    weekdays.length === 0 ||
-    !weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)
-  ) {
+  if (!validWeekdays(weekdays)) {
     return NextResponse.json(
       { error: "근무 요일(weekdays, 0~6)을 1개 이상 선택해야 합니다." },
       { status: 400, headers: NO_STORE },
@@ -116,11 +120,9 @@ export async function PATCH(request: Request): Promise<Response> {
   }
   // 같은 멤버의 '다른' 블록 요일과 겹치면 거부(자기 자신 제외).
   const usedByOthers = new Set(
-    listFixedShifts()
-      .filter((f) => f.crewId === target.crewId && f.id !== id)
-      .flatMap((f) => f.weekdays),
+    blocks.filter((f) => f.crewId === target.crewId && f.id !== id).flatMap((f) => f.weekdays),
   );
-  if ((weekdays as number[]).some((w) => usedByOthers.has(w))) {
+  if (weekdays.some((w) => usedByOthers.has(w))) {
     return NextResponse.json(
       { error: "이미 고정 근무가 등록된 요일이 있습니다." },
       { status: 409, headers: NO_STORE },
@@ -135,20 +137,20 @@ export async function PATCH(request: Request): Promise<Response> {
     );
   }
 
-  const updated = updateFixedShift(id, { weekdays: weekdays as number[], startTime, endTime });
+  const updated = await updateFixedShift(id, { weekdays, startTime, endTime });
   return NextResponse.json(updated, { headers: NO_STORE });
 }
 
 export async function DELETE(request: Request): Promise<Response> {
-  const denied = await gate(request);
-  if (denied) return denied;
+  const { deny } = await gate(request);
+  if (deny) return deny;
 
   const body = (await request.json().catch(() => null)) as Body | null;
   const id = body?.id;
   if (typeof id !== "string") {
     return NextResponse.json({ error: "id 가 필요합니다." }, { status: 400, headers: NO_STORE });
   }
-  if (!removeFixedShift(id)) {
+  if (!(await removeFixedShift(id))) {
     return NextResponse.json(
       { error: "해당 고정 근무를 찾을 수 없습니다." },
       { status: 404, headers: NO_STORE },

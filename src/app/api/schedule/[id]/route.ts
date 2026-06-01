@@ -17,7 +17,7 @@ export async function DELETE(
     );
   }
   const { id } = await ctx.params;
-  if (!removeSchedule(id)) {
+  if (!(await removeSchedule(id))) {
     return NextResponse.json(
       { error: "대상 스케쥴을 찾을 수 없습니다." },
       { status: 404, headers: NO_STORE },

@@ -3,6 +3,7 @@ import { GET } from "./route";
 import { POST as APPROVE } from "./approve/route";
 import { POST as CREATE } from "../../schedule/route";
 import { __resetStore, getDaySchedules } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 
 const JSON_H = { "Content-Type": "application/json" };
@@ -25,7 +26,11 @@ function approveReq(id: string, headers: Record<string, string>) {
   });
 }
 
-beforeEach(() => __resetStore());
+let storeId: string;
+beforeEach(async () => {
+  __resetStore();
+  storeId = await resetDb();
+});
 
 describe("대타 승인 알림 (요구사항 1)", () => {
   it("매니저가 대타를 배정하면 승인 대기로 마스터 목록에 뜬다", async () => {
@@ -47,7 +52,7 @@ describe("대타 승인 알림 (요구사항 1)", () => {
 
   it("마스터 승인 후 목록에서 사라진다", async () => {
     await CREATE(createReq({ date: FRIDAY, crewId: DEFAULT_CREW_ID, startTime: "09:00", endTime: "13:00" }, MANAGER));
-    const id = getDaySchedules(FRIDAY).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
+    const id = (await getDaySchedules(storeId, FRIDAY)).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
     expect((await APPROVE(approveReq(id, MASTER))).status).toBe(200);
     const body = await (await GET(get(MASTER))).json();
     expect(body.substitutes.length).toBe(0);

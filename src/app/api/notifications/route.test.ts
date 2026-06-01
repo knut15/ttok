@@ -3,6 +3,7 @@ import { GET, POST as READ } from "./route";
 import { POST as APPROVE } from "../master/substitutes/approve/route";
 import { POST as CREATE } from "../schedule/route";
 import { __resetStore, getDaySchedules } from "@/lib/store";
+import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 
 const JSON_H = { "Content-Type": "application/json" };
@@ -15,7 +16,11 @@ const FRIDAY = "2026-06-05"; // 김민정 고정 요일 아님 → 대타
 const headers = (h: Record<string, string>) =>
   new Request("http://localhost/api/notifications", { headers: h });
 
-beforeEach(() => __resetStore());
+let storeId: string;
+beforeEach(async () => {
+  __resetStore();
+  storeId = await resetDb();
+});
 
 describe("대타 승인 시 멤버 알림 (요구사항 1)", () => {
   it("매니저 대타 → 마스터 승인 → 해당 멤버에 알림 생성", async () => {
@@ -32,7 +37,7 @@ describe("대타 승인 시 멤버 알림 (요구사항 1)", () => {
     expect(body.unread).toBe(0);
 
     // 마스터 승인
-    const id = getDaySchedules(FRIDAY).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
+    const id = (await getDaySchedules(storeId, FRIDAY)).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
     await APPROVE(
       new Request("http://localhost/api/master/substitutes/approve", {
         method: "POST",
@@ -55,7 +60,7 @@ describe("대타 승인 시 멤버 알림 (요구사항 1)", () => {
         body: JSON.stringify({ date: FRIDAY, crewId: DEFAULT_CREW_ID, startTime: "09:00", endTime: "13:00" }),
       }),
     );
-    const id = getDaySchedules(FRIDAY).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
+    const id = (await getDaySchedules(storeId, FRIDAY)).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
     await APPROVE(
       new Request("http://localhost/api/master/substitutes/approve", {
         method: "POST",
@@ -77,7 +82,7 @@ describe("대타 승인 시 멤버 알림 (요구사항 1)", () => {
         body: JSON.stringify({ date: FRIDAY, crewId: DEFAULT_CREW_ID, startTime: "09:00", endTime: "13:00" }),
       }),
     );
-    const id = getDaySchedules(FRIDAY).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
+    const id = (await getDaySchedules(storeId, FRIDAY)).find((e) => e.crewId === DEFAULT_CREW_ID)!.id;
     await APPROVE(
       new Request("http://localhost/api/master/substitutes/approve", {
         method: "POST",

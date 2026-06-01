@@ -17,7 +17,7 @@ export async function POST(request: Request): Promise<Response> {
   if (typeof body?.id !== "string") {
     return NextResponse.json({ error: "id 가 필요합니다." }, { status: 400, headers: NO_STORE });
   }
-  const entry = approveSubstitute(body.id);
+  const entry = await approveSubstitute(body.id);
   if (!entry) {
     return NextResponse.json(
       { error: "대상 대타를 찾을 수 없습니다." },
