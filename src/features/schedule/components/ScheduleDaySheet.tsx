@@ -80,6 +80,16 @@ export function ScheduleDaySheet({
   const fixedMap = new Map(
     fixedShifts.filter((f) => f.weekdays.includes(weekday)).map((f) => [f.crewId, f]),
   );
+  // 근무 상태: 근무 / 비번(미배정) / 휴무(off). 비근무자는 흐리게, 정렬은 근무→비번→휴무.
+  const STATE_ORDER = { 근무: 0, 비번: 1, 휴무: 2 } as const;
+  type CrewState = keyof typeof STATE_ORDER;
+  const stateOf = (e: ScheduleEntry | undefined): CrewState =>
+    !e ? "비번" : e.off ? "휴무" : "근무";
+  const sortedCrew = [...crewList].sort(
+    (a, b) =>
+      STATE_ORDER[stateOf(byCrew.get(a.id))] - STATE_ORDER[stateOf(byCrew.get(b.id))] ||
+      a.id.localeCompare(b.id),
+  );
   // 운영시간 — 신규 배정 기본 시프트로 사용(근무시간은 이 범위 내에서 개별 등록).
   const op = getOperatingHours(date);
   const DEFAULT_DRAFT: Draft = { start: op.open, end: op.close, off: false };
@@ -120,21 +130,22 @@ export function ScheduleDaySheet({
 
   const title = formatLongDate(date); // 요일 포함
 
-  // 읽기전용(일반 크루): 배정된 근무자만 시간과 함께 표시.
+  // 읽기전용(일반 크루): 전체 명단. 비근무자(비번/휴무)는 opacity 60%, 근무→비번→휴무 순.
   if (!canWrite) {
-    const assigned = crewList.filter((c) => byCrew.has(c.id));
     return (
       <BottomSheet open onClose={onClose} title={title}>
-        {assigned.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted">등록된 스케쥴이 없습니다.</p>
+        {sortedCrew.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted">크루가 없습니다.</p>
         ) : (
           <ul className="space-y-2">
-            {assigned.map((c) => {
-              const e = byCrew.get(c.id)!;
+            {sortedCrew.map((c) => {
+              const e = byCrew.get(c.id);
+              const st = stateOf(e);
+              const working = st === "근무";
               return (
                 <li
                   key={c.id}
-                  className="flex items-center gap-3 rounded-xl bg-black/[0.03] px-3 py-2.5"
+                  className={`flex items-center gap-3 rounded-xl bg-black/[0.03] px-3 py-2.5 ${working ? "" : "opacity-60"}`}
                 >
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                     {c.avatarInitial}
@@ -144,7 +155,7 @@ export function ScheduleDaySheet({
                     <Chips kinds={chipsFor(e, fixedMap.get(c.id))} />
                   </span>
                   <span className="text-sm text-muted">
-                    {e.off ? "휴무" : `${e.startTime}–${e.endTime}`}
+                    {working ? `${e!.startTime}–${e!.endTime}` : st}
                   </span>
                 </li>
               );
@@ -161,20 +172,28 @@ export function ScheduleDaySheet({
         운영시간 {op.open}–{op.close} · 근무자별 근무시간을 지정하세요(휴무는 시간 없이 저장).
       </p>
       <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
-        {crewList.map((c) => {
+        {sortedCrew.map((c) => {
           const d = drafts[c.id] ?? DEFAULT_DRAFT;
           const existing = byCrew.get(c.id);
           const isManual = existing != null && existing.source !== "fixed";
-          const isFixed = existing?.source === "fixed";
+          const st = stateOf(existing); // 현재 저장 상태(근무/비번/휴무)
+          const working = st === "근무";
           return (
             <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
-              <div className="flex items-center gap-2">
+              {/* 비근무자(비번/휴무)는 이름 영역을 흐리게 — 컨트롤은 정상 */}
+              <div className={`flex items-center gap-2 ${working ? "" : "opacity-60"}`}>
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                   {c.avatarInitial}
                 </span>
                 <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                   {c.name}
-                  <Chips kinds={chipsFor(existing, fixedMap.get(c.id))} />
+                  {working ? (
+                    <Chips kinds={chipsFor(existing, fixedMap.get(c.id))} />
+                  ) : (
+                    <span className="rounded bg-black/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                      {st}
+                    </span>
+                  )}
                 </span>
                 <label className="flex items-center gap-1 text-xs text-muted">
                   <input
@@ -220,7 +239,7 @@ export function ScheduleDaySheet({
                   onClick={() => save(c.id)}
                   className="rounded-full bg-coral px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                 >
-                  {isManual ? "저장" : isFixed ? "변동 저장" : "추가"}
+                  {isManual ? "저장" : existing?.source === "fixed" ? "변동 저장" : "추가"}
                 </button>
               </div>
             </li>

@@ -79,16 +79,14 @@ export function ScheduleGrid({
                       onClick={() => onSelectDate(d)}
                       aria-label={`${c.name} ${Number(d.slice(-2))}일 스케쥴`}
                       className={`flex h-9 w-full flex-col items-center justify-center rounded text-[9px] leading-tight ${
-                        e
-                          ? e.off
-                            ? "bg-black/[0.04] text-muted"
-                            : "bg-coral/10 font-semibold text-coral"
-                          : "text-muted/40 hover:bg-black/5"
+                        e && !e.off
+                          ? "bg-coral/10 font-semibold text-coral"
+                          : "text-muted opacity-60 hover:opacity-100" // 비근무(비번/휴무) 흐리게
                       }`}
                     >
                       {e ? (
                         e.off ? (
-                          "휴"
+                          "휴무"
                         ) : (
                           <>
                             <span>{e.startTime}</span>
@@ -96,7 +94,7 @@ export function ScheduleGrid({
                           </>
                         )
                       ) : (
-                        "·"
+                        "비번"
                       )}
                     </button>
                   </td>
