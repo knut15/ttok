@@ -31,6 +31,13 @@ export interface SaveFixedInput {
   endTime: string;
 }
 
+export interface UpdateFixedInput {
+  id: string;
+  weekdays: number[];
+  startTime: string;
+  endTime: string;
+}
+
 export function useSchedule(month: string) {
   const { user } = useCurrentUser();
   const crewId = user.crewId ?? user.id;
@@ -107,13 +114,27 @@ export function useSchedule(month: string) {
     [user, reload],
   );
 
+  const updateFixed = useCallback(
+    async (input: UpdateFixedInput): Promise<boolean> => {
+      const res = await fetch(`/api/schedule/fixed`, {
+        ...NO_STORE,
+        method: "PATCH",
+        headers: { ...authHeaders(user), "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (res.ok) reload();
+      return res.ok;
+    },
+    [user, reload],
+  );
+
   const removeFixed = useCallback(
-    async (crewId: string): Promise<boolean> => {
+    async (id: string): Promise<boolean> => {
       const res = await fetch(`/api/schedule/fixed`, {
         ...NO_STORE,
         method: "DELETE",
         headers: { ...authHeaders(user), "Content-Type": "application/json" },
-        body: JSON.stringify({ crewId }),
+        body: JSON.stringify({ id }),
       });
       if (res.ok) reload();
       return res.ok;
@@ -131,6 +152,7 @@ export function useSchedule(month: string) {
     save,
     remove,
     saveFixed,
+    updateFixed,
     removeFixed,
   };
 }

@@ -11,6 +11,7 @@ import type {
   FixedShift,
   Invite,
   JoinResult,
+  Notification,
   ProfilePatch,
   ProfileResponse,
   Role,
@@ -84,7 +85,8 @@ interface StoreShape {
   invites: Invite[];
   profilesByCrew: Map<string, UserProfile>; // crewId → profile
   schedulesByDate: Map<string, ScheduleEntry[]>; // T16: date → 배정 목록
-  fixedShifts: FixedShift[]; // 크루별 고정근무((crewId, dayType) 유일)
+  fixedShifts: FixedShift[]; // 크루별 고정근무 블록(여러 개 가능)
+  notifications: Notification[]; // 크루 알림(대타 승인 등)
   storeInfo: StoreInfo; // 단일 매장 유지
   seq: number;
 }
@@ -106,6 +108,7 @@ function createStore(): StoreShape {
     profilesByCrew,
     schedulesByDate: buildSeedSchedules(),
     fixedShifts: buildSeedFixedShifts(),
+    notifications: [],
     storeInfo: SEED_STORE_INFO,
     seq: 1,
   };
@@ -134,6 +137,7 @@ function getStore(): StoreShape {
     !(s.profilesByCrew instanceof Map) ||
     !(s.schedulesByDate instanceof Map) || // T16: 스키마 변경 가드(HMR 잔존 옛 store 재생성)
     !Array.isArray(s.fixedShifts) || // 고정근무 스키마 가드
+    !Array.isArray(s.notifications) || // 알림 스키마 가드
     !Array.isArray(s.crews)
   ) {
     globalThis.__crewmonStore = createStore();
@@ -641,8 +645,8 @@ function isSubstituteAssignment(
   off?: boolean,
 ): boolean {
   if (off) return false;
-  const fs = store.fixedShifts.find((f) => f.crewId === crewId);
-  return !(fs && fs.weekdays.includes(getWeekdayIndex(date)));
+  const w = getWeekdayIndex(date);
+  return !store.fixedShifts.some((f) => f.crewId === crewId && f.weekdays.includes(w));
 }
 
 /**
@@ -686,17 +690,61 @@ export function upsertSchedule(input: NewSchedule): ScheduleEntry {
   return created;
 }
 
-/** 마스터 대타 승인. id 의 대타 entry approval → "수락". 성공 시 entry, 없으면 null. */
+/** 마스터 대타 승인. id 의 대타 entry approval → "수락" + 해당 크루에게 알림. 없으면 null. */
 export function approveSubstitute(id: string): ScheduleEntry | null {
   const store = getStore();
   for (const list of store.schedulesByDate.values()) {
     const e = list.find((x) => x.id === id);
     if (e) {
-      e.approval = "수락";
+      if (e.approval !== "수락") {
+        e.approval = "수락";
+        // 요구사항: 대타 승인 시 해당 크루에게 알림.
+        pushNotification(e.crewId, `대타 근무(${e.date} ${e.startTime}~${e.endTime})가 승인되었습니다.`);
+      }
       return e;
     }
   }
   return null;
+}
+
+// === 알림(Notification) ===
+
+/** 크루에게 알림 추가(미읽음). */
+export function pushNotification(crewId: string, message: string): Notification {
+  const store = getStore();
+  const n: Notification = {
+    id: `noti-${store.seq++}`,
+    crewId,
+    message,
+    createdAt: new Date().toISOString(),
+    read: false,
+  };
+  store.notifications.push(n);
+  return n;
+}
+
+/** 크루 알림 목록(최신순). */
+export function listNotifications(crewId: string): Notification[] {
+  return getStore()
+    .notifications.filter((n) => n.crewId === crewId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** 크루 미읽음 알림 수. */
+export function unreadNotificationCount(crewId: string): number {
+  return getStore().notifications.filter((n) => n.crewId === crewId && !n.read).length;
+}
+
+/** 크루 알림 전부 읽음 처리. 처리 건수 반환. */
+export function markNotificationsRead(crewId: string): number {
+  let n = 0;
+  for (const noti of getStore().notifications) {
+    if (noti.crewId === crewId && !noti.read) {
+      noti.read = true;
+      n++;
+    }
+  }
+  return n;
 }
 
 /** 승인 대기 대타 목록(approval==="대기"). 날짜순. */
@@ -723,9 +771,20 @@ export function removeSchedule(id: string): boolean {
 
 // === 고정 근무(FixedShift) + 병합 뷰 ===
 
-/** 크루별 고정근무 목록(crewId 순). */
+/** 고정근무 블록 목록(crewId, 시작요일 순). 크루당 여러 블록 가능. */
 export function listFixedShifts(): FixedShift[] {
-  return [...getStore().fixedShifts].sort((a, b) => a.crewId.localeCompare(b.crewId));
+  return [...getStore().fixedShifts].sort(
+    (a, b) => a.crewId.localeCompare(b.crewId) || (a.weekdays[0] ?? 0) - (b.weekdays[0] ?? 0),
+  );
+}
+
+/** 크루가 이미 사용 중인 요일 집합(블록 추가 시 중복 방지용). */
+export function crewFixedWeekdays(crewId: string): Set<number> {
+  const set = new Set<number>();
+  for (const f of getStore().fixedShifts) {
+    if (f.crewId === crewId) for (const w of f.weekdays) set.add(w);
+  }
+  return set;
 }
 
 export interface NewFixedShift {
@@ -735,29 +794,44 @@ export interface NewFixedShift {
   endTime: string;
 }
 
-/** 고정근무 upsert — crewId 당 1건. 기존 있으면 요일/시간 갱신. */
-export function setFixedShift(input: NewFixedShift): FixedShift {
+/** 고정근무 블록 추가. 요일 정규화(중복제거·정렬) 후 신규 id 부여. */
+export function addFixedShift(input: NewFixedShift): FixedShift {
   const store = getStore();
   const weekdays = [...new Set(input.weekdays)].sort((a, b) => a - b);
-  const existing = store.fixedShifts.find((f) => f.crewId === input.crewId);
-  if (existing) {
-    existing.weekdays = weekdays;
-    existing.startTime = input.startTime;
-    existing.endTime = input.endTime;
-    return existing;
-  }
-  const created: FixedShift = { ...input, weekdays };
+  const created: FixedShift = {
+    id: `fix-${store.seq++}`,
+    crewId: input.crewId,
+    weekdays,
+    startTime: input.startTime,
+    endTime: input.endTime,
+  };
   store.fixedShifts.push(created);
   return created;
 }
 
-/** 고정근무 해제(crewId). 제거 성공 → true. */
-export function removeFixedShift(crewId: string): boolean {
+/** 고정근무 블록 삭제(id). 제거 성공 → true. */
+export function removeFixedShift(id: string): boolean {
   const store = getStore();
-  const idx = store.fixedShifts.findIndex((f) => f.crewId === crewId);
+  const idx = store.fixedShifts.findIndex((f) => f.id === id);
   if (idx === -1) return false;
   store.fixedShifts.splice(idx, 1);
   return true;
+}
+
+export interface FixedShiftPatch {
+  weekdays: number[];
+  startTime: string;
+  endTime: string;
+}
+
+/** 고정근무 블록 편집(id). 요일 정규화. 없으면 null. (겹침 검증은 route 책임) */
+export function updateFixedShift(id: string, patch: FixedShiftPatch): FixedShift | null {
+  const block = getStore().fixedShifts.find((f) => f.id === id);
+  if (!block) return null;
+  block.weekdays = [...new Set(patch.weekdays)].sort((a, b) => a - b);
+  block.startTime = patch.startTime;
+  block.endTime = patch.endTime;
+  return block;
 }
 
 /**
@@ -767,10 +841,11 @@ export function removeFixedShift(crewId: string): boolean {
  */
 export function getMonthScheduleView(month: string): ScheduleEntry[] {
   const fixed = getStore().fixedShifts;
-  const fixedByCrew = new Map(fixed.map((f) => [f.crewId, f]));
-  // 해당 날짜 요일에 크루의 고정근무가 적용되는가(대타 판정용).
-  const hasFixedOn = (crewId: string, date: string) =>
-    fixedByCrew.get(crewId)?.weekdays.includes(getWeekdayIndex(date)) === true;
+  // 해당 날짜 요일에 크루의 고정근무 블록이 하나라도 적용되는가(대타 판정용).
+  const hasFixedOn = (crewId: string, date: string) => {
+    const w = getWeekdayIndex(date);
+    return fixed.some((f) => f.crewId === crewId && f.weekdays.includes(w));
+  };
 
   const explicit: ScheduleEntry[] = getMonthSchedules(month).map((e) => ({
     ...e,

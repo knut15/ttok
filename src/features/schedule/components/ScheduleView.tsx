@@ -46,6 +46,7 @@ export function ScheduleView() {
     save,
     remove,
     saveFixed,
+    updateFixed,
     removeFixed,
   } = useSchedule(month);
 
@@ -60,11 +61,22 @@ export function ScheduleView() {
     },
     [saveFixed],
   );
-  const removeFixedShift = useCallback(
-    async (crewId: string) => {
+  const updateFixedShift = useCallback(
+    async (input: Parameters<typeof updateFixed>[0]) => {
       setFixedBusy(true);
       try {
-        return await removeFixed(crewId);
+        return await updateFixed(input);
+      } finally {
+        setFixedBusy(false);
+      }
+    },
+    [updateFixed],
+  );
+  const removeFixedShift = useCallback(
+    async (id: string) => {
+      setFixedBusy(true);
+      try {
+        return await removeFixed(id);
       } finally {
         setFixedBusy(false);
       }
@@ -204,6 +216,7 @@ export function ScheduleView() {
           busy={fixedBusy}
           onClose={() => setFixedSheetOpen(false)}
           onSave={saveFixedShift}
+          onUpdate={updateFixedShift}
           onRemove={removeFixedShift}
         />
       ) : null}

@@ -207,14 +207,31 @@ export interface MasterSubstitutesResponse {
   substitutes: MasterSubstituteRow[];
 }
 
+/** 크루 알림 1건(예: 대타 승인). */
+export interface Notification {
+  id: string;
+  crewId: string; // 수신 크루
+  message: string;
+  createdAt: string; // ISO
+  read: boolean;
+}
+
+/** GET /api/notifications 응답(현재 사용자). */
+export interface NotificationsResponse {
+  items: Notification[];
+  unread: number;
+}
+
 /** 요일 유형 — 매장 운영시간 구분용(평일/주말). 고정근무 요일과는 별개. */
 export type DayType = "weekday" | "weekend";
 
 /**
- * 크루별 고정 근무. crewId 당 1건. 근무 요일을 직접 선택(일~토)하고 시프트 시간을 지정.
- * 스케쥴표는 해당 요일에 명시 배정이 없으면 이 고정값을 자동 적용 → 변동만 기록.
+ * 크루별 고정 근무 블록. crewId 당 여러 블록 가능(요일셋+시간 세트).
+ * 예) 월~목 08:00~15:00 블록 + 일 10:00~14:00 블록(시간 다름).
+ * 한 크루의 블록들은 요일이 겹치지 않는다(요일당 최대 1블록). 명시 배정 없으면 자동 적용.
  */
 export interface FixedShift {
+  id: string;
   crewId: string;
   weekdays: number[]; // 0=일 … 6=토 (선택 요일)
   startTime: string; // "HH:MM"

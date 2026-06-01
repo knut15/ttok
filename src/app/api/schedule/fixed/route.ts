@@ -1,8 +1,16 @@
-// /api/schedule/fixed — 크루별 고정 근무 등록/해제.
-// canWrite(master/매니저)만. POST { crewId, weekdays:number[], startTime, endTime } 로 upsert,
-// DELETE { crewId } 로 해제. 근무 요일은 일~토(0~6)에서 직접 선택.
+// /api/schedule/fixed — 크루별 고정 근무 블록 추가/삭제(크루당 여러 블록).
+// canWrite(master/매니저)만. POST { crewId, weekdays:number[], startTime, endTime } 로 블록 추가
+// (한 크루 안에서 요일 중복 불가), DELETE { id } 로 블록 삭제.
 import { NextResponse } from "next/server";
-import { canWriteSchedule, listCrews, setFixedShift, removeFixedShift } from "@/lib/store";
+import {
+  canWriteSchedule,
+  listCrews,
+  listFixedShifts,
+  addFixedShift,
+  removeFixedShift,
+  updateFixedShift,
+  crewFixedWeekdays,
+} from "@/lib/store";
 import { readScope } from "@/lib/scope";
 import { parseHHMM } from "@/lib/time";
 
@@ -19,6 +27,7 @@ function gate(request: Request): Response | null {
 }
 
 interface Body {
+  id?: unknown;
   crewId?: unknown;
   weekdays?: unknown;
   startTime?: unknown;
@@ -44,7 +53,6 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400, headers: NO_STORE },
     );
   }
-  // 요일: 1개 이상, 모두 0~6 정수.
   if (
     !Array.isArray(weekdays) ||
     weekdays.length === 0 ||
@@ -53,6 +61,14 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json(
       { error: "근무 요일(weekdays, 0~6)을 1개 이상 선택해야 합니다." },
       { status: 400, headers: NO_STORE },
+    );
+  }
+  // 같은 크루의 기존 블록과 요일이 겹치면 거부(요일당 1블록).
+  const used = crewFixedWeekdays(crewId);
+  if ((weekdays as number[]).some((w) => used.has(w))) {
+    return NextResponse.json(
+      { error: "이미 고정 근무가 등록된 요일이 있습니다." },
+      { status: 409, headers: NO_STORE },
     );
   }
   const s = parseHHMM(startTime);
@@ -64,8 +80,63 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const shift = setFixedShift({ crewId, weekdays: weekdays as number[], startTime, endTime });
-  return NextResponse.json(shift, { headers: NO_STORE });
+  const block = addFixedShift({ crewId, weekdays: weekdays as number[], startTime, endTime });
+  return NextResponse.json(block, { headers: NO_STORE });
+}
+
+export async function PATCH(request: Request): Promise<Response> {
+  const denied = gate(request);
+  if (denied) return denied;
+
+  const body = (await request.json().catch(() => null)) as Body | null;
+  const id = body?.id;
+  const weekdays = body?.weekdays;
+  const startTime = typeof body?.startTime === "string" ? body.startTime : "";
+  const endTime = typeof body?.endTime === "string" ? body.endTime : "";
+
+  if (typeof id !== "string") {
+    return NextResponse.json({ error: "id 가 필요합니다." }, { status: 400, headers: NO_STORE });
+  }
+  const target = listFixedShifts().find((f) => f.id === id);
+  if (!target) {
+    return NextResponse.json(
+      { error: "해당 고정 근무를 찾을 수 없습니다." },
+      { status: 404, headers: NO_STORE },
+    );
+  }
+  if (
+    !Array.isArray(weekdays) ||
+    weekdays.length === 0 ||
+    !weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+  ) {
+    return NextResponse.json(
+      { error: "근무 요일(weekdays, 0~6)을 1개 이상 선택해야 합니다." },
+      { status: 400, headers: NO_STORE },
+    );
+  }
+  // 같은 크루의 '다른' 블록 요일과 겹치면 거부(자기 자신 제외).
+  const usedByOthers = new Set(
+    listFixedShifts()
+      .filter((f) => f.crewId === target.crewId && f.id !== id)
+      .flatMap((f) => f.weekdays),
+  );
+  if ((weekdays as number[]).some((w) => usedByOthers.has(w))) {
+    return NextResponse.json(
+      { error: "이미 고정 근무가 등록된 요일이 있습니다." },
+      { status: 409, headers: NO_STORE },
+    );
+  }
+  const s = parseHHMM(startTime);
+  const e = parseHHMM(endTime);
+  if (Number.isNaN(s) || Number.isNaN(e) || e <= s) {
+    return NextResponse.json(
+      { error: "시작<종료 시간이어야 합니다." },
+      { status: 400, headers: NO_STORE },
+    );
+  }
+
+  const updated = updateFixedShift(id, { weekdays: weekdays as number[], startTime, endTime });
+  return NextResponse.json(updated, { headers: NO_STORE });
 }
 
 export async function DELETE(request: Request): Promise<Response> {
@@ -73,16 +144,13 @@ export async function DELETE(request: Request): Promise<Response> {
   if (denied) return denied;
 
   const body = (await request.json().catch(() => null)) as Body | null;
-  const crewId = body?.crewId;
-  if (typeof crewId !== "string") {
-    return NextResponse.json(
-      { error: "crewId 가 필요합니다." },
-      { status: 400, headers: NO_STORE },
-    );
+  const id = body?.id;
+  if (typeof id !== "string") {
+    return NextResponse.json({ error: "id 가 필요합니다." }, { status: 400, headers: NO_STORE });
   }
-  if (!removeFixedShift(crewId)) {
+  if (!removeFixedShift(id)) {
     return NextResponse.json(
-      { error: "해당 고정 근무가 없습니다." },
+      { error: "해당 고정 근무를 찾을 수 없습니다." },
       { status: 404, headers: NO_STORE },
     );
   }

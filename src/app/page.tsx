@@ -4,18 +4,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { HomeToday } from "@/features/attendance/components/HomeToday";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function HomePage() {
   return (
     <div>
-      <AppHeader
-        brand
-        right={
-          <span aria-hidden className="text-xl text-muted">
-            🔔
-          </span>
-        }
-      />
+      <AppHeader brand right={<NotificationBell />} />
 
       <div className="space-y-3 px-5 pt-1">
         <HomeToday />
