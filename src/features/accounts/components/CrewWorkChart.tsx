@@ -31,7 +31,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
         borderRadius: 4,
         // 좁은 막대 + 근무/연장 막대 사이 간격(barPercentage<1 로 간격 확보).
         categoryPercentage: 0.55,
-        barPercentage: 0.6,
+        barPercentage: 0.8,
       },
       {
         label: "연장(시간)",
@@ -39,7 +39,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
         backgroundColor: "rgba(245,158,11,0.85)", // amber
         borderRadius: 4,
         categoryPercentage: 0.55,
-        barPercentage: 0.6,
+        barPercentage: 0.8,
       },
     ],
   };
