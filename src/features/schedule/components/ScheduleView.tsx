@@ -2,13 +2,18 @@
 
 // 스케쥴 호스트 뷰(T19). 월 이동 + 캘린더 + 날짜 편집 시트.
 // 읽기는 전원, 작성(추가/수정/삭제)은 canWrite(master/매니저)만 — 시트가 분기 처리.
-import { useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { useSchedule } from "@/features/schedule/hooks/useSchedule";
+import {
+  authHeaders,
+  useCurrentUser,
+} from "@/features/accounts/hooks/useCurrentUser";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { ScheduleGrid } from "./ScheduleGrid";
 import { ScheduleDaySheet } from "./ScheduleDaySheet";
+import { ScheduleManagerSheet } from "./ScheduleManagerSheet";
 import { SEED_MONTH } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth, todayMonth } from "@/lib/date";
 
@@ -19,14 +24,38 @@ const emptySubscribe = () => () => {};
 
 export function ScheduleView() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const { user } = useCurrentUser();
+  const isMaster = mounted && user.role === "master"; // 매니저 지정은 마스터 전용
   // 기본 월: 마운트 후 현재월(6월). 사용자가 직접 고르면 그 값 유지.
   const [picked, setMonth] = useState<string | null>(null);
   const month = picked ?? (mounted ? todayMonth() : SEED_MONTH);
   const [view, setView] = useState<ViewMode>("calendar");
   const [selected, setSelected] = useState<string | null>(null);
-  const { entries, canWrite, crews, loading, save, remove } = useSchedule(month);
+  const [managerSheetOpen, setManagerSheetOpen] = useState(false);
+  const [managerBusyId, setManagerBusyId] = useState<string | null>(null);
+  const { entries, canWrite, crews, loading, reload, save, remove } =
+    useSchedule(month);
 
   const dayEntries = selected ? entries.filter((e) => e.date === selected) : [];
+
+  // 매니저 지정/해제(마스터 전용). PATCH 후 crews 재로드.
+  const toggleManager = useCallback(
+    async (crewId: string, on: boolean) => {
+      setManagerBusyId(crewId);
+      try {
+        const res = await fetch(`/api/master/crews/${crewId}/manager`, {
+          method: "PATCH",
+          cache: "no-store",
+          headers: { ...authHeaders(user), "Content-Type": "application/json" },
+          body: JSON.stringify({ on }),
+        });
+        if (res.ok) reload();
+      } finally {
+        setManagerBusyId(null);
+      }
+    },
+    [user, reload],
+  );
 
   return (
     <div className="pb-24">
@@ -51,6 +80,17 @@ export function ScheduleView() {
               ›
             </button>
           </span>
+        }
+        right={
+          isMaster ? (
+            <button
+              type="button"
+              onClick={() => setManagerSheetOpen(true)}
+              className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold"
+            >
+              매니저 지정
+            </button>
+          ) : undefined
         }
       />
       <div className="flex items-center justify-between px-5 pb-3">
@@ -101,6 +141,14 @@ export function ScheduleView() {
           onClose={() => setSelected(null)}
           onSave={save}
           onRemove={remove}
+        />
+      ) : null}
+      {managerSheetOpen ? (
+        <ScheduleManagerSheet
+          crews={crews}
+          busyId={managerBusyId}
+          onClose={() => setManagerSheetOpen(false)}
+          onToggle={toggleManager}
         />
       ) : null}
     </div>
