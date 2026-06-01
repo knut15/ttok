@@ -69,7 +69,7 @@ export function ScheduleGrid({
         <tbody>
           {crewList.map((c) => (
             <tr key={c.id}>
-              <th className="sticky left-0 z-10 bg-surface px-2 py-1 text-left text-xs font-semibold">
+              <th className="sticky left-0 z-10 bg-surface px-2 py-3 text-left text-xs font-semibold">
                 <span className="flex items-center gap-1">
                   <span className="grid h-5 w-5 place-items-center rounded-full bg-black/[0.06] text-[9px] font-bold">
                     {c.avatarInitial}
@@ -80,12 +80,12 @@ export function ScheduleGrid({
               {dates.map((d) => {
                 const e = byKey.get(`${d}|${c.id}`);
                 return (
-                  <td key={d} className="min-w-[34px] border-b border-black/5 p-0.5">
+                  <td key={d} className="min-w-[34px] border-b border-black/5 px-0.5 py-1.5">
                     <button
                       type="button"
                       onClick={() => onSelectDate(d)}
                       aria-label={`${c.name} ${Number(d.slice(-2))}일 스케쥴`}
-                      className={`flex h-9 w-full flex-col items-center justify-center rounded text-[9px] leading-tight ${
+                      className={`flex h-12 w-full flex-col items-center justify-center rounded text-[9px] leading-tight ${
                         e && !e.off
                           ? "bg-coral/10 font-semibold text-coral"
                           : "text-muted opacity-60 hover:opacity-100" // 비근무(비번/휴무) 흐리게
