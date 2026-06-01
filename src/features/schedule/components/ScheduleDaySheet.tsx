@@ -7,7 +7,7 @@ import { useState } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
 import type { Crew, FixedShift, ScheduleEntry } from "@/types";
 import { formatLongDate } from "@/lib/date";
-import { getDayType, getOperatingHours } from "@/lib/schedule";
+import { getOperatingHours, getWeekdayIndex } from "@/lib/schedule";
 import type { SaveScheduleInput } from "@/features/schedule/hooks/useSchedule";
 
 interface Draft {
@@ -16,11 +16,12 @@ interface Draft {
   off: boolean;
 }
 
-type ChipKind = "고정" | "시간변경" | "대타";
+type ChipKind = "고정" | "시간변경" | "대타" | "승인대기";
 const CHIP_CLS: Record<ChipKind, string> = {
   고정: "bg-neutral-200 text-neutral-600",
   시간변경: "bg-statusblue/15 text-statusblue",
   대타: "bg-emerald-100 text-emerald-700",
+  승인대기: "bg-amber-100 text-amber-700",
 };
 
 /**
@@ -32,7 +33,7 @@ const CHIP_CLS: Record<ChipKind, string> = {
 function chipsFor(e: ScheduleEntry | undefined, fixed: FixedShift | undefined): ChipKind[] {
   if (!e) return [];
   if (e.source === "fixed") return ["고정"];
-  if (e.substitute) return ["대타"];
+  if (e.substitute) return e.approval === "대기" ? ["대타", "승인대기"] : ["대타"];
   if (fixed) {
     const changed = !e.off && (e.startTime !== fixed.startTime || e.endTime !== fixed.endTime);
     return changed ? ["고정", "시간변경"] : ["고정"];
@@ -74,10 +75,10 @@ export function ScheduleDaySheet({
 }) {
   const crewList = crews.filter((c) => c.role === "crew");
   const byCrew = new Map(entries.map((e) => [e.crewId, e]));
-  // 이 날짜 요일유형의 고정근무 맵(crewId → FixedShift) — 칩 계산용.
-  const dayType = getDayType(date);
+  // 이 날짜 요일에 적용되는 고정근무 맵(crewId → FixedShift) — 칩 계산용.
+  const weekday = getWeekdayIndex(date);
   const fixedMap = new Map(
-    fixedShifts.filter((f) => f.dayType === dayType).map((f) => [f.crewId, f]),
+    fixedShifts.filter((f) => f.weekdays.includes(weekday)).map((f) => [f.crewId, f]),
   );
   // 운영시간 — 신규 배정 기본 시프트로 사용(근무시간은 이 범위 내에서 개별 등록).
   const op = getOperatingHours(date);

@@ -1,10 +1,10 @@
 "use client";
 
-// 마스터 대기 수정요청 알림 카운트(크루 근태변경 → 승인 대기). 마스터만 폴링.
+// 마스터 대기 알림 카운트 — 크루 근태변경 수정요청 + 대타 승인 대기 합산. 마스터만 폴링.
 // mock 환경(실시간 푸시 없음) → 짧은 주기 폴링으로 "새 승인 요청 발생" 을 감지.
-// client 는 store 직접 import 금지 → /api/master/requests 경유(마스터 게이트 403 → 0).
+// client 는 store 직접 import 금지 → /api/master/* 경유(마스터 게이트 403 → 0).
 import { useEffect, useState } from "react";
-import type { MasterRequestsResponse } from "@/types";
+import type { MasterRequestsResponse, MasterSubstitutesResponse } from "@/types";
 import {
   authHeaders,
   useCurrentUser,
@@ -22,12 +22,17 @@ export function useMasterPendingCount(): number {
     if (!isMaster) return; // 비마스터는 폴링 안 함(반환값에서 0 으로 강제).
     let active = true;
     const load = () =>
-      fetch("/api/master/requests", { cache: "no-store", headers: authHeaders(user) })
-        .then((res) => (res.ok ? (res.json() as Promise<MasterRequestsResponse>) : null))
-        .then((json) => {
-          if (!active || !json) return;
-          setCount(json.requests.filter((r) => r.status === "대기").length);
-        });
+      Promise.all([
+        fetch("/api/master/requests", { cache: "no-store", headers: authHeaders(user) })
+          .then((res) => (res.ok ? (res.json() as Promise<MasterRequestsResponse>) : null)),
+        fetch("/api/master/substitutes", { cache: "no-store", headers: authHeaders(user) })
+          .then((res) => (res.ok ? (res.json() as Promise<MasterSubstitutesResponse>) : null)),
+      ]).then(([req, sub]) => {
+        if (!active) return;
+        const requests = req?.requests.filter((r) => r.status === "대기").length ?? 0;
+        const substitutes = sub?.substitutes.length ?? 0;
+        setCount(requests + substitutes);
+      });
     load();
     const timer = setInterval(load, POLL_MS);
     return () => {

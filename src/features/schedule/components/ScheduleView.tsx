@@ -61,10 +61,10 @@ export function ScheduleView() {
     [saveFixed],
   );
   const removeFixedShift = useCallback(
-    async (crewId: string, dayType: Parameters<typeof removeFixed>[1]) => {
+    async (crewId: string) => {
       setFixedBusy(true);
       try {
-        return await removeFixed(crewId, dayType);
+        return await removeFixed(crewId);
       } finally {
         setFixedBusy(false);
       }

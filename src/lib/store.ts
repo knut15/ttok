@@ -7,7 +7,6 @@ import type {
   AttendanceRecord,
   Crew,
   CrewSummary,
-  DayType,
   EditRequest,
   FixedShift,
   Invite,
@@ -30,7 +29,7 @@ import {
   SEED_STORE_INFO,
 } from "./seed";
 import { buildMonthGrid } from "./date";
-import { getDayType } from "./schedule";
+import { getWeekdayIndex } from "./schedule";
 import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes } from "./time";
 import {
   DEFAULT_BREAK_MINUTES,
@@ -631,16 +630,31 @@ export interface NewSchedule {
   endTime: string;
   off?: boolean;
   createdBy: string;
+  autoApprove?: boolean; // 마스터 작성 시 대타 자동 승인
+}
+
+/** 해당 날짜·크루가 대타(고정 요일 아닌 근무) 인지. off 면 false. */
+function isSubstituteAssignment(
+  store: StoreShape,
+  date: string,
+  crewId: string,
+  off?: boolean,
+): boolean {
+  if (off) return false;
+  const fs = store.fixedShifts.find((f) => f.crewId === crewId);
+  return !(fs && fs.weekdays.includes(getWeekdayIndex(date)));
 }
 
 /**
  * 스케쥴 upsert — "근무자별 시간" 모델상 (date, crewId) 당 최대 1건.
  * 동일 (date, crewId) 존재 → 시간/off/작성자 갱신(id 보존). 없으면 신규 생성(`sch-${seq}`).
+ * 대타(고정 요일 아님)면 approval 부여: 신규 → autoApprove ? "수락" : "대기"(기존 승인상태 보존).
  */
 export function upsertSchedule(input: NewSchedule): ScheduleEntry {
   const store = getStore();
   const list = store.schedulesByDate.get(input.date) ?? [];
   const existing = list.find((e) => e.crewId === input.crewId);
+  const sub = isSubstituteAssignment(store, input.date, input.crewId, input.off);
 
   if (existing) {
     existing.startTime = input.startTime;
@@ -648,6 +662,12 @@ export function upsertSchedule(input: NewSchedule): ScheduleEntry {
     existing.createdBy = input.createdBy;
     if (input.off) existing.off = true;
     else delete existing.off;
+    if (sub) {
+      // 시간 변경엔 기존 승인상태 보존. 마스터 작성이면 즉시 수락.
+      existing.approval = input.autoApprove ? "수락" : (existing.approval ?? "대기");
+    } else {
+      delete existing.approval;
+    }
     return existing;
   }
 
@@ -659,10 +679,33 @@ export function upsertSchedule(input: NewSchedule): ScheduleEntry {
     endTime: input.endTime,
     createdBy: input.createdBy,
     ...(input.off ? { off: true } : {}),
+    ...(sub ? { approval: input.autoApprove ? "수락" : "대기" } : {}),
   };
   list.push(created);
   store.schedulesByDate.set(input.date, list);
   return created;
+}
+
+/** 마스터 대타 승인. id 의 대타 entry approval → "수락". 성공 시 entry, 없으면 null. */
+export function approveSubstitute(id: string): ScheduleEntry | null {
+  const store = getStore();
+  for (const list of store.schedulesByDate.values()) {
+    const e = list.find((x) => x.id === id);
+    if (e) {
+      e.approval = "수락";
+      return e;
+    }
+  }
+  return null;
+}
+
+/** 승인 대기 대타 목록(approval==="대기"). 날짜순. */
+export function listPendingSubstitutes(): ScheduleEntry[] {
+  const out: ScheduleEntry[] = [];
+  for (const list of getStore().schedulesByDate.values()) {
+    for (const e of list) if (e.approval === "대기") out.push(e);
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || a.crewId.localeCompare(b.crewId));
 }
 
 /** 스케쥴 삭제(id 기준 전 날짜 탐색). 제거 성공 → true, 없으면 false. */
@@ -680,42 +723,38 @@ export function removeSchedule(id: string): boolean {
 
 // === 고정 근무(FixedShift) + 병합 뷰 ===
 
-/** 크루별 고정근무 목록(crewId, dayType 순). */
+/** 크루별 고정근무 목록(crewId 순). */
 export function listFixedShifts(): FixedShift[] {
-  return [...getStore().fixedShifts].sort(
-    (a, b) => a.crewId.localeCompare(b.crewId) || a.dayType.localeCompare(b.dayType),
-  );
+  return [...getStore().fixedShifts].sort((a, b) => a.crewId.localeCompare(b.crewId));
 }
 
 export interface NewFixedShift {
   crewId: string;
-  dayType: DayType;
+  weekdays: number[];
   startTime: string;
   endTime: string;
 }
 
-/** 고정근무 upsert — (crewId, dayType) 당 1건. 기존 있으면 시간 갱신. */
+/** 고정근무 upsert — crewId 당 1건. 기존 있으면 요일/시간 갱신. */
 export function setFixedShift(input: NewFixedShift): FixedShift {
   const store = getStore();
-  const existing = store.fixedShifts.find(
-    (f) => f.crewId === input.crewId && f.dayType === input.dayType,
-  );
+  const weekdays = [...new Set(input.weekdays)].sort((a, b) => a - b);
+  const existing = store.fixedShifts.find((f) => f.crewId === input.crewId);
   if (existing) {
+    existing.weekdays = weekdays;
     existing.startTime = input.startTime;
     existing.endTime = input.endTime;
     return existing;
   }
-  const created: FixedShift = { ...input };
+  const created: FixedShift = { ...input, weekdays };
   store.fixedShifts.push(created);
   return created;
 }
 
-/** 고정근무 해제((crewId, dayType)). 제거 성공 → true. */
-export function removeFixedShift(crewId: string, dayType: DayType): boolean {
+/** 고정근무 해제(crewId). 제거 성공 → true. */
+export function removeFixedShift(crewId: string): boolean {
   const store = getStore();
-  const idx = store.fixedShifts.findIndex(
-    (f) => f.crewId === crewId && f.dayType === dayType,
-  );
+  const idx = store.fixedShifts.findIndex((f) => f.crewId === crewId);
   if (idx === -1) return false;
   store.fixedShifts.splice(idx, 1);
   return true;
@@ -728,22 +767,25 @@ export function removeFixedShift(crewId: string, dayType: DayType): boolean {
  */
 export function getMonthScheduleView(month: string): ScheduleEntry[] {
   const fixed = getStore().fixedShifts;
-  // (crewId|dayType) 고정근무 보유 집합 — 대타 판정용.
-  const fixedKeys = new Set(fixed.map((f) => `${f.crewId}|${f.dayType}`));
+  const fixedByCrew = new Map(fixed.map((f) => [f.crewId, f]));
+  // 해당 날짜 요일에 크루의 고정근무가 적용되는가(대타 판정용).
+  const hasFixedOn = (crewId: string, date: string) =>
+    fixedByCrew.get(crewId)?.weekdays.includes(getWeekdayIndex(date)) === true;
+
   const explicit: ScheduleEntry[] = getMonthSchedules(month).map((e) => ({
     ...e,
     source: "manual",
-    // 대타: 근무(off 아님)인데 그날 요일유형의 고정근무가 없는 경우.
-    substitute: e.off !== true && !fixedKeys.has(`${e.crewId}|${getDayType(e.date)}`),
+    // 대타: 근무(off 아님)인데 그날 요일의 고정근무가 없는 경우.
+    substitute: e.off !== true && !hasFixedOn(e.crewId, e.date),
   }));
   const explicitKeys = new Set(explicit.map((e) => `${e.date}|${e.crewId}`));
   const derived: ScheduleEntry[] = [];
   if (fixed.length > 0) {
     for (const date of buildMonthGrid(month)) {
       if (!date) continue;
-      const dayType = getDayType(date);
+      const weekday = getWeekdayIndex(date);
       for (const fs of fixed) {
-        if (fs.dayType !== dayType) continue;
+        if (!fs.weekdays.includes(weekday)) continue;
         if (explicitKeys.has(`${date}|${fs.crewId}`)) continue;
         derived.push({
           id: `fixed-${fs.crewId}-${date}`,

@@ -18,8 +18,8 @@ function req(method: "POST" | "DELETE", body: unknown, headers: Record<string, s
 
 beforeEach(() => __resetStore());
 
-describe("POST /api/schedule/fixed — 고정 근무 등록", () => {
-  const VALID = { crewId: "crew-3", dayType: "weekday", startTime: "09:00", endTime: "12:00" };
+describe("POST /api/schedule/fixed — 고정 근무 등록(요일 선택)", () => {
+  const VALID = { crewId: "crew-3", weekdays: [1, 2, 3], startTime: "09:00", endTime: "12:00" };
 
   it("마스터/매니저는 등록 가능 → 200", async () => {
     expect((await POST(req("POST", VALID, MASTER))).status).toBe(200);
@@ -30,42 +30,39 @@ describe("POST /api/schedule/fixed — 고정 근무 등록", () => {
     expect((await POST(req("POST", VALID, PLAIN_CREW))).status).toBe(403);
   });
 
-  it("운영시간(평일 08~19) 밖이면 400", async () => {
-    const res = await POST(req("POST", { ...VALID, startTime: "07:00", endTime: "12:00" }, MASTER));
-    expect(res.status).toBe(400);
+  it("요일 미선택(빈 배열) → 400", async () => {
+    expect((await POST(req("POST", { ...VALID, weekdays: [] }, MASTER))).status).toBe(400);
   });
 
-  it("주말 운영시간(09~17) 밖이면 400", async () => {
-    const res = await POST(
-      req("POST", { crewId: "crew-3", dayType: "weekend", startTime: "08:00", endTime: "17:00" }, MASTER),
-    );
-    expect(res.status).toBe(400);
+  it("요일 범위 밖(7) → 400", async () => {
+    expect((await POST(req("POST", { ...VALID, weekdays: [1, 7] }, MASTER))).status).toBe(400);
   });
 
-  it("잘못된 dayType → 400", async () => {
-    const res = await POST(req("POST", { ...VALID, dayType: "holiday" }, MASTER));
-    expect(res.status).toBe(400);
+  it("종료<=시작 → 400", async () => {
+    expect((await POST(req("POST", { ...VALID, startTime: "12:00", endTime: "09:00" }, MASTER))).status).toBe(400);
   });
 
-  it("등록 후 store 에 반영된다", async () => {
+  it("없는/비근무자 crewId → 400", async () => {
+    expect((await POST(req("POST", { ...VALID, crewId: "nope" }, MASTER))).status).toBe(400);
+  });
+
+  it("등록 후 store 에 요일이 반영된다", async () => {
     await POST(req("POST", VALID, MASTER));
-    expect(listFixedShifts().some((f) => f.crewId === "crew-3" && f.dayType === "weekday")).toBe(true);
+    const f = listFixedShifts().find((x) => x.crewId === "crew-3");
+    expect(f?.weekdays).toEqual([1, 2, 3]);
   });
 });
 
 describe("DELETE /api/schedule/fixed — 고정 근무 해제", () => {
   it("시드 고정근무 해제 → 200", async () => {
-    const res = await DELETE(req("DELETE", { crewId: DEFAULT_CREW_ID, dayType: "weekday" }, MASTER));
-    expect(res.status).toBe(200);
+    expect((await DELETE(req("DELETE", { crewId: DEFAULT_CREW_ID }, MASTER))).status).toBe(200);
   });
 
   it("없는 고정근무 해제 → 404", async () => {
-    const res = await DELETE(req("DELETE", { crewId: "crew-3", dayType: "weekend" }, MASTER));
-    expect(res.status).toBe(404);
+    expect((await DELETE(req("DELETE", { crewId: "crew-3" }, MASTER))).status).toBe(404);
   });
 
   it("일반 크루는 해제 불가 → 403", async () => {
-    const res = await DELETE(req("DELETE", { crewId: DEFAULT_CREW_ID, dayType: "weekday" }, PLAIN_CREW));
-    expect(res.status).toBe(403);
+    expect((await DELETE(req("DELETE", { crewId: DEFAULT_CREW_ID }, PLAIN_CREW))).status).toBe(403);
   });
 });

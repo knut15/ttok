@@ -90,6 +90,7 @@ export async function POST(request: Request): Promise<Response> {
     endTime: off ? "00:00" : endTime,
     off,
     createdBy: scope.crewId,
+    autoApprove: scope.role === "master", // 마스터 작성 대타는 즉시 승인
   });
   return NextResponse.json(entry, { headers: NO_STORE });
 }

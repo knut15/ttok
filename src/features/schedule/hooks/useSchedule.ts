@@ -5,7 +5,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
   Crew,
-  DayType,
   FixedShift,
   ScheduleEntry,
   ScheduleResponse,
@@ -27,7 +26,7 @@ export interface SaveScheduleInput {
 
 export interface SaveFixedInput {
   crewId: string;
-  dayType: DayType;
+  weekdays: number[];
   startTime: string;
   endTime: string;
 }
@@ -109,12 +108,12 @@ export function useSchedule(month: string) {
   );
 
   const removeFixed = useCallback(
-    async (crewId: string, dayType: DayType): Promise<boolean> => {
+    async (crewId: string): Promise<boolean> => {
       const res = await fetch(`/api/schedule/fixed`, {
         ...NO_STORE,
         method: "DELETE",
         headers: { ...authHeaders(user), "Content-Type": "application/json" },
-        body: JSON.stringify({ crewId, dayType }),
+        body: JSON.stringify({ crewId }),
       });
       if (res.ok) reload();
       return res.ok;

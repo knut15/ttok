@@ -13,8 +13,10 @@ import {
 } from "@/features/accounts/hooks/useCurrentUser";
 import { useMasterSummary } from "@/features/accounts/hooks/useMasterSummary";
 import { useMasterRequests } from "@/features/accounts/hooks/useMasterRequests";
+import { useMasterSubstitutes } from "@/features/accounts/hooks/useMasterSubstitutes";
 import { CrewSummaryList } from "./CrewSummaryList";
 import { MasterRequestList } from "./MasterRequestList";
+import { formatPayRowDate } from "@/lib/date";
 import { SEED_MONTH } from "@/lib/constants";
 import { formatMonthLabel, shiftMonth } from "@/lib/date";
 
@@ -53,6 +55,12 @@ export function MasterView() {
   } = useMasterRequests();
   // 대기(미승인) 수정요청 = 크루 근태변경 승인 알림 건수.
   const pendingCount = requests.filter((r) => r.status === "대기").length;
+  // 대타 승인 대기.
+  const {
+    substitutes,
+    loading: substitutesLoading,
+    approve: approveSubstitute,
+  } = useMasterSubstitutes();
 
   // 가드: mount 후(role 확정) 크루면 홈으로. mount 전엔 리다이렉트 금지(role 미확정).
   useEffect(() => {
@@ -128,6 +136,57 @@ export function MasterView() {
           </p>
         ) : (
           <MasterRequestList requests={requests} onApprove={approve} />
+        )}
+      </section>
+
+      {/* 대타 승인: 매니저가 등록한 대타(고정 요일 아님) 근무를 마스터가 승인. */}
+      <section className="pt-8">
+        <h2 className="flex items-center gap-2 px-5 pb-3 text-lg font-bold">
+          대타 승인
+          {substitutes.length > 0 ? (
+            <span
+              aria-label={`대타 ${substitutes.length}건`}
+              className="grid h-6 min-w-6 place-items-center rounded-full bg-emerald-500 px-1.5 text-xs font-bold text-white"
+            >
+              {substitutes.length}
+            </span>
+          ) : null}
+        </h2>
+        {substitutesLoading ? (
+          <p className="px-5 pt-2 text-center text-sm text-muted">대타 불러오는 중…</p>
+        ) : substitutes.length === 0 ? (
+          <p className="px-5 text-center text-sm text-muted">승인 대기 중인 대타가 없습니다.</p>
+        ) : (
+          <ul className="space-y-2 px-5">
+            {substitutes.map((s) => (
+              <li
+                key={s.id}
+                className="flex items-center gap-3 rounded-2xl border border-black/5 bg-surface px-4 py-3"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                  {s.crewName.slice(0, 1)}
+                </span>
+                <div className="flex-1">
+                  <p className="font-semibold">
+                    {s.crewName}
+                    <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      대타
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted">
+                    {formatPayRowDate(s.date)} · {s.startTime}–{s.endTime}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => approveSubstitute(s.id)}
+                  className="rounded-full bg-coral px-4 py-1.5 text-sm font-semibold text-white"
+                >
+                  승인
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

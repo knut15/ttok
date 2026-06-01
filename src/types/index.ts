@@ -194,19 +194,30 @@ export interface ScheduleEntry {
   createdBy: string; // 작성자(master/manager) id
   source?: "manual" | "fixed"; // 출처. fixed=고정근무 자동적용(미저장 가상), 기본 manual.
   substitute?: boolean; // 대타: 고정근무 아닌데 변동(manual)으로 근무 투입(off 제외)
+  approval?: "대기" | "수락"; // 대타 배정의 마스터 승인 상태(대타 entry 에만 존재)
 }
 
-/** 요일 유형 — 고정근무 적용 단위. */
+/** 마스터 대타 승인 목록 행 — ScheduleEntry + 크루명(서버 조인). */
+export interface MasterSubstituteRow extends ScheduleEntry {
+  crewName: string;
+}
+
+/** GET /api/master/substitutes 응답. */
+export interface MasterSubstitutesResponse {
+  substitutes: MasterSubstituteRow[];
+}
+
+/** 요일 유형 — 매장 운영시간 구분용(평일/주말). 고정근무 요일과는 별개. */
 export type DayType = "weekday" | "weekend";
 
 /**
- * 크루별 고정 근무(요일유형별 기본 시프트). (crewId, dayType) 당 1건.
- * 스케쥴표는 명시 배정이 없으면 이 고정값을 자동 적용 → 변동만 기록.
+ * 크루별 고정 근무. crewId 당 1건. 근무 요일을 직접 선택(일~토)하고 시프트 시간을 지정.
+ * 스케쥴표는 해당 요일에 명시 배정이 없으면 이 고정값을 자동 적용 → 변동만 기록.
  */
 export interface FixedShift {
   crewId: string;
-  dayType: DayType;
-  startTime: string; // "HH:MM" (운영시간 내)
+  weekdays: number[]; // 0=일 … 6=토 (선택 요일)
+  startTime: string; // "HH:MM"
   endTime: string; // "HH:MM"
 }
 

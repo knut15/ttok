@@ -2,11 +2,16 @@
 import { OPERATING_HOURS } from "./constants";
 import type { DayType } from "@/types";
 
-/** 주말(토/일) 여부. 로컬 시각 기준(파싱 tz 이슈 회피용 명시 생성). */
-export function isWeekendDate(date: string): boolean {
+/** 요일 인덱스(0=일 … 6=토). 로컬 시각 기준(파싱 tz 이슈 회피용 명시 생성). */
+export function getWeekdayIndex(date: string): number {
   const [y, m, d] = date.split("-").map(Number);
-  const day = new Date(y, m - 1, d).getDay(); // 0=일, 6=토
-  return day === 0 || day === 6;
+  return new Date(y, m - 1, d).getDay();
+}
+
+/** 주말(토/일) 여부. */
+export function isWeekendDate(date: string): boolean {
+  const w = getWeekdayIndex(date);
+  return w === 0 || w === 6;
 }
 
 /** 날짜 → 요일유형(평일/주말). 고정근무 매칭 키. */

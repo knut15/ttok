@@ -192,13 +192,13 @@ export function buildSeedInvites(): Invite[] {
 }
 
 /**
- * 고정 근무 시드(예시). 운영시간 내 요일유형별 기본 시프트.
- * 김민정=평일 오전 08:00~11:00, 이서연=주말 오후 11:00~17:00.
+ * 고정 근무 시드(예시). 크루별 근무 요일을 직접 선택(0=일 … 6=토).
+ * 김민정=일~목 오전 08:00~11:00, 이서연=금·토 오후 11:00~17:00.
  */
 export function buildSeedFixedShifts(): FixedShift[] {
   return [
-    { crewId: DEFAULT_CREW_ID, dayType: "weekday", startTime: "08:00", endTime: "11:00" },
-    { crewId: "crew-2", dayType: "weekend", startTime: "11:00", endTime: "17:00" },
+    { crewId: DEFAULT_CREW_ID, weekdays: [0, 1, 2, 3, 4], startTime: "08:00", endTime: "11:00" },
+    { crewId: "crew-2", weekdays: [5, 6], startTime: "11:00", endTime: "17:00" },
   ];
 }
 
