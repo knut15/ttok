@@ -147,8 +147,14 @@ export function ScheduleDaySheet({
                   key={c.id}
                   className={`flex items-center gap-3 rounded-xl bg-black/[0.03] px-3 py-2.5 ${working ? "" : "opacity-60"}`}
                 >
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
+                  <span className="relative grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                     {c.avatarInitial}
+                    {working ? (
+                      <span
+                        aria-label="근무"
+                        className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-statusgreen ring-2 ring-surface"
+                      />
+                    ) : null}
                   </span>
                   <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                     {c.name}
@@ -182,8 +188,14 @@ export function ScheduleDaySheet({
             <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
               {/* 비근무자(비번/휴무)는 이름 영역을 흐리게 — 컨트롤은 정상 */}
               <div className={`flex items-center gap-2 ${working ? "" : "opacity-60"}`}>
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
+                <span className="relative grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                   {c.avatarInitial}
+                  {working ? (
+                    <span
+                      aria-label="근무"
+                      className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-statusgreen ring-2 ring-surface"
+                    />
+                  ) : null}
                 </span>
                 <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                   {c.name}
