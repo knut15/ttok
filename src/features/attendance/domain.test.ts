@@ -4,6 +4,8 @@ import {
   clockPhase,
   clockRangeLabel,
   shouldShowPercent,
+  canSubmitAddRecord,
+  requestKindLabel,
 } from "./domain";
 import type { AttendanceRecord } from "@/types";
 
@@ -102,5 +104,73 @@ describe("shouldShowPercent (홈 진행바 우측 % 라벨: 퇴근 완료 후에
 
   it("working(근무중)이면 % 라벨 미노출", () => {
     expect(shouldShowPercent("working")).toBe(false);
+  });
+});
+
+describe("canSubmitAddRecord (T15 추가 폼 로컬 검증)", () => {
+  // AC-3/E-3: 출근시각 필수 — 미입력이면 제출 불가
+  it("출근시각이 비어있으면 제출 불가", () => {
+    expect(canSubmitAddRecord({ clockIn: "", clockOut: "" })).toBe(false);
+    expect(canSubmitAddRecord({ clockIn: "", clockOut: "15:00" })).toBe(false);
+  });
+
+  // Q2/E-6: 출근만 입력(퇴근 빈값)은 제출 가능(퇴근 선택, null 허용)
+  it("출근만 입력(퇴근 빈값)은 제출 가능", () => {
+    expect(canSubmitAddRecord({ clockIn: "08:00", clockOut: "" })).toBe(true);
+  });
+
+  // AC-11/Q5: 출근·퇴근 둘 다 있고 퇴근<=출근(역전·동일)이면 제출 불가
+  it("퇴근이 출근보다 빠르면(역전) 제출 불가", () => {
+    expect(canSubmitAddRecord({ clockIn: "09:00", clockOut: "08:00" })).toBe(
+      false,
+    );
+  });
+  it("퇴근이 출근과 동일하면 제출 불가", () => {
+    expect(canSubmitAddRecord({ clockIn: "09:00", clockOut: "09:00" })).toBe(
+      false,
+    );
+  });
+
+  // AC-3: 출근·퇴근 둘 다 있고 퇴근>출근이면 제출 가능
+  it("출근·퇴근 정상(퇴근>출근)이면 제출 가능", () => {
+    expect(canSubmitAddRecord({ clockIn: "08:00", clockOut: "15:00" })).toBe(
+      true,
+    );
+  });
+
+  // E-3: 잘못된 시각 형식(NaN)은 제출 불가
+  it("출근시각 형식이 올바르지 않으면 제출 불가", () => {
+    expect(canSubmitAddRecord({ clockIn: "99:99", clockOut: "" })).toBe(false);
+  });
+  it("퇴근시각 형식이 올바르지 않으면 제출 불가", () => {
+    expect(canSubmitAddRecord({ clockIn: "08:00", clockOut: "bad" })).toBe(
+      false,
+    );
+  });
+});
+
+describe("requestKindLabel (T15 Q4 추가/수정 파생 라벨)", () => {
+  // Q4: before 빈 스냅샷(정상·clockIn null·clockOut null) = 레코드 없던 날 → "추가"
+  it("before 가 빈 스냅샷이면 '추가'", () => {
+    expect(
+      requestKindLabel({ status: "정상", clockIn: null, clockOut: null }),
+    ).toBe("추가");
+  });
+
+  // Q4: before 에 기존 clock/상태가 있으면 → "수정"
+  it("before 에 clockIn 이 있으면 '수정'", () => {
+    expect(
+      requestKindLabel({ status: "정상", clockIn: "08:00", clockOut: "15:00" }),
+    ).toBe("수정");
+  });
+  it("before.status 가 정상이 아니면(휴가) '수정'", () => {
+    expect(
+      requestKindLabel({ status: "휴가", clockIn: null, clockOut: null }),
+    ).toBe("수정");
+  });
+  it("before.clockOut 만 있어도 '수정'", () => {
+    expect(
+      requestKindLabel({ status: "정상", clockIn: null, clockOut: "15:00" }),
+    ).toBe("수정");
   });
 });

@@ -3,6 +3,7 @@
 // 0건이면 빈 상태(E-2). props 는 types 만 의존(store/route 비접근).
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPayRowDate } from "@/lib/date";
+import { requestKindLabel } from "@/features/attendance/domain";
 import type { MasterRequestRow } from "@/types";
 
 export function MasterRequestList({
@@ -31,6 +32,10 @@ export function MasterRequestList({
             <span className="font-bold">{req.crewName}</span>
             <span className="text-sm text-muted">
               {formatPayRowDate(req.date)}
+            </span>
+            {/* T15 Q4: before 빈값 파생 "추가"/"수정" 라벨(표시 전용, 스키마 무변경). */}
+            <span className="rounded-md bg-black/[0.06] px-2 py-0.5 text-xs font-semibold text-muted">
+              {requestKindLabel(req.before)}
             </span>
             <StatusBadge
               label={req.status}

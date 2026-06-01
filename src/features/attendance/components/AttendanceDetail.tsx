@@ -9,10 +9,12 @@ import {
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { statusTone } from "@/features/attendance/domain";
 import { DEFAULT_BREAK_RANGE } from "@/lib/constants";
+import { todayDate } from "@/lib/date";
 import type { WorkStatus } from "@/types";
 import { StatusChangeSheet } from "./StatusChangeSheet";
 import { BreakChangeSheet } from "./BreakChangeSheet";
 import { ClockOutStatusSheet } from "./ClockOutStatusSheet";
+import { AddRecordForm } from "./AddRecordForm";
 import { EditRequestForm } from "./EditRequestForm";
 import { EditRequestList } from "./EditRequestList";
 
@@ -79,10 +81,34 @@ export function AttendanceDetail({ date }: { date: string }) {
     return <p className="px-5 py-10 text-center text-sm text-muted">불러오는 중…</p>;
   }
   if (!record) {
+    // T15(S1/S4): 레코드 없는 날 — 미래(Q3)는 추가 불가 안내, 과거/오늘은 "근무 추가" 폼.
+    if (date > todayDate()) {
+      return (
+        <p className="px-5 py-10 text-center text-sm text-muted">
+          미래 날짜는 추가할 수 없습니다.
+        </p>
+      );
+    }
     return (
-      <p className="px-5 py-10 text-center text-sm text-muted">
-        해당 날짜의 근무기록이 없습니다.
-      </p>
+      <div>
+        <AddRecordForm
+          onSubmit={async ({ status, clockIn, clockOut, reason }) => {
+            // 추가요청: before 미전송 → store.addRequest 가 빈 스냅샷 자동 생성(AC-5).
+            await submit({
+              date,
+              reason,
+              after: { status, clockIn, clockOut },
+            });
+          }}
+        />
+        <EditRequestList
+          requests={requests.filter((r) => r.date === date)}
+          canApprove={user.role === "master"}
+          onApprove={async (id) => {
+            if (await approve(id)) await reloadDay();
+          }}
+        />
+      </div>
     );
   }
 

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { addRequest, listRequests } from "@/lib/store";
 import { WORK_STATUSES } from "@/lib/constants";
 import { parseHHMM } from "@/lib/time";
+import { todayDate } from "@/lib/date";
 import { readScope, enforceReadScope } from "@/lib/scope";
 import type { EditRequestChange, WorkStatus } from "@/types";
 
@@ -44,6 +45,15 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  // Q3(T15): 미래 날짜 추가/수정요청 서버 방어. "YYYY-MM-DD" 사전식 비교(zero-pad 보장).
+  // 과거/오늘만 허용 — 누락 보정의 의미상 미래 사전 등록은 범위 밖(폼 미노출 + 서버 이중 방어).
+  if (body.date > todayDate()) {
+    return NextResponse.json(
+      { error: "미래 날짜는 추가할 수 없습니다." },
+      { status: 400, headers: NO_STORE },
+    );
+  }
+
   // E-8: after 형식 검증. status 가 유효 WorkStatus 가 아니면 400.
   if (!WORK_STATUSES.includes(body.after.status as WorkStatus)) {
     return NextResponse.json(
@@ -64,6 +74,17 @@ export async function POST(request: Request): Promise<Response> {
     if (clock !== null && Number.isNaN(parseHHMM(clock))) {
       return NextResponse.json(
         { error: "출퇴근 시각 형식이 올바르지 않습니다." },
+        { status: 400, headers: NO_STORE },
+      );
+    }
+  }
+
+  // Q5(T15): clockIn·clockOut 둘 다 명시(non-null)이고 clockOut<=clockIn(역전·동일)이면 400.
+  // 진입 가드(둘 다 non-null)라 기존 휴게·clockOut-null 요청은 미진입 → 회귀 0. NaN 은 위 루프 선차단.
+  if (body.after.clockIn != null && body.after.clockOut != null) {
+    if (parseHHMM(body.after.clockOut) <= parseHHMM(body.after.clockIn)) {
+      return NextResponse.json(
+        { error: "퇴근 시각이 출근보다 빠르거나 같습니다." },
         { status: 400, headers: NO_STORE },
       );
     }

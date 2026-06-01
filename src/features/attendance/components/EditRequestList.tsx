@@ -1,6 +1,7 @@
 // 근무기록 수정 요청내역(AC-16, presentational): 날짜·시각·대기 배지.
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPayRowDate } from "@/lib/date";
+import { requestKindLabel } from "@/features/attendance/domain";
 import type { EditRequest } from "@/types";
 
 // T8-7: 수락 버튼은 마스터에게만(canApprove). UI 숨김 + approve API 403 이중 방어(AC-18).
@@ -26,6 +27,10 @@ export function EditRequestList({
           >
             <div className="flex items-center gap-2">
               <span className="font-bold">{formatPayRowDate(req.date)}</span>
+              {/* T15 Q4: before 빈값 파생 "추가"/"수정" 라벨(표시 전용, 스키마 무변경). */}
+              <span className="rounded-md bg-black/[0.06] px-2 py-0.5 text-xs font-semibold text-muted">
+                {requestKindLabel(req.before)}
+              </span>
               <span className="text-sm text-muted">
                 {new Date(req.createdAt).toLocaleTimeString("ko-KR", {
                   hour: "2-digit",
