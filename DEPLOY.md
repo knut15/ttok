@@ -14,17 +14,13 @@
 
 ## 2. Neon Postgres 연결
 1. 프로젝트 → **Storage → Create Database → Neon** 선택해 생성/연결.
-2. 연결되면 Neon이 프로젝트에 환경변수를 자동 주입한다(대표적으로):
+2. 연결되면 Neon이 프로젝트에 환경변수를 **자동 주입**한다(모든 환경):
    - `DATABASE_URL` — 풀링(pooler) 연결. **앱 런타임용**.
    - `DATABASE_URL_UNPOOLED` — 직결(non-pooled). **마이그레이션용**.
-3. 우리 Prisma 스키마는 `DATABASE_URL` + `DIRECT_URL` 두 키를 읽으므로 **`DIRECT_URL` 을 추가**한다:
-   - 프로젝트 → **Settings → Environment Variables**
-   - `DIRECT_URL` = (`DATABASE_URL_UNPOOLED` 의 값) — Production/Preview/Development 모두 체크.
-4. Prisma + pgbouncer 호환을 위해 `DATABASE_URL` 끝에 쿼리스트링이 없으면 추가:
-   - `...&pgbouncer=true&connection_limit=1` (Neon pooler 사용 시 prepared statement 충돌 방지)
-   - 이미 `sslmode=require` 가 붙어 있는지 확인(없으면 추가).
+3. Prisma 스키마가 이 **두 이름을 그대로 읽으므로 수동 매핑이 필요 없다**(과거에 만들었던 `DIRECT_URL` 수동 변수는 지워도 됨).
+4. (선택) prepared statement 충돌이 보이면 `DATABASE_URL` 끝에 `&pgbouncer=true&connection_limit=1` 추가.
 
-> 요약 매핑: 앱=`DATABASE_URL`(pooler, `pgbouncer=true`), 마이그레이션=`DIRECT_URL`=`DATABASE_URL_UNPOOLED`.
+> 핵심: 앱=`DATABASE_URL`(pooler), 마이그레이션=`DATABASE_URL_UNPOOLED`(직결). 둘 다 Neon이 자동 제공.
 
 ## 3. 인증(NextAuth) 환경변수
 프로젝트 → Settings → Environment Variables 에 추가:
@@ -60,7 +56,7 @@ prod는 빈 DB로 시작하며, 실제 사용자는 Google 로그인 후 온보�
 
 ```bash
 # prod Neon 의 직결 URL을 양쪽에 넣고 시드(주의: prod 데이터 변경)
-DATABASE_URL="<prod DATABASE_URL_UNPOOLED>" DIRECT_URL="<prod DATABASE_URL_UNPOOLED>" pnpm db:seed:prod
+DATABASE_URL="<prod DATABASE_URL_UNPOOLED>" DATABASE_URL_UNPOOLED="<prod DATABASE_URL_UNPOOLED>" pnpm db:seed:prod
 ```
 
 > 데모 멤버십은 `operationalId`(crew-minjung 등) 기반이라, 실제 Google 계정과는 연결되지 않는다.
@@ -77,6 +73,6 @@ pnpm dev
 
 ## 트러블슈팅
 - **`prisma.<model> is undefined` / `findUnique` 에러**: Prisma Client가 stale. 재배포(=재install로 `prisma generate`) 또는 로컬은 dev 서버 재시작.
-- **빌드 단계 `migrate deploy` 실패**: `DIRECT_URL` 미설정/오타. 2-3 확인.
+- **빌드 단계 `migrate deploy` 실패(`Environment variable not found: DATABASE_URL_UNPOOLED`)**: Neon이 프로젝트에 연결됐는지, 해당 변수가 **Production 환경**에 있는지 확인(2).
 - **로그인 후 무한 `/login`**: `AUTH_SECRET` 누락 또는 Google redirect URI 불일치(4-3).
 - **런타임 DB 연결 에러(prepared statement)**: `DATABASE_URL` 에 `pgbouncer=true&connection_limit=1` 추가.

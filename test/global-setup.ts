@@ -4,7 +4,7 @@ import { TEST_DATABASE_URL } from "./db-url";
 
 export default function setup() {
   execSync("pnpm prisma migrate deploy", {
-    env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL, DIRECT_URL: TEST_DATABASE_URL },
+    env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL, DATABASE_URL_UNPOOLED: TEST_DATABASE_URL },
     stdio: "inherit",
   });
 }

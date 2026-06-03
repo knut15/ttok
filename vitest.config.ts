@@ -12,7 +12,7 @@ export default defineConfig({
     globalSetup: "./test/global-setup.ts",
     env: {
       DATABASE_URL: TEST_DATABASE_URL,
-      DIRECT_URL: TEST_DATABASE_URL,
+      DATABASE_URL_UNPOOLED: TEST_DATABASE_URL,
     },
   },
   resolve: {

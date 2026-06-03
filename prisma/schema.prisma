@@ -5,8 +5,8 @@
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL") // 앱(서버리스 풀링 URL — Vercel: POSTGRES_PRISMA_URL)
-  directUrl = env("DIRECT_URL") // 마이그레이션 직결(Vercel: POSTGRES_URL_NON_POOLING)
+  url       = env("DATABASE_URL") // 앱(풀링 URL). Neon 통합이 자동 주입.
+  directUrl = env("DATABASE_URL_UNPOOLED") // 마이그레이션 직결. Neon 통합이 자동 주입(수동 매핑 불필요).
 }
 
 generator client {
