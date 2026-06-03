@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { AttendanceRecord, EditRequest, WorkStatus } from "@/types";
+import type {
+  AttendanceRecord,
+  ClockInStatus,
+  ClockOutStatus,
+  EditRequest,
+  WorkStatus,
+} from "@/types";
 import {
   authHeaders,
   useCurrentUser,
@@ -113,7 +119,31 @@ export function useDayAttendance(date: string) {
     [date, user],
   );
 
-  return { record, loading, reload, changeStatus };
+  const changeClockInStatus = useCallback(
+    async (clockInStatus: ClockInStatus) => {
+      const res = await fetch(`/api/attendance?date=${date}`, {
+        method: "PATCH",
+        headers: authHeaders(user),
+        body: JSON.stringify({ clockInStatus }),
+      });
+      if (res.ok) setRecord(await res.json());
+    },
+    [date, user],
+  );
+
+  const changeClockOutStatus = useCallback(
+    async (clockOutStatus: ClockOutStatus) => {
+      const res = await fetch(`/api/attendance?date=${date}`, {
+        method: "PATCH",
+        headers: authHeaders(user),
+        body: JSON.stringify({ clockOutStatus }),
+      });
+      if (res.ok) setRecord(await res.json());
+    },
+    [date, user],
+  );
+
+  return { record, loading, reload, changeStatus, changeClockInStatus, changeClockOutStatus };
 }
 
 export interface UseTodayClock {

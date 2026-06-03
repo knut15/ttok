@@ -10,6 +10,7 @@ import {
   buildSeedProfile,
   buildSeedCrews,
 } from "./seed";
+import { subStatusesFromStatus } from "./attendance-rules";
 import { SEED_JOIN_DATE, SEED_WORK_DAYS, SEED_WORK_TIME, STORE_NAME } from "./constants";
 
 const DEMO_STORE = { operationalId: "store-demo", bizNumber: "2208162517" };
@@ -81,14 +82,17 @@ export async function seedDemoOperational(prisma: PrismaClient, storeId: string)
   // 출퇴근: Map<crewId, Map<date, rec>> 평탄화.
   const records: {
     storeId: string; crewId: string; date: string; status: string;
+    clockInStatus: string; clockOutStatus: string;
     clockIn: string | null; clockOut: string | null; breakMinutes: number;
     breakStart: string | null; breakEnd: string | null;
     workMinutes: number; overtimeMinutes: number; deductMinutes: number;
   }[] = [];
   for (const [crewId, byDate] of buildSeedRecordsByCrew()) {
     for (const r of byDate.values()) {
+      const sub = subStatusesFromStatus(r.status);
       records.push({
         storeId, crewId, date: r.date, status: r.status,
+        clockInStatus: sub.clockInStatus, clockOutStatus: sub.clockOutStatus,
         clockIn: r.clockIn, clockOut: r.clockOut, breakMinutes: r.breakMinutes,
         breakStart: r.breakStart ?? null, breakEnd: r.breakEnd ?? null,
         workMinutes: r.workMinutes, overtimeMinutes: r.overtimeMinutes, deductMinutes: r.deductMinutes,

@@ -6,16 +6,21 @@ import { storeIdForCrew } from "./identity-repo";
 import type {
   ApproveResult,
   AttendanceRecord,
+  ClockInStatus,
+  ClockOutStatus,
   EditRequest,
   EditRequestChange,
   WorkStatus,
 } from "@/types";
 import {
   applyAfter,
+  applyClockInStatus,
+  applyClockOutStatus,
   applyStatusPolicy,
   emptyRecord,
   isAfterValid,
   newRecordFrom,
+  subStatusesFromStatus,
 } from "./attendance-rules";
 import { calcWorkMinutes, calcOvertimeByClock } from "./time";
 import { DEFAULT_BREAK_MINUTES, DEFAULT_CREW_ID } from "./constants";
@@ -35,17 +40,22 @@ function toRecord(row: RecordRow): AttendanceRecord {
     overtimeMinutes: row.overtimeMinutes,
     deductMinutes: row.deductMinutes,
     crewId: row.crewId,
+    clockInStatus: row.clockInStatus as ClockInStatus,
+    clockOutStatus: row.clockOutStatus as ClockOutStatus,
     ...(row.breakStart && row.breakEnd
       ? { breakStart: row.breakStart, breakEnd: row.breakEnd }
       : {}),
   };
 }
 
-/** 도메인 레코드 → Prisma write data(필드 공통, storeId/crewId 는 별도). */
+/** 도메인 레코드 → Prisma write data(필드 공통, storeId/crewId 는 별도). 분리상태 동기화. */
 function toData(rec: AttendanceRecord) {
+  const sub = subStatusesFromStatus(rec.status);
   return {
     date: rec.date,
     status: rec.status,
+    clockInStatus: rec.clockInStatus ?? sub.clockInStatus,
+    clockOutStatus: rec.clockOutStatus ?? sub.clockOutStatus,
     clockIn: rec.clockIn,
     clockOut: rec.clockOut,
     breakMinutes: rec.breakMinutes,
@@ -110,7 +120,43 @@ export async function updateStatus(
     where: { crewId_date: { crewId, date } },
   });
   if (!row) return null;
-  const updated = applyStatusPolicy(toRecord(row), status);
+  // 단일 status 변경(레거시 호환): 분리상태도 status 에서 파생 동기화.
+  const updated: AttendanceRecord = {
+    ...applyStatusPolicy(toRecord(row), status),
+    ...subStatusesFromStatus(status),
+  };
+  await prisma.attendanceRecord.update({
+    where: { crewId_date: { crewId, date } },
+    data: toData(updated),
+  });
+  return updated;
+}
+
+/** 출근 상태 변경(독립, 즉시). 없으면 null. */
+export async function setClockInStatus(
+  date: string,
+  clockInStatus: ClockInStatus,
+  crewId: string = DEFAULT_CREW_ID,
+): Promise<AttendanceRecord | null> {
+  const row = await prisma.attendanceRecord.findUnique({ where: { crewId_date: { crewId, date } } });
+  if (!row) return null;
+  const updated = applyClockInStatus(toRecord(row), clockInStatus);
+  await prisma.attendanceRecord.update({
+    where: { crewId_date: { crewId, date } },
+    data: toData(updated),
+  });
+  return updated;
+}
+
+/** 퇴근 상태 변경(독립, 즉시). 없으면 null. */
+export async function setClockOutStatus(
+  date: string,
+  clockOutStatus: ClockOutStatus,
+  crewId: string = DEFAULT_CREW_ID,
+): Promise<AttendanceRecord | null> {
+  const row = await prisma.attendanceRecord.findUnique({ where: { crewId_date: { crewId, date } } });
+  if (!row) return null;
+  const updated = applyClockOutStatus(toRecord(row), clockOutStatus);
   await prisma.attendanceRecord.update({
     where: { crewId_date: { crewId, date } },
     data: toData(updated),
@@ -244,7 +290,10 @@ export async function approveRequest(id: string): Promise<ApproveResult | null> 
   }
 
   const base = existing ?? newRecordFrom(req.date, after);
-  const record = applyAfter(base, after);
+  const record: AttendanceRecord = {
+    ...applyAfter(base, after),
+    ...subStatusesFromStatus(after.status),
+  };
   await prisma.attendanceRecord.upsert({
     where: { crewId_date: { crewId, date: req.date } },
     create: { storeId: req.storeId, crewId, ...toData(record) },

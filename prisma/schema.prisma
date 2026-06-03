@@ -115,7 +115,9 @@ model AttendanceRecord {
   storeId         String
   crewId          String
   date            String // "YYYY-MM-DD"
-  status          String // WorkStatus
+  status          String // WorkStatus(파생: clockIn/clockOutStatus 조합)
+  clockInStatus   String  @default("정상") // 출근 상태: 정상|지각|결근|휴가
+  clockOutStatus  String  @default("정상") // 퇴근 상태: 정상|연장
   clockIn         String? // "HH:MM"
   clockOut        String?
   breakMinutes    Int     @default(30)

@@ -4,6 +4,8 @@ export {
   getMonthRecords,
   getRecord,
   updateStatus,
+  setClockInStatus,
+  setClockOutStatus,
   upsertTodayClock,
   listRequests,
   listRequestsForCrews,

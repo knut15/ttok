@@ -3,6 +3,11 @@
 
 export type WorkStatus = "정상" | "지각" | "결근" | "휴가" | "연장";
 
+/** 출근 상태(독립): 정상/지각 + 무근무(결근/휴가). */
+export type ClockInStatus = "정상" | "지각" | "결근" | "휴가";
+/** 퇴근 상태(독립): 정상/연장. */
+export type ClockOutStatus = "정상" | "연장";
+
 export interface AttendanceRecord {
   date: string; // "YYYY-MM-DD"
   status: WorkStatus;
@@ -15,6 +20,8 @@ export interface AttendanceRecord {
   overtimeMinutes: number; // 정규(390) 초과분, 없으면 0
   deductMinutes: number; // 급여차감(지각·결근분), 기본 0
   crewId?: string; // T8: 멀티멤버 스코프 태그(append-only, 회귀 0). 미지정 → DEFAULT_CREW_ID.
+  clockInStatus?: ClockInStatus; // 출근 상태(독립). 미지정 → status 에서 파생.
+  clockOutStatus?: ClockOutStatus; // 퇴근 상태(독립). 미지정 → status 에서 파생.
 }
 
 export type EditRequestStatus = "대기" | "수락";

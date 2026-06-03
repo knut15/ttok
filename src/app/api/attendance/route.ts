@@ -3,10 +3,15 @@ import { NextResponse } from "next/server";
 import {
   getMonthRecords,
   updateStatus,
+  setClockInStatus,
+  setClockOutStatus,
   upsertTodayClock,
 } from "@/lib/store";
-import type { WorkStatus } from "@/types";
+import type { ClockInStatus, ClockOutStatus, WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
+
+const CLOCK_IN_STATUSES: readonly ClockInStatus[] = ["정상", "지각", "결근", "휴가"];
+const CLOCK_OUT_STATUSES: readonly ClockOutStatus[] = ["정상", "연장"];
 import { parseHHMM } from "@/lib/time";
 import { enforceReadScope } from "@/lib/scope";
 import { resolveScope } from "@/lib/session-scope";
@@ -41,9 +46,35 @@ export async function PATCH(request: Request): Promise<Response> {
   }
   const body = (await request.json()) as {
     status?: WorkStatus;
+    clockInStatus?: ClockInStatus;
+    clockOutStatus?: ClockOutStatus;
     field?: "clockIn" | "clockOut";
     time?: string;
   };
+
+  // 출근 상태 변경(독립).
+  if (body.clockInStatus !== undefined) {
+    if (!CLOCK_IN_STATUSES.includes(body.clockInStatus)) {
+      return NextResponse.json({ error: "유효한 출근 상태가 아닙니다." }, { status: 400, headers: NO_STORE });
+    }
+    const updated = await setClockInStatus(date, body.clockInStatus, scoped);
+    if (!updated) {
+      return NextResponse.json({ error: "해당 날짜 레코드가 없습니다." }, { status: 404, headers: NO_STORE });
+    }
+    return NextResponse.json(updated, { headers: NO_STORE });
+  }
+
+  // 퇴근 상태 변경(독립).
+  if (body.clockOutStatus !== undefined) {
+    if (!CLOCK_OUT_STATUSES.includes(body.clockOutStatus)) {
+      return NextResponse.json({ error: "유효한 퇴근 상태가 아닙니다." }, { status: 400, headers: NO_STORE });
+    }
+    const updated = await setClockOutStatus(date, body.clockOutStatus, scoped);
+    if (!updated) {
+      return NextResponse.json({ error: "해당 날짜 레코드가 없습니다." }, { status: 404, headers: NO_STORE });
+    }
+    return NextResponse.json(updated, { headers: NO_STORE });
+  }
 
   // 쟁점 C: 출/퇴근 토글 — 현재 시각(client new Date()) 기록.
   if (body.field === "clockIn" || body.field === "clockOut") {
