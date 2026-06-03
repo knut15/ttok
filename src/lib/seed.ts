@@ -324,7 +324,7 @@ function minutesLabel(min: number): string {
  * 레코드 → 급여 item 목록 + 주휴 블루행. architect §2.2 PayItem 계약.
  * 주휴 블루행은 해당 레코드 집합이 주휴 발생 월을 포함할 때만 추가(빈 달 격리).
  */
-export function buildPayItems(records: AttendanceRecord[]): PayItem[] {
+export function buildPayItems(records: AttendanceRecord[], hourlyWage: number = HOURLY_WAGE): PayItem[] {
   if (records.length === 0) return [];
   const items: PayItem[] = records.map((r) => {
     if (r.status === "휴가") {
@@ -346,7 +346,7 @@ export function buildPayItems(records: AttendanceRecord[]): PayItem[] {
       date: r.date,
       kind: "work",
       label: minutesLabel(r.workMinutes),
-      amount: calcDailyPay({ paidMinutes: paid, hourlyWage: HOURLY_WAGE, status: r.status }),
+      amount: calcDailyPay({ paidMinutes: paid, hourlyWage, status: r.status }),
       overtimeMinutes: r.overtimeMinutes,
       isWeeklyHoliday: false,
     };
@@ -364,7 +364,7 @@ export function buildPayItems(records: AttendanceRecord[]): PayItem[] {
     weekly.set(key, acc);
   }
   for (const { workMinutes, lastDate } of weekly.values()) {
-    const amount = calcWeeklyHolidayPay({ weeklyWorkMinutes: workMinutes, hourlyWage: HOURLY_WAGE });
+    const amount = calcWeeklyHolidayPay({ weeklyWorkMinutes: workMinutes, hourlyWage });
     if (amount <= 0) continue; // 주 15시간 미만 → 주휴 없음
     items.push({
       date: lastDate, // 해당 주의 마지막 근무일에 주휴행 표기(월 범위 내)

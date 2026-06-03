@@ -11,7 +11,7 @@ import type { ClockInStatus, ClockOutStatus, WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
 
 const CLOCK_IN_STATUSES: readonly ClockInStatus[] = ["정상", "지각", "결근", "휴가"];
-const CLOCK_OUT_STATUSES: readonly ClockOutStatus[] = ["정상", "연장"];
+const CLOCK_OUT_STATUSES: readonly ClockOutStatus[] = ["정상", "연장", "조퇴"];
 import { parseHHMM } from "@/lib/time";
 import { enforceReadScope } from "@/lib/scope";
 import { resolveScope } from "@/lib/session-scope";

@@ -88,6 +88,7 @@ model Membership {
   storeId       String
   role          String // "master" | "crew"
   isManager     Boolean  @default(false)
+  hourlyWage    Int      @default(10320) // 멤버별 시급(원)
   operationalId String? // 데모 매핑: crew-minjung/crew-2/... 또는 master-1
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())

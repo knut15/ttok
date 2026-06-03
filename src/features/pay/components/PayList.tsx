@@ -9,6 +9,7 @@ import {
 } from "@/features/pay/domain";
 import { formatPayRowDate, shortMonthLabel, payPeriodLabel } from "@/lib/date";
 import { PaySummaryCard } from "./PaySummaryCard";
+import { StabilityRadar } from "./StabilityRadar";
 
 // 급여 메인 리스트(AC-17): 요약카드 + 일별 행(휴가0원/연장표기/주휴 블루행).
 export function PayList({ month }: { month: string }) {
@@ -29,9 +30,14 @@ export function PayList({ month }: { month: string }) {
     <div className="px-5">
       <PaySummaryCard
         summary={data.summary}
+        stats={data.stats}
         monthLabel={shortMonthLabel(month)}
         rangeLabel={payPeriodLabel(month)}
       />
+
+      <div className="mt-3">
+        <StabilityRadar axes={data.stats.stability} />
+      </div>
 
       <ul className="mt-2 divide-y divide-black/5">
         {data.items.map((item, i) => {

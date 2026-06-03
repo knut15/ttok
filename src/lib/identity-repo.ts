@@ -23,6 +23,15 @@ export async function resolveStoreId(scope: {
   return scope.storeId ?? storeIdForCrew(scope.crewId);
 }
 
+/** crewId 의 시급(원). 멤버십 미존재 시 null. */
+export async function hourlyWageForCrew(crewId: string): Promise<number | null> {
+  const m = await prisma.membership.findFirst({
+    where: { OR: [{ operationalId: crewId }, { id: crewId }] },
+    select: { hourlyWage: true },
+  });
+  return m?.hourlyWage ?? null;
+}
+
 /** crewId(operationalId 또는 membershipId)가 속한 매장 id. 운영행 생성/스코프용. 없으면 null. */
 export async function storeIdForCrew(crewId: string): Promise<string | null> {
   const m = await prisma.membership.findFirst({

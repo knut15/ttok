@@ -5,8 +5,25 @@ import {
   buildPaySummary,
   calcWeeklyHolidayPay,
   weeklyHolidayPaidMinutes,
+  buildMonthStats,
 } from "./pay";
-import type { PayItem } from "@/types";
+import { buildPayItems } from "./seed";
+import type { AttendanceRecord, PayItem } from "@/types";
+
+function rec(p: Partial<AttendanceRecord> & { date: string }): AttendanceRecord {
+  return {
+    status: "정상",
+    clockIn: "08:00",
+    clockOut: "15:00",
+    breakMinutes: 30,
+    workMinutes: 390,
+    overtimeMinutes: 0,
+    deductMinutes: 0,
+    clockInStatus: "정상",
+    clockOutStatus: "정상",
+    ...p,
+  };
+}
 
 describe("calcDailyPay", () => {
   // AC-2
@@ -65,6 +82,41 @@ describe("calcWeeklyHolidayPay (주휴수당 — 1주 총 근로시간 기준)",
     expect(weeklyHolidayPaidMinutes(20 * 60)).toBe(240);
     expect(weeklyHolidayPaidMinutes(45 * 60)).toBe(480);
     expect(weeklyHolidayPaidMinutes(10 * 60)).toBe(0);
+  });
+});
+
+describe("buildMonthStats (월 집계 + 근무 안정성 레이더)", () => {
+  const records: AttendanceRecord[] = [
+    rec({ date: "2026-06-01" }),
+    rec({ date: "2026-06-02", status: "지각", clockIn: "09:00", workMinutes: 330, deductMinutes: 60, clockInStatus: "지각" }),
+    rec({ date: "2026-06-03", status: "결근", clockIn: null, clockOut: null, breakMinutes: 0, workMinutes: 0, deductMinutes: 390, clockInStatus: "결근" }),
+    rec({ date: "2026-06-04", status: "휴가", clockIn: null, clockOut: null, breakMinutes: 0, workMinutes: 0, clockInStatus: "휴가" }),
+    rec({ date: "2026-06-05", status: "연장", clockOut: "17:00", workMinutes: 510, overtimeMinutes: 120, clockOutStatus: "연장" }),
+    rec({ date: "2026-06-06", clockOut: "14:00", workMinutes: 330, clockOutStatus: "조퇴" }),
+  ];
+  const stats = buildMonthStats(records, buildPayItems(records, 10320), 10320);
+
+  it("월 집계가 정확하다", () => {
+    expect(stats.hourlyWage).toBe(10320);
+    expect(stats.workDays).toBe(4); // 정상2 + 지각1 + 연장1 (결근/휴가 제외)
+    expect(stats.workMinutes).toBe(390 + 330 + 510 + 330);
+    expect(stats.breakMinutes).toBe(120);
+    expect(stats.lateCount).toBe(1);
+    expect(stats.earlyLeaveCount).toBe(1);
+    expect(stats.absentCount).toBe(1);
+    expect(stats.vacationDays).toBe(1);
+    expect(stats.overtimeCount).toBe(1);
+    expect(stats.overtimeMinutes).toBe(120);
+  });
+
+  it("레이더 5축 점수가 산정된다(분모=출근예정 5일)", () => {
+    const map = Object.fromEntries(stats.stability.map((a) => [a.label, a.score]));
+    expect(stats.stability).toHaveLength(5);
+    expect(map["출근"]).toBe(80); // 1-1/5
+    expect(map["정시출근"]).toBe(80);
+    expect(map["정시퇴근"]).toBe(80);
+    expect(map["근무시간"]).toBe(100); // 1560/(4*390)
+    expect(map["연장기여"]).toBe(20); // 120/600
   });
 });
 

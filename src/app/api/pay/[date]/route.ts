@@ -5,6 +5,7 @@ import { calcPaidMinutes, calcDailyPay } from "@/lib/pay";
 import { HOURLY_WAGE, DEFAULT_BREAK_RANGE } from "@/lib/constants";
 import { enforceReadScope } from "@/lib/scope";
 import { resolveScope } from "@/lib/session-scope";
+import { hourlyWageForCrew } from "@/lib/identity-repo";
 import type { PayDetail } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -27,6 +28,7 @@ export async function GET(
     );
   }
 
+  const hourlyWage = (await hourlyWageForCrew(scoped)) ?? HOURLY_WAGE;
   const paidMinutes = calcPaidMinutes({
     workMinutes: record.workMinutes,
     deductMinutes: record.deductMinutes,
@@ -37,17 +39,13 @@ export async function GET(
     date: record.date,
     clockIn: record.clockIn,
     clockOut: record.clockOut,
-    hourlyWage: HOURLY_WAGE,
+    hourlyWage,
     paidMinutes,
     breakMinutes: record.breakMinutes,
     breakRange: record.breakMinutes > 0 ? DEFAULT_BREAK_RANGE : null,
     deductMinutes: record.deductMinutes,
     overtimeMinutes: record.overtimeMinutes,
-    amount: calcDailyPay({
-      paidMinutes,
-      hourlyWage: HOURLY_WAGE,
-      status: record.status,
-    }),
+    amount: calcDailyPay({ paidMinutes, hourlyWage, status: record.status }),
   };
 
   return NextResponse.json(detail, { headers: NO_STORE });

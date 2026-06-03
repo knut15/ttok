@@ -22,7 +22,7 @@ import { ScheduleVsActual } from "@/features/schedule/components/ScheduleVsActua
 
 const [DEFAULT_BREAK_START, DEFAULT_BREAK_END] = DEFAULT_BREAK_RANGE.split("~");
 const CLOCK_IN_OPTIONS: readonly string[] = ["정상", "지각", "결근", "휴가"];
-const CLOCK_OUT_OPTIONS: readonly string[] = ["정상", "연장"];
+const CLOCK_OUT_OPTIONS: readonly string[] = ["정상", "연장", "조퇴"];
 
 function Row({
   label,

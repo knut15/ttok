@@ -5,8 +5,8 @@ export type WorkStatus = "정상" | "지각" | "결근" | "휴가" | "연장";
 
 /** 출근 상태(독립): 정상/지각 + 무근무(결근/휴가). */
 export type ClockInStatus = "정상" | "지각" | "결근" | "휴가";
-/** 퇴근 상태(독립): 정상/연장. */
-export type ClockOutStatus = "정상" | "연장";
+/** 퇴근 상태(독립): 정상/연장/조퇴. */
+export type ClockOutStatus = "정상" | "연장" | "조퇴";
 
 export interface AttendanceRecord {
   date: string; // "YYYY-MM-DD"
@@ -69,9 +69,33 @@ export interface PaySummary {
   overtimeMinutes: number; // = 544 (= 9시간4분) (AC-17)
 }
 
+/** 레이더(근무 안정성) 1축. score 0~100. */
+export interface StabilityAxis {
+  label: string;
+  score: number;
+}
+
+/** 월간 급여/근태 통계(pay 페이지 헤더·레이더용). */
+export interface PayMonthStats {
+  hourlyWage: number; // 멤버 시급(원)
+  workDays: number; // 실근무일 수(휴가·결근 제외, 근무시간>0)
+  workMinutes: number; // 총 근무시간(분)
+  breakMinutes: number; // 총 휴게시간(분)
+  weeklyHolidayPay: number; // 주휴수당 합(원)
+  basePay: number; // 근무분 급여(주휴 제외, = totalPay - weeklyHolidayPay)
+  lateCount: number; // 지각
+  earlyLeaveCount: number; // 조퇴
+  absentCount: number; // 결근
+  vacationDays: number; // 휴가
+  overtimeCount: number; // 연장 회수
+  overtimeMinutes: number; // 연장 합(분)
+  stability: StabilityAxis[]; // 레이더 축
+}
+
 export interface PayResponse {
   summary: PaySummary;
   items: PayItem[];
+  stats: PayMonthStats;
 }
 
 export interface PayDetail {
