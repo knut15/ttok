@@ -15,7 +15,7 @@ const NO_STORE: RequestInit = { cache: "no-store" };
  * 400 응답은 throw → 호출자(ProfileForm)가 에러 메시지 처리(AC-14).
  * T8-4: authHeaders spread + crewId 를 effect 의존성에 추가(전환 시 무효화).
  */
-export function useProfile() {
+export function useProfile(targetCrewId?: string) {
   const { user } = useCurrentUser();
   const crewId = user.crewId ?? user.id;
   const [data, setData] = useState<ProfileResponse | null>(null);
@@ -27,7 +27,9 @@ export function useProfile() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setData(null);
     setLoading(true);
-    fetch("/api/profile", { ...NO_STORE, headers: authHeaders(user) })
+    // 마스터가 멤버 명세서 조회 시 ?crewId 타겟(멤버는 서버가 본인 강제).
+    const url = targetCrewId ? `/api/profile?crewId=${targetCrewId}` : "/api/profile";
+    fetch(url, { ...NO_STORE, headers: authHeaders(user) })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: ProfileResponse | null) => {
         if (!active) return;
@@ -38,7 +40,7 @@ export function useProfile() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crewId]);
+  }, [crewId, targetCrewId]);
 
   const update = useCallback(
     async (patch: ProfilePatch) => {

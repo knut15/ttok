@@ -8,6 +8,7 @@ import {
   LineElement,
   Filler,
   Tooltip,
+  type TooltipItem,
 } from "chart.js";
 import { Radar } from "react-chartjs-2";
 import type { StabilityAxis } from "@/types";
@@ -36,7 +37,16 @@ export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          // 점수 + 실측값(지각/연장/결근 등 도메인 규칙 기준)을 함께 노출.
+          label: (ctx: TooltipItem<"radar">) =>
+            `${ctx.parsed.r}점 · ${axes[ctx.dataIndex]?.detail ?? ""}`,
+        },
+      },
+    },
     scales: {
       r: {
         min: 0,
@@ -58,6 +68,15 @@ export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
       <div className="relative h-56">
         <Radar data={data} options={options} />
       </div>
+      {/* 터치 환경에서도 실측값이 보이도록 축별 실측을 상시 노출(툴팁은 보조). */}
+      <ul className="mt-3 space-y-1 border-t border-black/5 pt-3 text-sm">
+        {axes.map((a) => (
+          <li key={a.label} className="flex items-center justify-between gap-3">
+            <span className="text-muted">{a.label}</span>
+            <span className="font-medium">{a.detail}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

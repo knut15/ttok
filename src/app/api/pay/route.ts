@@ -1,6 +1,6 @@
 // GET 월간 급여(AC-10): {summary, items}. totalPay === Σ items.amount 불변식.
 import { NextResponse } from "next/server";
-import { getMonthRecords } from "@/lib/store";
+import { getMonthRecords, getPayslipInput } from "@/lib/store";
 import { buildPayItems } from "@/lib/seed";
 import { buildPaySummary, buildMonthStats } from "@/lib/pay";
 import { enforceReadScope } from "@/lib/scope";
@@ -15,10 +15,8 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const month = url.searchParams.get("month") ?? "";
   // T8-4: 본인 강제(멤버) / 마스터 target.
-  const scoped = enforceReadScope(
-    (await resolveScope(request)),
-    url.searchParams.get("crewId") ?? undefined,
-  );
+  const scope = await resolveScope(request);
+  const scoped = enforceReadScope(scope, url.searchParams.get("crewId") ?? undefined);
   const records = await getMonthRecords(month, scoped);
   const hourlyWage = (await hourlyWageForCrew(scoped)) ?? HOURLY_WAGE;
   const items = buildPayItems(records, hourlyWage);
@@ -35,6 +33,20 @@ export async function GET(request: Request): Promise<Response> {
     return b.date.localeCompare(a.date);
   });
 
-  const payload: PayResponse = { summary, items: sorted, stats };
+  // 명세서 근무내역용 원본 레코드(날짜 오름차순). items/summary/stats 는 불변.
+  const recordsAsc = [...records].sort((a, b) => a.date.localeCompare(b.date));
+
+  // 명세서 입력값(저장값, 없으면 기본) + 편집 권한(마스터). 멤버는 statementInputs 로 완성본 조회.
+  const statementInputs = await getPayslipInput(scoped, month);
+  const canEditStatement = scope.role === "master";
+
+  const payload: PayResponse = {
+    summary,
+    items: sorted,
+    stats,
+    records: recordsAsc,
+    statementInputs,
+    canEditStatement,
+  };
   return NextResponse.json(payload, { headers: NO_STORE });
 }

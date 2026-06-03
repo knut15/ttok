@@ -37,4 +37,6 @@ export type { NewSchedule, NewFixedShift, FixedShiftPatch } from "./schedule-sto
 
 export { getProfile, updateProfile } from "./profile-store";
 
+export { getPayslipInput, savePayslipInput } from "./payslip-input-store";
+
 export { canWriteSchedule, listStoreCrews } from "./identity-repo";

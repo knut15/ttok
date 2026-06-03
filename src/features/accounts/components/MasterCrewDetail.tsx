@@ -7,6 +7,7 @@
 // 멤버가 이 경로 접근 시 가드(router.replace("/")). 빈 멤버 graceful.
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { MonthBar } from "@/components/MonthBar";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { useMonthAttendance } from "@/features/attendance/hooks/useAttendance";
@@ -62,7 +63,15 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
   return (
     <div className="pb-24">
       <MonthBar month={month} onChange={setMonth} />
-      <p className="px-5 pb-4 text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
+      <div className="flex items-center justify-between px-5 pb-4">
+        <p className="text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
+        <Link
+          href={`/pay/statement?crewId=${crewId}&month=${month}`}
+          className="rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold"
+        >
+          급여명세서 작성
+        </Link>
+      </div>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">
           불러오는 중…

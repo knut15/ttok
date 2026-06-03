@@ -51,6 +51,15 @@ function clamp100(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+/** 분 → "N시간 M분". lib 은 features 를 의존하지 않으므로(역방향 금지) 포맷터를 로컬로 둔다. */
+function hm(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+  if (h > 0) return `${h}시간`;
+  return `${m}분`;
+}
+
 function clockIn(r: AttendanceRecord): string {
   return r.clockInStatus ?? (r.status === "결근" || r.status === "휴가" || r.status === "지각" ? r.status : "정상");
 }
@@ -96,12 +105,33 @@ export function buildMonthStats(
     workDays > 0 ? (workMinutes / (workDays * REGULAR_MINUTES)) * 100 : 0;
   const overtimeScore = (overtimeMinutes / 600) * 100; // 10시간(600분) → 100
 
+  // 각 축의 점수와 그 근거가 된 실측값(도메인 규칙 그대로)을 함께 산출 — 레이더에 정확히 표기.
   const stability: StabilityAxis[] = [
-    { label: "출근", score: clamp100(ratio(absentCount)) },
-    { label: "정시출근", score: clamp100(ratio(lateCount)) },
-    { label: "정시퇴근", score: clamp100(ratio(earlyLeaveCount)) },
-    { label: "근무시간", score: clamp100(fulfill) },
-    { label: "연장기여", score: clamp100(overtimeScore) },
+    {
+      label: "출근",
+      score: clamp100(ratio(absentCount)),
+      detail: absentCount > 0 ? `결근 ${absentCount}회` : "결근 없음",
+    },
+    {
+      label: "정시출근",
+      score: clamp100(ratio(lateCount)),
+      detail: lateCount > 0 ? `지각 ${lateCount}회` : "지각 없음",
+    },
+    {
+      label: "정시퇴근",
+      score: clamp100(ratio(earlyLeaveCount)),
+      detail: earlyLeaveCount > 0 ? `조퇴 ${earlyLeaveCount}회` : "조퇴 없음",
+    },
+    {
+      label: "근무시간",
+      score: clamp100(fulfill),
+      detail: `근무 ${workDays}일 · ${hm(workMinutes)}`,
+    },
+    {
+      label: "연장기여",
+      score: clamp100(overtimeScore),
+      detail: overtimeMinutes > 0 ? `연장 ${overtimeCount}회 · ${hm(overtimeMinutes)}` : "연장 없음",
+    },
   ];
 
   return {

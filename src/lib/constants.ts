@@ -71,3 +71,24 @@ export const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const INVITE_CODE_LENGTH = 6;
 /** 초대코드 기본 만료 기간(일). 발급 시 now + 이 일수. */
 export const INVITE_TTL_DAYS = 7;
+
+// === 급여명세서 요율 (근로자 부담분) — 4대보험·세금·인센티브. PDF 스펙 기준(검산 일치). ===
+/** 4대보험 요율(근로자 부담분). 장기요양은 건강보험료에 곱한다(소득 아님). */
+export const INSURANCE_RATES = {
+  nationalPension: 0.0475, // 국민연금 4.75%
+  health: 0.03595, // 건강보험 3.595%
+  longTermCare: 0.1314, // 장기요양 = 건강보험료 × 13.14%
+  employment: 0.009, // 고용보험 0.9%
+} as const;
+
+/** 지방소득세 = 소득세 × 10%. */
+export const LOCAL_INCOME_TAX_RATE = 0.1;
+
+/** 인센티브 = 총매출 × 1%. */
+export const INCENTIVE_RATE = 0.01;
+
+/** 연장 단가(원/시간). 5인 미만 사업장 가산 없음 → 0(시간만 표기). */
+export const OVERTIME_HOURLY_WAGE = 0;
+
+/** 국민연금 기준소득월액 절사 단위(원). 총지급액을 이 단위로 내림 후 요율 적용. */
+export const PENSION_BASE_UNIT = 1000;

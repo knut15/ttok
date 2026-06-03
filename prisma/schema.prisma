@@ -80,6 +80,7 @@ model Store {
   fixedShifts   FixedShift[]
   notifications Notification[]
   profiles      Profile[]
+  payslipInputs PayslipInput[]
 }
 
 model Membership {
@@ -201,4 +202,20 @@ model Profile {
   email         String  @default("")
   avatarInitial String  @default("?")
   store         Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// 급여명세서 입력값(월별, 멤버별). 마스터만 기록, 멤버는 읽기. 도출 불가 항목 보관.
+model PayslipInput {
+  id               String  @id @default(cuid())
+  storeId          String
+  crewId           String
+  month            String // "YYYY-MM"
+  incentiveEnabled Boolean @default(false) // 1% 인센티브 선택 여부
+  monthlySales     Int     @default(0) // 총매출(원) → 인센티브 = ×1%
+  incomeTax        Int     @default(0) // 근로소득세(간이세액표값, 원)
+  nightPay         Int     @default(0) // 야간수당(원)
+  store            Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([crewId, month])
+  @@index([storeId])
 }

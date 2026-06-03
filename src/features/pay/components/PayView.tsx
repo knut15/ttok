@@ -3,6 +3,7 @@
 // 급여 client 래퍼: 월 네비(‹ 라벨 › + picker, AttendanceCalendarView 패턴) +
 // 매장명 + PayList 렌더. PayList/PaySummaryCard 가 month 기반으로 라벨 동적 표기.
 import { useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { MonthBar } from "@/components/MonthBar";
 import { MonthPickerSheet } from "@/components/MonthPickerSheet";
 import { PayList } from "./PayList";
@@ -33,9 +34,12 @@ export function PayView() {
         onChange={setMonth}
         onPick={() => setPickerOpen(true)}
         right={
-          <span className="ml-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold">
+          <Link
+            href={`/pay/statement?month=${month}`}
+            className="ml-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold"
+          >
             급여명세서
-          </span>
+          </Link>
         }
       />
       <div className="flex items-center gap-2 px-5 pb-3 text-base font-bold">

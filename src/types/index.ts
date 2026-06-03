@@ -73,6 +73,7 @@ export interface PaySummary {
 export interface StabilityAxis {
   label: string;
   score: number;
+  detail: string; // 실측 표기(도메인 규칙 기준): "지각 1회" / "연장 2회 · 1시간 30분" / "결근 없음" 등
 }
 
 /** 월간 급여/근태 통계(pay 페이지 헤더·레이더용). */
@@ -96,6 +97,46 @@ export interface PayResponse {
   summary: PaySummary;
   items: PayItem[];
   stats: PayMonthStats;
+  records: AttendanceRecord[]; // 명세서 근무내역용 원본 레코드(append, 날짜 오름차순). 기존 필드 불변.
+  statementInputs: PayslipInputs; // 명세서 입력값(저장값, 없으면 기본). 멤버는 이 값으로 완성본 조회.
+  canEditStatement: boolean; // 요청자가 마스터인지(명세서 입력 편집 권한, 서버 판정).
+}
+
+// === 급여명세서(월별) — leaf 단일출처. lib/payslip ↔ FE 공용 계약. ===
+
+/**
+ * 명세서 입력값(도출 불가 → 마스터 입력, 멤버 읽기). 인센티브는 선택(incentiveEnabled).
+ * 영속: PayslipInput(crewId, month) 단일 진실원.
+ */
+export interface PayslipInputs {
+  incentiveEnabled: boolean; // 1% 인센티브 포함 여부(체크박스). false → 인센티브 항목 제외
+  monthlySales: number; // 총매출(원) → 인센티브 = ×1% (incentiveEnabled 시에만 사용)
+  incomeTax: number; // 근로소득세(간이세액표 조회값, 원)
+  nightPay: number; // 야간수당(원), 기본 0
+}
+
+/**
+ * 명세서 1행(지급/공제 공용). note = 산식 표기("10,320원 × 150시간10분" 등).
+ * subRows = 하위 세부행(주휴 주별 5줄 / 4대보험 4종 / 소득세 2종) — 합계행 아래 들여쓰기 표기.
+ */
+export interface PayslipLine {
+  label: string;
+  amount: number;
+  note?: string;
+  subRows?: PayslipLine[];
+}
+
+/** 월별 급여명세서 전체. lib/payslip.buildPayslip 산출물. */
+export interface Payslip {
+  month: string; // "YYYY-MM"
+  periodLabel: string; // "2026.05.01 ~ 2026.05.31"
+  payDate: string; // 급여일/직원확인일 "YYYY-MM-DD"
+  employee: { name: string; birthDate: string; company: string };
+  earnings: PayslipLine[]; // 기본급/주휴(subRows=주별)/연장/야간/인센티브
+  totalEarnings: number; // 총 지급액
+  deductions: PayslipLine[]; // 4대보험(subRows)/소득세(subRows)
+  totalDeduction: number; // 총 공제액
+  netPay: number; // 실 지급액 = totalEarnings − totalDeduction
 }
 
 export interface PayDetail {

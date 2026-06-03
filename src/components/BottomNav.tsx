@@ -105,7 +105,7 @@ export function BottomNav() {
   const pending = useMasterPendingCount();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md border-t border-black/5 bg-surface">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md border-t border-black/5 bg-surface print:hidden">
       <ul className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab.href);
