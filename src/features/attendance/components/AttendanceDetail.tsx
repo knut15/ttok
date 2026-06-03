@@ -13,6 +13,7 @@ import { todayDate } from "@/lib/date";
 import type { ClockInStatus, ClockOutStatus, WorkStatus } from "@/types";
 import { StatusChangeSheet } from "./StatusChangeSheet";
 import { BreakChangeSheet } from "./BreakChangeSheet";
+import { ClockOutTimeSheet } from "./ClockOutTimeSheet";
 import { AddRecordForm } from "./AddRecordForm";
 import { EditRequestForm } from "./EditRequestForm";
 import { EditRequestList } from "./EditRequestList";
@@ -56,15 +57,24 @@ export function AttendanceDetail({ date }: { date: string }) {
   const schedule = useDaySchedule(date);
   const [inSheetOpen, setInSheetOpen] = useState(false);
   const [outSheetOpen, setOutSheetOpen] = useState(false);
+  const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const [breakSheetOpen, setBreakSheetOpen] = useState(false);
-  // 휴게 범위 draft(수정요청용).
-  const [breakDraft, setBreakDraft] = useState<{ breakStart?: string; breakEnd?: string } | null>(null);
+  // 퇴근시각·휴게 범위 draft(수정요청용 — 상태변경은 즉시이지만 시간 정정은 요청).
+  const [draft, setDraft] = useState<{
+    clockOut: string | null;
+    breakStart?: string;
+    breakEnd?: string;
+  } | null>(null);
   const [syncKey, setSyncKey] = useState<string | null>(null);
   const recordKey = record
-    ? `${record.date}|${record.breakStart ?? ""}|${record.breakEnd ?? ""}`
+    ? `${record.date}|${record.clockOut ?? ""}|${record.breakStart ?? ""}|${record.breakEnd ?? ""}`
     : null;
   if (record && recordKey !== syncKey) {
-    setBreakDraft({ breakStart: record.breakStart, breakEnd: record.breakEnd });
+    setDraft({
+      clockOut: record.clockOut,
+      breakStart: record.breakStart,
+      breakEnd: record.breakEnd,
+    });
     setSyncKey(recordKey);
   }
 
@@ -99,8 +109,9 @@ export function AttendanceDetail({ date }: { date: string }) {
 
   const clockInStatus = record.clockInStatus ?? "정상";
   const clockOutStatus = record.clockOutStatus ?? "정상";
-  const breakStart = breakDraft?.breakStart;
-  const breakEnd = breakDraft?.breakEnd;
+  const draftClockOut = draft ? draft.clockOut : record.clockOut;
+  const breakStart = draft?.breakStart;
+  const breakEnd = draft?.breakEnd;
 
   const breakRangeLabel =
     record.breakStart && record.breakEnd
@@ -135,20 +146,29 @@ export function AttendanceDetail({ date }: { date: string }) {
         />
         <Row
           label="퇴근"
-          value={record.clockOut ?? "-"}
+          value={draftClockOut ?? "-"}
           badge={
             clockOutStatus !== "정상" ? (
               <StatusBadge label={clockOutStatus} tone={statusTone(clockOutStatus as WorkStatus)} />
             ) : undefined
           }
           action={
-            <button
-              type="button"
-              onClick={() => setOutSheetOpen(true)}
-              className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
-            >
-              상태변경
-            </button>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setOutSheetOpen(true)}
+                className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+              >
+                상태변경
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeSheetOpen(true)}
+                className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+              >
+                시각변경
+              </button>
+            </div>
           }
         />
         <Row
@@ -174,7 +194,7 @@ export function AttendanceDetail({ date }: { date: string }) {
             after: {
               status: record.status,
               clockIn: record.clockIn,
-              clockOut: record.clockOut,
+              clockOut: draftClockOut,
               ...(breakStart && breakEnd ? { breakStart, breakEnd } : {}),
             },
           });
@@ -207,6 +227,17 @@ export function AttendanceDetail({ date }: { date: string }) {
         onChange={(s) => changeClockOutStatus(s as ClockOutStatus)}
       />
 
+      <ClockOutTimeSheet
+        key={`time|${timeSheetOpen}|${draftClockOut ?? ""}`}
+        open={timeSheetOpen}
+        initial={draftClockOut}
+        onClose={() => setTimeSheetOpen(false)}
+        onApply={(clockOut) => {
+          setDraft((d) => ({ clockOut, breakStart: d?.breakStart, breakEnd: d?.breakEnd }));
+          setTimeSheetOpen(false);
+        }}
+      />
+
       <BreakChangeSheet
         key={`break|${breakSheetOpen}|${breakStart ?? ""}|${breakEnd ?? ""}`}
         open={breakSheetOpen}
@@ -216,7 +247,11 @@ export function AttendanceDetail({ date }: { date: string }) {
         }}
         onClose={() => setBreakSheetOpen(false)}
         onApply={(next) => {
-          setBreakDraft({ breakStart: next.breakStart, breakEnd: next.breakEnd });
+          setDraft((d) => ({
+            clockOut: d ? d.clockOut : record.clockOut,
+            breakStart: next.breakStart,
+            breakEnd: next.breakEnd,
+          }));
           setBreakSheetOpen(false);
         }}
       />
