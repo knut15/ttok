@@ -103,6 +103,15 @@ export function shiftDay(date: string, delta: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
+/** 해당 날짜가 속한 주의 월요일("YYYY-MM-DD"). 주휴 주간 그룹 키. */
+export function weekStartMonday(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  const wd = dt.getDay(); // 0=일 … 6=토
+  const diff = (wd + 6) % 7; // 월요일까지 거슬러 갈 일수
+  return shiftDay(date, -diff);
+}
+
 /**
  * "YYYY-MM" start~end(포함) 오름차순 목록. start>end 면 빈 배열.
  * "YYYY-MM" 사전식 비교 = 시간순(zero-pad 보장). shiftMonth 단조증가로 종료(무한루프 없음).

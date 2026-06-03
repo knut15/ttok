@@ -18,13 +18,16 @@ describe("seed 불변식", () => {
     expect(summary.overtimeMinutes).toBe(544);
   });
 
-  it("③ totalPay = Σ items.amount (주휴 67,080원 포함)", () => {
+  it("③ totalPay = Σ items.amount (주휴 포함)", () => {
     const sumItems = items.reduce((s, it) => s + it.amount, 0);
     expect(summary.totalPay).toBe(sumItems);
-    // 주휴수당 블루행이 정확히 1건, 67,080원
+    // 주휴수당은 주 단위 산정(1주 총 근로시간 기준). 자격 주마다 1건.
     const weekly = items.filter((it) => it.isWeeklyHoliday);
-    expect(weekly).toHaveLength(1);
-    expect(weekly[0].amount).toBe(67080);
+    expect(weekly.length).toBeGreaterThanOrEqual(1);
+    for (const w of weekly) {
+      expect(w.amount).toBeGreaterThan(0); // 주 15시간 이상 주만 포함
+      expect(w.amount).toBeLessThanOrEqual(8 * 10320); // 풀타임 8시간 상한
+    }
   });
 
   // T7: 근무일에 휴게 범위(11:30~12:00) 부여 — 파생 30분 = 기존 breakMinutes(회귀 0).

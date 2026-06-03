@@ -22,6 +22,24 @@ export function calcDailyPay(i: {
 }
 
 /**
+ * 주휴 인정시간(분) — 1주 총 근로시간 기준.
+ * - 주 15시간 미만 → 0(주휴 미발생).
+ * - 주 15~40시간 → (주근로시간 / 40) × 8시간.
+ * - 주 40시간 이상 → 8시간(풀타임 상한; min(시간,40) 으로 일원화).
+ */
+export function weeklyHolidayPaidMinutes(weeklyWorkMinutes: number): number {
+  const hours = weeklyWorkMinutes / 60;
+  if (hours < 15) return 0;
+  const capped = Math.min(hours, 40);
+  return Math.round((capped / 40) * 8 * 60);
+}
+
+/** 주휴수당(원) = 주휴 인정시간 × 시급. (검산: 주20h·10,320원 → 41,280 / 주45h → 82,560) */
+export function calcWeeklyHolidayPay(i: { weeklyWorkMinutes: number; hourlyWage: number }): number {
+  return Math.round((weeklyHolidayPaidMinutes(i.weeklyWorkMinutes) / 60) * i.hourlyWage);
+}
+
+/**
  * 월간 급여 요약 집계. O(n), n = 월 일수 ≤ 31.
  * totalPay = Σ items.amount (주휴 포함) — AC-10 불변식.
  * 연장은 work item 의 overtimeMinutes 합/회수.

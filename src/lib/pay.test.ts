@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { calcDailyPay, calcPaidMinutes, buildPaySummary } from "./pay";
+import {
+  calcDailyPay,
+  calcPaidMinutes,
+  buildPaySummary,
+  calcWeeklyHolidayPay,
+  weeklyHolidayPaidMinutes,
+} from "./pay";
 import type { PayItem } from "@/types";
 
 describe("calcDailyPay", () => {
@@ -36,6 +42,29 @@ describe("calcPaidMinutes", () => {
     expect(
       calcPaidMinutes({ workMinutes: 90, deductMinutes: 300, status: "정상" }),
     ).toBe(0);
+  });
+});
+
+describe("calcWeeklyHolidayPay (주휴수당 — 1주 총 근로시간 기준)", () => {
+  // 기본(15~40h): (시간/40)×8×시급. 주 20h·10,320원 → 41,280원
+  it("주 20시간 → 41,280원", () => {
+    expect(calcWeeklyHolidayPay({ weeklyWorkMinutes: 20 * 60, hourlyWage: 10320 })).toBe(41280);
+  });
+  // 풀타임(40h↑): 8×시급 상한. 주 45h → 82,560원
+  it("주 45시간(풀타임) → 8시간 상한 82,560원", () => {
+    expect(calcWeeklyHolidayPay({ weeklyWorkMinutes: 45 * 60, hourlyWage: 10320 })).toBe(82560);
+  });
+  it("정확히 주 40시간 → 82,560원", () => {
+    expect(calcWeeklyHolidayPay({ weeklyWorkMinutes: 40 * 60, hourlyWage: 10320 })).toBe(82560);
+  });
+  // 주 15시간 미만 → 주휴 미발생(0)
+  it("주 15시간 미만 → 0원", () => {
+    expect(calcWeeklyHolidayPay({ weeklyWorkMinutes: 14 * 60, hourlyWage: 10320 })).toBe(0);
+  });
+  it("인정시간(분): 주 20h → 240분(4h), 풀타임 → 480분(8h), 미만 → 0", () => {
+    expect(weeklyHolidayPaidMinutes(20 * 60)).toBe(240);
+    expect(weeklyHolidayPaidMinutes(45 * 60)).toBe(480);
+    expect(weeklyHolidayPaidMinutes(10 * 60)).toBe(0);
   });
 });
 

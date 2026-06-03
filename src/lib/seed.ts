@@ -25,7 +25,8 @@ import {
   SEED_WORK_TIME,
   STORE_NAME,
 } from "./constants";
-import { calcPaidMinutes, calcDailyPay } from "./pay";
+import { calcPaidMinutes, calcDailyPay, calcWeeklyHolidayPay, weeklyHolidayPaidMinutes } from "./pay";
+import { weekStartMonday } from "./date";
 
 interface SeedRow {
   day: string; // "DD"
@@ -69,12 +70,6 @@ const SEED_ROWS: SeedRow[] = [
   { day: "29", status: "휴가", clockIn: null, clockOut: null, workMinutes: 0, overtimeMinutes: 0, deductMinutes: 0 },
 ];
 
-/** 주휴수당 고정 레코드(쟁점 B): 5/24 블루행, 67,080원. 산식 미구현. */
-export const WEEKLY_HOLIDAY = {
-  date: "2026-05-24",
-  paidMinutes: 390,
-  amount: 67080,
-} as const;
 
 // === 마이페이지 시드 (append) ===
 
@@ -357,13 +352,25 @@ export function buildPayItems(records: AttendanceRecord[]): PayItem[] {
     };
   });
 
-  const weeklyMonth = WEEKLY_HOLIDAY.date.slice(0, 7);
-  if (records.some((r) => r.date.startsWith(weeklyMonth))) {
+  // 주휴수당: 1주 총 근로시간 기준으로 주 단위 산정(주 월요일 기준 그룹).
+  // 주 15시간 미만 → 미발생. 15~40h → (시간/40)×8h, 40h↑ → 8h 상한. 시급 곱해 금액.
+  const weekly = new Map<string, { workMinutes: number; lastDate: string }>();
+  for (const r of records) {
+    if (r.status === "휴가" || r.workMinutes <= 0) continue;
+    const key = weekStartMonday(r.date);
+    const acc = weekly.get(key) ?? { workMinutes: 0, lastDate: r.date };
+    acc.workMinutes += r.workMinutes;
+    if (r.date > acc.lastDate) acc.lastDate = r.date;
+    weekly.set(key, acc);
+  }
+  for (const { workMinutes, lastDate } of weekly.values()) {
+    const amount = calcWeeklyHolidayPay({ weeklyWorkMinutes: workMinutes, hourlyWage: HOURLY_WAGE });
+    if (amount <= 0) continue; // 주 15시간 미만 → 주휴 없음
     items.push({
-      date: WEEKLY_HOLIDAY.date,
+      date: lastDate, // 해당 주의 마지막 근무일에 주휴행 표기(월 범위 내)
       kind: "weekly_holiday",
-      label: `주휴수당 ${minutesLabel(WEEKLY_HOLIDAY.paidMinutes)}`,
-      amount: WEEKLY_HOLIDAY.amount,
+      label: `주휴수당 ${minutesLabel(weeklyHolidayPaidMinutes(workMinutes))}`,
+      amount,
       overtimeMinutes: 0,
       isWeeklyHoliday: true,
     });
