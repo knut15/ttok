@@ -26,7 +26,7 @@ const CREW_TABS: Tab[] = [
 
 // 마스터 탭: 집계 진입(/master) 중심 + 스케쥴 + 마이페이지. 본인 출퇴근/급여 기록 없음(E-4) → 미노출.
 const MASTER_TABS: Tab[] = [
-  { href: "/master", label: "집계", icon: "won" },
+  { href: "/master", label: "대시보드", icon: "won" },
   { href: "/schedule", label: "스케쥴", icon: "calendar" },
   { href: "/mypage", label: "마이페이지", icon: "user" },
 ];

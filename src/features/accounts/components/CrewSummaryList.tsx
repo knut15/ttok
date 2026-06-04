@@ -41,7 +41,7 @@ export function CrewSummaryList({
   if (crews.length === 0) {
     return (
       <p className="px-5 pt-10 text-center text-sm text-muted">
-        집계할 멤버가 없습니다.
+        멤버가 없습니다.
       </p>
     );
   }

@@ -41,7 +41,7 @@ export function MyPageView() {
                 href="/master"
                 className="block rounded-2xl bg-coral px-4 py-3 text-center font-semibold text-white"
               >
-                마스터 집계 보기
+                마스터 대시보드 보기
               </Link>
             </section>
           )}

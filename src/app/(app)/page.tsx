@@ -1,5 +1,5 @@
 // 홈 RSC 셸(AC-11): 공통 헤더(layout) 하위 — 근무 진행·공지/바로가기.
-// 마스터는 본인 출퇴근 기록이 없어(E-4) 홈이 무의미 → 메인은 마이페이지. 서버에서 리다이렉트(클라 플래시 0).
+// 마스터는 본인 출퇴근 기록이 없어(E-4) 홈이 무의미 → 메인은 대시보드(/master). 서버에서 리다이렉트(클라 플래시 0).
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/Card";
@@ -8,9 +8,9 @@ import { HomeToday } from "@/features/attendance/components/HomeToday";
 import { requireMembership } from "@/lib/guard";
 
 export default async function HomePage() {
-  // role 진실원 = 멤버십 DB(guard). 마스터 → 마이페이지(홈 비노출, BottomNav 에도 홈 탭 없음).
+  // role 진실원 = 멤버십 DB(guard). 마스터 → 대시보드(/master). 홈 비노출, BottomNav 에도 홈 탭 없음.
   const { membership } = await requireMembership();
-  if (membership.role === "master") redirect("/mypage");
+  if (membership.role === "master") redirect("/master");
 
   return (
     <div>

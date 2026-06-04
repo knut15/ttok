@@ -15,7 +15,7 @@ const TITLES: Record<string, string> = {
   "/pay": "급여",
   "/mypage": "마이페이지",
   "/mypage/profile": "프로필 수정",
-  "/master": "집계",
+  "/master": "대시보드",
 };
 const TOP_LEVEL = new Set(["/", "/attendance", "/schedule", "/pay", "/mypage", "/master"]);
 

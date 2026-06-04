@@ -85,10 +85,10 @@ export function MasterView() {
   return (
     <div className="pb-24">
       <MonthBar month={month} onChange={setPicked} />
-      <p className="px-5 pb-4 text-sm text-muted">전체 멤버 근무 집계</p>
+      <p className="px-5 pb-4 text-sm text-muted">전체 멤버 근무 현황</p>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">
-          집계 불러오는 중…
+          불러오는 중…
         </p>
       ) : (
         <>
