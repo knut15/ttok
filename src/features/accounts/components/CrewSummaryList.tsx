@@ -17,6 +17,8 @@ function minutesLabel(min: number): string {
 
 interface CrewSummaryListProps {
   crews: CrewSummary[];
+  /** 선택 월(YYYY-MM). 드릴다운 링크에 ?month= 로 전달 → 멤버 상세가 같은 월로 진입. */
+  month: string;
   /** 매니저 지정/해제(마스터 전용). 미지정 시 토글 버튼 숨김. */
   onToggleManager?: (crewId: string, on: boolean) => void;
 }
@@ -31,7 +33,11 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps) {
+export function CrewSummaryList({
+  crews,
+  month,
+  onToggleManager,
+}: CrewSummaryListProps) {
   if (crews.length === 0) {
     return (
       <p className="px-5 pt-10 text-center text-sm text-muted">
@@ -50,7 +56,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
           {/* 상단: 신원(드릴다운) + 매니저 토글(형제) */}
           <div className="flex items-center justify-between gap-2 px-4 pt-4">
             <Link
-              href={`/master/${c.crewId}`}
+              href={`/master/${c.crewId}?month=${month}`}
               aria-label={`${c.name} 근무 상세 보기`}
               className="flex flex-1 items-center gap-3 transition active:scale-[0.99]"
             >
@@ -94,7 +100,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
 
           {/* 하단: 근무/연장/휴일 3열 지표 그리드(드릴다운) */}
           <Link
-            href={`/master/${c.crewId}`}
+            href={`/master/${c.crewId}?month=${month}`}
             tabIndex={-1}
             aria-hidden
             className="mt-3 block px-4 pb-4"

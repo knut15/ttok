@@ -19,7 +19,7 @@ import {
 } from "@/features/attendance/domain";
 import { SEED_MONTH } from "@/lib/constants";
 import type { Tone } from "@/lib/constants";
-import { formatDotDate, weekdayKo } from "@/lib/date";
+import { formatDotDate, weekdayKo, todayMonth } from "@/lib/date";
 
 const emptySubscribe = () => () => {};
 
@@ -32,7 +32,14 @@ const TONE_TEXT: Record<Tone, string> = {
   neutral: "text-foreground",
 };
 
-export function MasterCrewDetail({ crewId }: { crewId: string }) {
+export function MasterCrewDetail({
+  crewId,
+  initialMonth,
+}: {
+  crewId: string;
+  /** 집계뷰에서 전달된 선택 월(?month=). 없으면 현재월 default. */
+  initialMonth?: string;
+}) {
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -40,7 +47,9 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
   );
   const router = useRouter();
   const { user } = useCurrentUser();
-  const [month, setMonth] = useState(SEED_MONTH);
+  // 전달된 월 우선, 없으면 mount 후 현재월(SEED_MONTH 는 mount 전 하이드레이션 안전용).
+  const [picked, setPicked] = useState<string | null>(initialMonth ?? null);
+  const month = picked ?? (mounted ? todayMonth() : SEED_MONTH);
   // 마스터일 때만 대상 멤버 fetch. 멤버(가드 진행 중)는 빈 인자로 호출 안 함.
   const { records, loading } = useMonthAttendance(month, crewId);
   // 안정성 레이더용 대상 멤버 급여 stats(마스터 스코프 ?crewId=). 마스터 전용 페이지이므로 노출 허용.
@@ -67,7 +76,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
 
   return (
     <div className="pb-24">
-      <MonthBar month={month} onChange={setMonth} />
+      <MonthBar month={month} onChange={setPicked} />
       <div className="flex items-center justify-between px-5 pb-4">
         <p className="text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
         <Link

@@ -5,9 +5,13 @@ import { MasterCrewDetail } from "@/features/accounts/components/MasterCrewDetai
 
 export default async function MasterCrewDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ crewId: string }>;
+  searchParams: Promise<{ month?: string }>;
 }) {
   const { crewId } = await params;
-  return <MasterCrewDetail crewId={crewId} />;
+  // 집계뷰에서 선택한 월을 ?month= 로 전달받아 같은 월로 진입(없으면 현재월 default).
+  const { month } = await searchParams;
+  return <MasterCrewDetail crewId={crewId} initialMonth={month} />;
 }

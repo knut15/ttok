@@ -16,7 +16,7 @@ import { useMasterSubstitutes } from "@/features/accounts/hooks/useMasterSubstit
 import { CrewSummaryList } from "./CrewSummaryList";
 import { CrewWorkChart } from "./CrewWorkChart";
 import { MasterRequestList } from "./MasterRequestList";
-import { formatPayRowDate } from "@/lib/date";
+import { formatPayRowDate, todayMonth } from "@/lib/date";
 import { SEED_MONTH } from "@/lib/constants";
 
 // 마운트 여부 구독(AttendanceCalendarView 동일 패턴). 서버/첫CSR false →
@@ -31,7 +31,10 @@ export function MasterView() {
   );
   const router = useRouter();
   const { user } = useCurrentUser();
-  const [month, setMonth] = useState(SEED_MONTH);
+  // 현재월 기준 default(다른 화면 동일 패턴). mount 전엔 SEED_MONTH(하이드레이션 안전), 후엔 todayMonth().
+  // picked(사용자 월 선택)가 있으면 우선.
+  const [picked, setPicked] = useState<string | null>(null);
+  const month = picked ?? (mounted ? todayMonth() : SEED_MONTH);
   const { crews, loading, reload } = useMasterSummary(month);
 
   // 매니저 지정/해제(마스터 전용). PATCH 후 집계 재로드로 토글 상태 반영.
@@ -81,7 +84,7 @@ export function MasterView() {
 
   return (
     <div className="pb-24">
-      <MonthBar month={month} onChange={setMonth} />
+      <MonthBar month={month} onChange={setPicked} />
       <p className="px-5 pb-4 text-sm text-muted">전체 멤버 근무 집계</p>
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">
@@ -90,7 +93,11 @@ export function MasterView() {
       ) : (
         <>
           <CrewWorkChart crews={crews} />
-          <CrewSummaryList crews={crews} onToggleManager={toggleManager} />
+          <CrewSummaryList
+            crews={crews}
+            month={month}
+            onToggleManager={toggleManager}
+          />
         </>
       )}
 
