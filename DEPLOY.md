@@ -1,4 +1,4 @@
-# 배포 가이드 — Vercel + Neon(Postgres) + Google 로그인
+# 배포 가이드 — Vercel + Neon(Postgres) + Google·Kakao 로그인
 
 이 문서대로 하면 GitHub(`knut15/ttok`) → Vercel 자동 배포 + Neon Postgres 연결이 끝난다.
 
@@ -30,6 +30,8 @@
 | `AUTH_SECRET` | `pnpm dlx auth secret` 또는 `openssl rand -base64 32` 결과 | **필수**. 없으면 로그인 동작 안 함 |
 | `GOOGLE_CLIENT_ID` | Google OAuth 클라이언트 ID | 4단계에서 발급 |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth 시크릿 | 4단계에서 발급 |
+| `KAKAO_CLIENT_ID` | Kakao REST API 키 | 4.5단계에서 발급 |
+| `KAKAO_CLIENT_SECRET` | Kakao Client Secret | 4.5단계에서 발급 |
 | `BIZ_VALIDATION` | `off` | 데모는 off(아무 사업자번호 허용). 실검증 시 `nts`+`NTS_SERVICE_KEY` |
 
 - **`AUTH_DEV_LOGIN` 은 설정하지 말 것**(prod 데모 우회 로그인은 코드가 `NODE_ENV=production` 으로 이중 차단).
@@ -45,10 +47,29 @@
    (커스텀 도메인 쓰면 그 도메인도 추가. Preview 배포는 URL이 매번 바뀌어 OAuth가 안 되므로 프로덕션 도메인 기준.)
 4. 발급된 ID/Secret 을 3단계 `GOOGLE_CLIENT_ID/SECRET` 에 입력.
 
+> ⚠️ 구글은 **카톡/네이버 등 인앱 브라우저 안에서의 로그인을 차단**(`disallowed_useragent`)한다.
+> 일반 브라우저에서만 동작 → 인앱 유입 대응으로 **카카오 로그인을 함께 제공**(4.5단계).
+
+## 4.5 Kakao OAuth 클라이언트 발급 (인앱 브라우저 대응)
+카카오 로그인은 **카카오톡 인앱 브라우저 안에서도 동작**한다(구글이 막히는 환경 대응).
+
+1. https://developers.kakao.com → 앱 생성 → **[카카오 로그인] 활성화 ON**.
+2. 키 매핑:
+   - **[앱 키] REST API 키** → `KAKAO_CLIENT_ID`
+   - **[카카오 로그인] → [보안] → Client Secret 코드 생성 + 활성화 ON** → `KAKAO_CLIENT_SECRET`
+3. **[카카오 로그인] → [Redirect URI]** 에 등록(로컬·prod 둘 다):
+   ```
+   http://localhost:3000/api/auth/callback/kakao
+   https://<your-app>.vercel.app/api/auth/callback/kakao
+   ```
+4. **[동의항목] → 카카오계정(이메일) → 필수 동의**(구글 계정과 email 기준 자동 링크에 필요).
+   필수 동의는 **비즈앱 전환**([앱 설정] → [비즈니스], 사업자등록번호) 필요. 미설정 시 email이 null → 별도 계정 생성.
+
 ## 5. 배포
 - 환경변수 저장 후 **Deployments → Redeploy**(또는 `main` 에 새 커밋 push).
 - 빌드 로그에서 `prisma migrate deploy` 가 마이그레이션 5개(+ payslip_input) 적용하는지 확인.
-- 완료 후 `https://<your-app>.vercel.app` 접속 → `/login` → **Google 로그인** → 멤버십이 없으면 `/onboarding`(매장 생성)으로 이동.
+- 완료 후 `https://<your-app>.vercel.app` 접속 → `/login` → **Google·Kakao 로그인** → 멤버십이 없으면 `/onboarding`(매장 생성)으로 이동.
+- 키 적용은 순서 주의: Vercel 환경변수 저장 → **그 다음** 재배포(빈 커밋/Redeploy)해야 빌드가 값을 집어간다. 키 넣기 전에 재배포하면 그 provider만 prod에서 실패한다.
 
 ## 6. (선택) 데모 데이터 시드
 prod는 빈 DB로 시작하며, 실제 사용자는 Google 로그인 후 온보딩으로 직접 매장/데이터를 만든다.
