@@ -21,7 +21,7 @@ export default async function LoginPage({
     process.env.NODE_ENV !== "production" && process.env.AUTH_DEV_LOGIN === "1";
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6">
+    <main className="mx-auto flex min-h-dvh w-full flex-col justify-center px-6">
       <h1 className="mb-1 text-center text-2xl font-bold text-coral">Crewmon</h1>
       <p className="mb-8 text-center text-sm text-muted">출퇴근·급여 관리</p>
       {invite && (

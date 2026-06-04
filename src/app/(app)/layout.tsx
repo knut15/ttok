@@ -10,7 +10,7 @@ export default async function AppLayout({
   await requireMembership();
 
   return (
-    <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
+    <div className="relative mx-auto flex min-h-dvh w-full flex-col bg-background">
       <GlobalHeader />
       <main className="flex-1 pb-24">{children}</main>
       <BottomNav />

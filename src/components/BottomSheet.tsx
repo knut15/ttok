@@ -34,7 +34,7 @@ export function BottomSheet({
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      <div className="relative mx-auto w-full max-w-md rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl">
+      <div className="relative mx-auto w-full rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl">
         <div className="flex items-center justify-between px-5 pb-2 pt-5">
           <span className="text-base font-bold">{title}</span>
           <button
