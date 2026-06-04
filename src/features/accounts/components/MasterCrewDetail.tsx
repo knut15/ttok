@@ -11,6 +11,8 @@ import Link from "next/link";
 import { MonthBar } from "@/components/MonthBar";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { useMonthAttendance } from "@/features/attendance/hooks/useAttendance";
+import { useMonthPay } from "@/features/pay/hooks/usePay";
+import { StabilityRadar } from "@/features/pay/components/StabilityRadar";
 import {
   longWorkLabel,
   statusTone,
@@ -41,6 +43,9 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
   const [month, setMonth] = useState(SEED_MONTH);
   // 마스터일 때만 대상 멤버 fetch. 멤버(가드 진행 중)는 빈 인자로 호출 안 함.
   const { records, loading } = useMonthAttendance(month, crewId);
+  // 안정성 레이더용 대상 멤버 급여 stats(마스터 스코프 ?crewId=). 마스터 전용 페이지이므로 노출 허용.
+  const { data: pay } = useMonthPay(month, crewId);
+  const stability = pay?.stats.stability;
 
   // 가드: mount 후(role 확정) 멤버면 홈으로. mount 전엔 리다이렉트 금지.
   useEffect(() => {
@@ -72,6 +77,12 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
           급여명세서 작성
         </Link>
       </div>
+      {/* 안정성 레이더(마스터·매니저 전용 인사이트). 급여 stats 있을 때만 노출. */}
+      {stability && stability.length > 0 ? (
+        <div className="px-5 pb-4">
+          <StabilityRadar axes={stability} />
+        </div>
+      ) : null}
       {loading ? (
         <p className="px-5 pt-10 text-center text-sm text-muted">
           불러오는 중…

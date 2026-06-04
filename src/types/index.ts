@@ -202,6 +202,7 @@ export interface User {
   role: Role;
   avatarInitial: string;
   crewId?: string;
+  isManager?: boolean; // 매니저 지정 여부(매니저 전용 가시성: radar 등). master 는 항상 권한 보유.
 }
 
 export type InviteStatus = "대기" | "사용";

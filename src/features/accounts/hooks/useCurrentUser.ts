@@ -14,6 +14,7 @@ export const INITIAL_USER: User = {
   role: "crew",
   avatarInitial: "",
   crewId: "guest",
+  isManager: false,
 };
 
 export function useCurrentUser() {
@@ -30,6 +31,7 @@ export function useCurrentUser() {
     role,
     avatarInitial: name.charAt(0) || "?",
     crewId: role === "crew" ? crewId : undefined,
+    isManager: data.isManager ?? false,
   };
   // setCurrentUser 는 세션 모델에서 의미 없음(전환=재로그인) — 호환용 no-op.
   return { user, setCurrentUser: () => {} };

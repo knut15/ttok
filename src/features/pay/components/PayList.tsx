@@ -8,12 +8,16 @@ import {
   isVacationItem,
 } from "@/features/pay/domain";
 import { formatPayRowDate, shortMonthLabel, payPeriodLabel } from "@/lib/date";
+import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { PaySummaryCard } from "./PaySummaryCard";
 import { StabilityRadar } from "./StabilityRadar";
 
 // 급여 메인 리스트(AC-17): 요약카드 + 일별 행(휴가0원/연장표기/주휴 블루행).
 export function PayList({ month }: { month: string }) {
   const { data, loading } = useMonthPay(month);
+  const { user } = useCurrentUser();
+  // 안정성 레이더는 마스터·매니저만 노출(일반 크루 미노출).
+  const canSeeRadar = user.role === "master" || !!user.isManager;
 
   if (loading) {
     return <p className="px-5 py-10 text-center text-sm text-muted">불러오는 중…</p>;
@@ -35,9 +39,11 @@ export function PayList({ month }: { month: string }) {
         rangeLabel={payPeriodLabel(month)}
       />
 
-      <div className="mt-3">
-        <StabilityRadar axes={data.stats.stability} />
-      </div>
+      {canSeeRadar ? (
+        <div className="mt-3">
+          <StabilityRadar axes={data.stats.stability} />
+        </div>
+      ) : null}
 
       <ul className="mt-2 divide-y divide-foreground/5">
         {data.items.map((item, i) => {
