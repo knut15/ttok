@@ -52,7 +52,7 @@ export function MyPageView() {
             <button
               type="button"
               onClick={() => signOut({ redirectTo: "/login" })}
-              className="w-full rounded-3xl border border-black/10 px-4 py-3 font-semibold text-muted"
+              className="w-full rounded-3xl border border-foreground/10 px-4 py-3 font-semibold text-muted"
             >
               로그아웃
             </button>

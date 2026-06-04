@@ -138,7 +138,7 @@ export function AttendanceDetail({ date }: { date: string }) {
             <button
               type="button"
               onClick={() => setInSheetOpen(true)}
-              className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+              className="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm font-semibold"
             >
               상태변경
             </button>
@@ -157,14 +157,14 @@ export function AttendanceDetail({ date }: { date: string }) {
               <button
                 type="button"
                 onClick={() => setOutSheetOpen(true)}
-                className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+                className="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm font-semibold"
               >
                 상태변경
               </button>
               <button
                 type="button"
                 onClick={() => setTimeSheetOpen(true)}
-                className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+                className="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm font-semibold"
               >
                 시각변경
               </button>
@@ -178,7 +178,7 @@ export function AttendanceDetail({ date }: { date: string }) {
             <button
               type="button"
               onClick={() => setBreakSheetOpen(true)}
-              className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-semibold"
+              className="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm font-semibold"
             >
               시간변경
             </button>

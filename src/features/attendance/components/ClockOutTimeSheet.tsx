@@ -28,7 +28,7 @@ export function ClockOutTimeSheet({
           type="time"
           value={clockOut}
           onChange={(e) => setClockOut(e.target.value)}
-          className="rounded-lg border border-black/10 px-3 py-2 text-base"
+          className="rounded-lg border border-foreground/10 px-3 py-2 text-base"
           aria-label="퇴근 시각"
         />
       </label>

@@ -59,7 +59,7 @@ export function ScheduleVsActual({
   }
 
   return (
-    <div className="rounded-3xl border border-black/5 bg-surface px-4 py-3">
+    <div className="rounded-3xl border border-foreground/5 bg-surface px-4 py-3">
       <p className="pb-2 text-sm font-bold">예정 대비 실제</p>
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted">예정</span>

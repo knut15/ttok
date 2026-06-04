@@ -141,7 +141,7 @@ export function MasterView() {
             {substitutes.map((s) => (
               <li
                 key={s.id}
-                className="flex items-center gap-3 rounded-3xl border border-black/5 bg-surface px-4 py-3"
+                className="flex items-center gap-3 rounded-3xl border border-foreground/5 bg-surface px-4 py-3"
               >
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
                   {s.crewName.slice(0, 1)}

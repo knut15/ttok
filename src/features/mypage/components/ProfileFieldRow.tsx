@@ -62,7 +62,7 @@ export function ProfileFieldRow({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               aria-label={label}
-              className="flex-1 rounded-lg border border-black/15 px-3 py-1.5 text-base font-medium text-foreground outline-none focus:border-coral"
+              className="flex-1 rounded-lg border border-foreground/15 px-3 py-1.5 text-base font-medium text-foreground outline-none focus:border-coral"
             />
             <button
               type="button"

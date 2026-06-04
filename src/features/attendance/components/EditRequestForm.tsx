@@ -16,7 +16,7 @@ export function EditRequestForm({
   return (
     <section className="px-5 pt-6">
       <h2 className="mb-2 text-lg font-bold">요청사유</h2>
-      <div className="rounded-3xl border border-black/10 bg-surface p-3">
+      <div className="rounded-3xl border border-foreground/10 bg-surface p-3">
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value.slice(0, MAX))}

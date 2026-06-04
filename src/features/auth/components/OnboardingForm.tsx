@@ -68,7 +68,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="예) 매머드커피 마석점"
-              className="mt-1 w-full rounded-3xl border border-black/10 bg-surface px-4 py-3"
+              className="mt-1 w-full rounded-3xl border border-foreground/10 bg-surface px-4 py-3"
             />
           </label>
           <label className="block text-sm font-medium">
@@ -77,7 +77,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
               value={bizNumber}
               onChange={(e) => setBizNumber(e.target.value)}
               placeholder="000-00-00000"
-              className="mt-1 w-full rounded-3xl border border-black/10 bg-surface px-4 py-3 tracking-wider"
+              className="mt-1 w-full rounded-3xl border border-foreground/10 bg-surface px-4 py-3 tracking-wider"
             />
           </label>
           <button
@@ -97,7 +97,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="초대 코드 입력"
-              className="mt-1 w-full rounded-3xl border border-black/10 bg-surface px-4 py-3 tracking-widest"
+              className="mt-1 w-full rounded-3xl border border-foreground/10 bg-surface px-4 py-3 tracking-widest"
             />
           </label>
           <button

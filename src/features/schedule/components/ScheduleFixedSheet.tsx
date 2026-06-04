@@ -132,7 +132,7 @@ export function ScheduleFixedSheet({
           const used = new Set(blocks.flatMap((b) => b.weekdays));
           const d = drafts[c.id];
           return (
-            <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
+            <li key={c.id} className="rounded-xl border border-foreground/5 px-3 py-2.5">
               <div className="flex items-center gap-2 pb-2">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
                   {c.avatarInitial}
@@ -164,14 +164,14 @@ export function ScheduleFixedSheet({
                             type="time"
                             value={editDraft.start}
                             onChange={(e) => setEditDraft((s) => ({ ...s, start: e.target.value }))}
-                            className="w-0 min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm"
+                            className="w-0 min-w-0 flex-1 rounded-lg border border-foreground/10 px-2 py-1 text-sm"
                           />
                           <span className="text-muted">–</span>
                           <input
                             type="time"
                             value={editDraft.end}
                             onChange={(e) => setEditDraft((s) => ({ ...s, end: e.target.value }))}
-                            className="w-0 min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm"
+                            className="w-0 min-w-0 flex-1 rounded-lg border border-foreground/10 px-2 py-1 text-sm"
                           />
                           <button
                             type="button"
@@ -232,14 +232,14 @@ export function ScheduleFixedSheet({
                   type="time"
                   value={d.start}
                   onChange={(e) => setDraft(c.id, { start: e.target.value })}
-                  className="w-0 min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm"
+                  className="w-0 min-w-0 flex-1 rounded-lg border border-foreground/10 px-2 py-1 text-sm"
                 />
                 <span className="text-muted">–</span>
                 <input
                   type="time"
                   value={d.end}
                   onChange={(e) => setDraft(c.id, { end: e.target.value })}
-                  className="w-0 min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm"
+                  className="w-0 min-w-0 flex-1 rounded-lg border border-foreground/10 px-2 py-1 text-sm"
                 />
                 <button
                   type="button"

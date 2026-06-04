@@ -67,7 +67,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
         <p className="text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
         <Link
           href={`/pay/statement?crewId=${crewId}&month=${month}`}
-          className="rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold"
+          className="rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
         >
           급여명세서 작성
         </Link>
@@ -85,7 +85,7 @@ export function MasterCrewDetail({ crewId }: { crewId: string }) {
           {sorted.map((r) => (
             <li
               key={r.date}
-              className="flex items-center justify-between rounded-3xl border border-black/5 bg-surface px-4 py-3"
+              className="flex items-center justify-between rounded-3xl border border-foreground/5 bg-surface px-4 py-3"
             >
               <div>
                 <p className="font-semibold">

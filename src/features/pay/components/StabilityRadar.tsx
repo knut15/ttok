@@ -60,7 +60,7 @@ export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
   } as const;
 
   return (
-    <div className="rounded-3xl border border-black/5 bg-surface p-4">
+    <div className="rounded-3xl border border-foreground/5 bg-surface p-4">
       <div className="mb-1 flex items-baseline justify-between">
         <h3 className="text-sm font-bold">근무 안정성</h3>
         <span className="text-sm font-bold text-coral">{overall}점</span>
@@ -69,7 +69,7 @@ export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
         <Radar data={data} options={options} />
       </div>
       {/* 터치 환경에서도 실측값이 보이도록 축별 실측을 상시 노출(툴팁은 보조). */}
-      <ul className="mt-3 space-y-1 border-t border-black/5 pt-3 text-sm">
+      <ul className="mt-3 space-y-1 border-t border-foreground/5 pt-3 text-sm">
         {axes.map((a) => (
           <li key={a.label} className="flex items-center justify-between gap-3">
             <span className="text-muted">{a.label}</span>

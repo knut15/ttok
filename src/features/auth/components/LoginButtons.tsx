@@ -43,13 +43,13 @@ export function LoginButtons({
       <button
         type="button"
         onClick={() => signIn("google", { redirectTo: dest })}
-        className="flex w-full items-center justify-center gap-2 rounded-3xl border border-black/10 bg-surface px-4 py-3 font-semibold text-foreground"
+        className="flex w-full items-center justify-center gap-2 rounded-3xl border border-foreground/10 bg-surface px-4 py-3 font-semibold text-foreground"
       >
         <span className="text-lg">G</span> 구글로 로그인
       </button>
 
       {devEnabled && (
-        <section className="mt-2 rounded-3xl border border-dashed border-black/15 p-4">
+        <section className="mt-2 rounded-3xl border border-dashed border-foreground/15 p-4">
           <h2 className="mb-2 text-sm font-bold text-muted">개발용 로그인 (loc/dev)</h2>
           <ul className="mb-3 space-y-2">
             {DEMO_PERSONAS.map((p) => (
@@ -72,7 +72,7 @@ export function LoginButtons({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="새 계정 이메일(온보딩 테스트)"
-              className="flex-1 rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm"
+              className="flex-1 rounded-xl border border-foreground/10 bg-surface px-3 py-2 text-sm"
             />
             <button
               type="button"

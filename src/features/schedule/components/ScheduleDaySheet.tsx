@@ -192,7 +192,7 @@ export function ScheduleDaySheet({
           const st = stateOf(existing); // 현재 저장 상태(근무/비번/휴무)
           const working = st === "근무";
           return (
-            <li key={c.id} className="rounded-xl border border-black/5 px-3 py-2.5">
+            <li key={c.id} className="rounded-xl border border-foreground/5 px-3 py-2.5">
               {/* 비근무자(비번/휴무)는 이름 영역을 흐리게 — 컨트롤은 정상 */}
               <div className={`flex items-center gap-2 ${working ? "" : "opacity-60"}`}>
                 <span className="relative grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
@@ -234,7 +234,7 @@ export function ScheduleDaySheet({
                   value={d.start}
                   disabled={d.off}
                   onChange={(e) => setDraft(c.id, { start: e.target.value })}
-                  className="w-0 min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm"
+                  className="w-0 min-w-0 flex-1 rounded-lg border border-foreground/10 px-2 py-1 text-sm"
                 />
                 <span className="text-muted">–</span>
                 <input
@@ -242,7 +242,7 @@ export function ScheduleDaySheet({
                   value={d.end}
                   disabled={d.off}
                   onChange={(e) => setDraft(c.id, { end: e.target.value })}
-                  className="w-0 min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm"
+                  className="w-0 min-w-0 flex-1 rounded-lg border border-foreground/10 px-2 py-1 text-sm"
                 />
               </div>
               <div className="mt-2 flex items-center justify-end gap-2">

@@ -137,7 +137,7 @@ export function ScheduleView() {
           <button
             type="button"
             onClick={() => setFixedSheetOpen(true)}
-            className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold"
+            className="rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
           >
             고정 근무
           </button>
@@ -145,7 +145,7 @@ export function ScheduleView() {
             <button
               type="button"
               onClick={() => setManagerSheetOpen(true)}
-              className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold"
+              className="rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
             >
               매니저 지정
             </button>

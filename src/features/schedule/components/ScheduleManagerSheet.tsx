@@ -29,7 +29,7 @@ export function ScheduleManagerSheet({
         {crewList.map((c) => (
           <li
             key={c.id}
-            className="flex items-center gap-3 rounded-xl border border-black/5 px-3 py-2.5"
+            className="flex items-center gap-3 rounded-xl border border-foreground/5 px-3 py-2.5"
           >
             <span className="relative grid h-9 w-9 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
               {c.avatarInitial}

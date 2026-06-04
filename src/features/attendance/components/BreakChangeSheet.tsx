@@ -37,7 +37,7 @@ export function BreakChangeSheet({
             type="time"
             value={breakStart}
             onChange={(e) => setBreakStart(e.target.value)}
-            className="rounded-lg border border-black/10 px-3 py-2 text-base"
+            className="rounded-lg border border-foreground/10 px-3 py-2 text-base"
             aria-label="휴게 시작 시각"
           />
         </label>
@@ -47,7 +47,7 @@ export function BreakChangeSheet({
             type="time"
             value={breakEnd}
             onChange={(e) => setBreakEnd(e.target.value)}
-            className="rounded-lg border border-black/10 px-3 py-2 text-base"
+            className="rounded-lg border border-foreground/10 px-3 py-2 text-base"
             aria-label="휴게 종료 시각"
           />
         </label>

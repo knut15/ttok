@@ -62,7 +62,7 @@ export function InvitePanel() {
       </button>
 
       {createdCode && (
-        <div className="mt-3 space-y-3 rounded-3xl border border-black/5 bg-surface p-4">
+        <div className="mt-3 space-y-3 rounded-3xl border border-foreground/5 bg-surface p-4">
           <div className="text-center">
             <span className="block text-sm text-muted">새 초대 코드 (7일 후 만료)</span>
             <span className="block text-2xl font-bold tracking-widest text-coral">{createdCode}</span>
@@ -71,14 +71,14 @@ export function InvitePanel() {
             <button
               type="button"
               onClick={() => void copy(createdCode, "code")}
-              className="flex-1 rounded-xl border border-black/10 px-3 py-2 text-sm font-semibold"
+              className="flex-1 rounded-xl border border-foreground/10 px-3 py-2 text-sm font-semibold"
             >
               {copied === "code" ? "복사됨 ✓" : "코드 복사"}
             </button>
             <button
               type="button"
               onClick={() => void copy(joinLink, "link")}
-              className="flex-1 rounded-xl border border-black/10 px-3 py-2 text-sm font-semibold"
+              className="flex-1 rounded-xl border border-foreground/10 px-3 py-2 text-sm font-semibold"
             >
               {copied === "link" ? "복사됨 ✓" : "합류 링크 복사"}
             </button>
@@ -107,7 +107,7 @@ export function InvitePanel() {
               return (
                 <li
                   key={inv.code}
-                  className="flex items-center gap-2 rounded-3xl border border-black/5 bg-surface px-4 py-2.5"
+                  className="flex items-center gap-2 rounded-3xl border border-foreground/5 bg-surface px-4 py-2.5"
                 >
                   <span className="font-bold tracking-widest">{inv.code}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${st.tone}`}>

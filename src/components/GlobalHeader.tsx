@@ -39,7 +39,7 @@ export function GlobalHeader() {
   const title = titleFor(pathname);
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-black/5 bg-surface px-3 py-3 print:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-foreground/5 bg-surface px-3 py-3 print:hidden">
       <div className="flex min-w-[44px] justify-start">
         {showBack ? (
           <button

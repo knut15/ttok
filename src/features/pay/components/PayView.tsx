@@ -36,7 +36,7 @@ export function PayView() {
         right={
           <Link
             href={`/pay/statement?month=${month}`}
-            className="ml-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold"
+            className="ml-2 rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
           >
             급여명세서
           </Link>

@@ -27,7 +27,7 @@ function NumberField({
         value={value === 0 ? "" : value}
         placeholder="0"
         onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
-        className="mt-1 w-full rounded-xl border border-black/10 bg-surface px-3 py-2 text-right text-sm font-medium tabular-nums focus:border-coral focus:outline-none"
+        className="mt-1 w-full rounded-xl border border-foreground/10 bg-surface px-3 py-2 text-right text-sm font-medium tabular-nums focus:border-coral focus:outline-none"
       />
       {hint && <span className="mt-1 block text-right text-xs text-muted">{hint}</span>}
     </label>
@@ -39,7 +39,7 @@ function InputCard({ children }: { children: React.ReactNode }) {
   return (
     <section
       data-print-hide
-      className="mx-5 mb-2 rounded-3xl border border-black/5 bg-surface p-4 print:hidden"
+      className="mx-5 mb-2 rounded-3xl border border-foreground/5 bg-surface p-4 print:hidden"
     >
       {children}
     </section>
@@ -104,7 +104,7 @@ export function PayslipInputs({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="flex-1 rounded-xl border border-black/10 py-2.5 text-sm font-semibold disabled:opacity-40"
+            className="flex-1 rounded-xl border border-foreground/10 py-2.5 text-sm font-semibold disabled:opacity-40"
           >
             취소
           </button>
@@ -147,7 +147,7 @@ export function PayslipInputsSummary({
         <button
           type="button"
           onClick={onEdit}
-          className="rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold"
+          className="rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
         >
           수정
         </button>

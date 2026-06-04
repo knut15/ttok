@@ -14,7 +14,7 @@ const MAX_AVATARS = 3;
 function Avatar({ a }: { a: ScheduleAssignee }) {
   // 색 우선순위: 휴무(흰색) > 대타(민트) > 매니저(노랑) > 고정(옅은회색) > 일반(짙은회색).
   const tone = a.off
-    ? "border border-black/15 bg-white text-muted"
+    ? "border border-foreground/15 bg-white text-muted"
     : a.substitute
       ? "bg-emerald-400 text-white" // 대타 = 민트
       : a.manager

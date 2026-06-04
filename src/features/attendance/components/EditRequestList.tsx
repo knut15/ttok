@@ -23,7 +23,7 @@ export function EditRequestList({
         {requests.map((req) => (
           <li
             key={req.id}
-            className="rounded-3xl border border-black/5 bg-surface p-4"
+            className="rounded-3xl border border-foreground/5 bg-surface p-4"
           >
             <div className="flex items-center gap-2">
               <span className="font-bold">{formatPayRowDate(req.date)}</span>

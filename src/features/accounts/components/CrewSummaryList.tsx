@@ -35,7 +35,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
         // 토글 버튼은 Link 바깥 형제로 배치(중첩 인터랙티브 방지).
         <li
           key={c.crewId}
-          className="flex items-center gap-2 rounded-3xl border border-black/5 bg-surface pr-3"
+          className="flex items-center gap-2 rounded-3xl border border-foreground/5 bg-surface pr-3"
         >
           <Link
             href={`/master/${c.crewId}`}
