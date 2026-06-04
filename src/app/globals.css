@@ -6,9 +6,9 @@
   --surface: #fffcf7; /* 웜 화이트 */
   --foreground: #2a2320; /* 웜 다크브라운(순흑 회피) */
   --muted: #9a8c82; /* 웜 토프 */
-  /* 메인 강조 = 테라코타(이름은 coral 유지, 시맨틱 라벨) */
-  --coral: #d2694a;
-  --coral-soft: #f6e3d8; /* 피치 */
+  /* 메인 강조 = 블랙(이름은 coral 유지, 시맨틱 라벨). near-black 으로 화면 부담 완화. */
+  --coral: #1a1a1a;
+  --coral-soft: #ece7e0; /* 웜 그레이(중성화) — 크림+블랙 모노톤 */
   --green: #5e9a6b; /* 세이지 그린(상태: 정상/정규) */
   --green-soft: #e7efe2;
   --blue: #4f7ca8; /* 더스티 블루(상태: 연장/주휴) */
