@@ -58,7 +58,7 @@ export function LoginButtons({
                   type="button"
                   disabled={busy}
                   onClick={() => devLogin(p.email)}
-                  className="w-full rounded-xl bg-black/[0.04] px-3 py-2 text-left text-sm hover:bg-black/[0.08] disabled:opacity-50"
+                  className="w-full rounded-xl bg-foreground/[0.04] px-3 py-2 text-left text-sm hover:bg-foreground/[0.08] disabled:opacity-50"
                 >
                   {p.label}
                   <span className="block text-xs text-muted">{p.email}</span>

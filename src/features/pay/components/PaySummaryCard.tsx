@@ -64,7 +64,7 @@ export function PaySummaryCard({
           <span className="text-xs text-muted">근태</span>
           <Chip label="지각" count={stats.lateCount} tone="bg-coral/10 text-coral" />
           <Chip label="조퇴" count={stats.earlyLeaveCount} tone="bg-amber-100 text-amber-700" />
-          <Chip label="결근" count={stats.absentCount} tone="bg-black/[0.06] text-muted" />
+          <Chip label="결근" count={stats.absentCount} tone="bg-foreground/[0.06] text-muted" />
         </div>
       )}
     </Card>

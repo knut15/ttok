@@ -6,7 +6,7 @@ const TONE_CLASS: Record<Tone, string> = {
   green: "bg-statusgreen text-white",
   blue: "bg-statusblue/10 text-statusblue",
   gray: "bg-graybadge text-white",
-  neutral: "bg-black/5 text-muted",
+  neutral: "bg-foreground/5 text-muted",
 };
 
 export function StatusBadge({

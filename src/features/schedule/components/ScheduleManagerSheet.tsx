@@ -31,7 +31,7 @@ export function ScheduleManagerSheet({
             key={c.id}
             className="flex items-center gap-3 rounded-xl border border-foreground/5 px-3 py-2.5"
           >
-            <span className="relative grid h-9 w-9 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
+            <span className="relative grid h-9 w-9 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
               {c.avatarInitial}
               {c.isManager ? (
                 <span
@@ -57,7 +57,7 @@ export function ScheduleManagerSheet({
               aria-pressed={c.isManager}
               aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 disabled:opacity-50 ${
-                c.isManager ? "bg-amber-500 text-white" : "bg-black/[0.06] text-muted"
+                c.isManager ? "bg-amber-500 text-white" : "bg-foreground/[0.06] text-muted"
               }`}
             >
               {c.isManager ? "해제" : "지정"}

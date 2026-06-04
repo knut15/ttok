@@ -34,7 +34,7 @@ export function MasterRequestList({
               {formatPayRowDate(req.date)}
             </span>
             {/* T15 Q4: before 빈값 파생 "추가"/"수정" 라벨(표시 전용, 스키마 무변경). */}
-            <span className="rounded-md bg-black/[0.06] px-2 py-0.5 text-xs font-semibold text-muted">
+            <span className="rounded-md bg-foreground/[0.06] px-2 py-0.5 text-xs font-semibold text-muted">
               {requestKindLabel(req.before)}
             </span>
             <StatusBadge

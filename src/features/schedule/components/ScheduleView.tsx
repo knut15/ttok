@@ -116,7 +116,7 @@ export function ScheduleView() {
           근무 스케쥴{canWrite ? " · 탭하여 근무자 배정" : ""}
         </p>
         {/* 달력 / 표 보기 토글(요구사항 3: 둘 다). */}
-        <div className="flex rounded-full bg-black/[0.06] p-0.5 text-xs font-semibold">
+        <div className="flex rounded-full bg-foreground/[0.06] p-0.5 text-xs font-semibold">
           {(["calendar", "grid"] as const).map((m) => (
             <button
               key={m}

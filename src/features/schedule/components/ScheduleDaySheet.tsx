@@ -147,9 +147,9 @@ export function ScheduleDaySheet({
               return (
                 <li
                   key={c.id}
-                  className={`flex items-center gap-3 rounded-xl bg-black/[0.03] px-3 py-2.5 ${working ? "" : "opacity-60"}`}
+                  className={`flex items-center gap-3 rounded-xl bg-foreground/[0.03] px-3 py-2.5 ${working ? "" : "opacity-60"}`}
                 >
-                  <span className="relative grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
+                  <span className="relative grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
                     {c.avatarInitial}
                     {working ? (
                       <span
@@ -195,7 +195,7 @@ export function ScheduleDaySheet({
             <li key={c.id} className="rounded-xl border border-foreground/5 px-3 py-2.5">
               {/* 비근무자(비번/휴무)는 이름 영역을 흐리게 — 컨트롤은 정상 */}
               <div className={`flex items-center gap-2 ${working ? "" : "opacity-60"}`}>
-                <span className="relative grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
+                <span className="relative grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
                   {c.avatarInitial}
                   {working ? (
                     <span
@@ -214,7 +214,7 @@ export function ScheduleDaySheet({
                   {working ? (
                     <Chips kinds={chipsFor(existing, fixedMap.get(c.id))} />
                   ) : (
-                    <span className="rounded bg-black/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                    <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-muted">
                       {st}
                     </span>
                   )}
@@ -252,7 +252,7 @@ export function ScheduleDaySheet({
                     disabled={busy}
                     onClick={() => remove(existing!.id)}
                     aria-label={`${c.name} 배정 삭제`}
-                    className="rounded-full bg-black/[0.06] px-4 py-1.5 text-xs font-semibold text-muted disabled:opacity-50"
+                    className="rounded-full bg-foreground/[0.06] px-4 py-1.5 text-xs font-semibold text-muted disabled:opacity-50"
                   >
                     삭제
                   </button>

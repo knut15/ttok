@@ -11,7 +11,7 @@ export function ProgressBar({
   const clamped = Math.max(0, Math.min(100, percent));
   return (
     <div className="w-full">
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/5">
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-foreground/5">
         <div
           className="h-full rounded-full bg-coral transition-[width]"
           style={{ width: `${clamped}%` }}

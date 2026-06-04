@@ -67,7 +67,7 @@ export function ScheduleDayCell({
       type="button"
       onClick={() => onSelect(view.date)}
       aria-label={`${view.dayNum}일 스케쥴 ${view.assignees.length}명`}
-      className="flex aspect-[3/4] flex-col items-center gap-1 rounded-lg px-0.5 py-1 hover:bg-black/5"
+      className="flex aspect-[3/4] flex-col items-center gap-1 rounded-lg px-0.5 py-1 hover:bg-foreground/5"
     >
       <span className={`text-sm font-semibold ${numColor}`}>{view.dayNum}</span>
       {shown.length > 0 ? (
@@ -79,7 +79,7 @@ export function ScheduleDayCell({
             </span>
           ))}
           {extra > 0 ? (
-            <span className="-ml-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-black/[0.06] px-1 text-[8px] font-bold text-muted ring-2 ring-surface">
+            <span className="-ml-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-foreground/[0.06] px-1 text-[8px] font-bold text-muted ring-2 ring-surface">
               +{extra}
             </span>
           ) : null}

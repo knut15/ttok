@@ -59,7 +59,7 @@ function ClockFabInner({ onRegistered }: { onRegistered?: () => void }) {
       aria-label={`오늘 ${label}`}
       disabled={disabled}
       onClick={handleClick}
-      className="fixed bottom-28 right-4 z-40 mx-auto rounded-full bg-coral px-6 py-4 font-bold text-white shadow-lg disabled:bg-black/20 disabled:text-white/70 sm:right-[calc((100vw-28rem)/2+1rem)]"
+      className="fixed bottom-28 right-4 z-40 mx-auto rounded-full bg-coral px-6 py-4 font-bold text-white shadow-lg disabled:bg-foreground/20 disabled:text-white/70 sm:right-[calc((100vw-28rem)/2+1rem)]"
     >
       {label}
     </button>

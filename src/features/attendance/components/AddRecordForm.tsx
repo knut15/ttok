@@ -112,7 +112,7 @@ export function AddRecordForm({
           setReason("");
           setStatus("정상");
         }}
-        className="mt-3 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-black/5 disabled:text-muted"
+        className="mt-3 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-foreground/5 disabled:text-muted"
       >
         추가요청
       </button>

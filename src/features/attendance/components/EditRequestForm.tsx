@@ -39,7 +39,7 @@ export function EditRequestForm({
           await onSubmit(trimmed);
           setReason("");
         }}
-        className="mt-3 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-black/5 disabled:text-muted"
+        className="mt-3 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-foreground/5 disabled:text-muted"
       >
         수정요청
       </button>

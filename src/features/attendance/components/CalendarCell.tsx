@@ -35,7 +35,7 @@ export function CalendarCell({
   return (
     <Link
       href={`/attendance/${view.date}`}
-      className="flex aspect-[3/4] flex-col items-center gap-1 rounded-lg px-0.5 py-1 hover:bg-black/5"
+      className="flex aspect-[3/4] flex-col items-center gap-1 rounded-lg px-0.5 py-1 hover:bg-foreground/5"
     >
       <span className={`text-sm font-semibold ${numColor}`}>{view.dayNum}</span>
       {view.badge && (
@@ -46,7 +46,7 @@ export function CalendarCell({
         </span>
       )}
       {view.vacation ? (
-        <span className="rounded-md bg-black/5 px-1 text-[10px] font-semibold text-muted">
+        <span className="rounded-md bg-foreground/5 px-1 text-[10px] font-semibold text-muted">
           휴가
         </span>
       ) : view.workLabel ? (

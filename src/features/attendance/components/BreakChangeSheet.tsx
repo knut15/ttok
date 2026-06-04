@@ -59,7 +59,7 @@ export function BreakChangeSheet({
         type="button"
         disabled={!canApply}
         onClick={() => onApply({ breakStart, breakEnd })}
-        className="mt-4 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-black/5 disabled:text-muted"
+        className="mt-4 w-full rounded-xl bg-coral py-3 font-bold text-white disabled:bg-foreground/5 disabled:text-muted"
       >
         적용
       </button>

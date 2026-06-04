@@ -54,7 +54,7 @@ export function ProfileForm() {
         </span>
       </div>
 
-      <div className="divide-y divide-black/5">
+      <div className="divide-y divide-foreground/5">
         <ProfileFieldRow label="이름" value={profile.name} />
         <ProfileFieldRow
           label="생년월일"

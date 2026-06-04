@@ -43,7 +43,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
       <h1 className="mb-1 text-2xl font-bold text-foreground">시작하기</h1>
       <p className="mb-6 text-sm text-muted">매장을 만들거나 초대받은 매장에 합류하세요.</p>
 
-      <div className="mb-5 flex rounded-3xl bg-black/[0.04] p-1">
+      <div className="mb-5 flex rounded-3xl bg-foreground/[0.04] p-1">
         <button
           type="button"
           onClick={() => setTab("create")}

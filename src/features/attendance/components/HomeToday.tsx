@@ -28,13 +28,13 @@ export function HomeToday() {
           aria-hidden
           className="flex items-center justify-between text-base font-bold text-foreground"
         >
-          <span className="h-5 w-32 animate-pulse rounded bg-black/10" />
+          <span className="h-5 w-32 animate-pulse rounded bg-foreground/10" />
           <span className="text-muted">›</span>
         </div>
         <Card aria-hidden>
-          <div className="h-5 w-40 animate-pulse rounded bg-black/10" />
-          <div className="mt-3 h-6 w-48 animate-pulse rounded bg-black/10" />
-          <div className="mt-3 h-2 w-full animate-pulse rounded bg-black/10" />
+          <div className="h-5 w-40 animate-pulse rounded bg-foreground/10" />
+          <div className="mt-3 h-6 w-48 animate-pulse rounded bg-foreground/10" />
+          <div className="mt-3 h-2 w-full animate-pulse rounded bg-foreground/10" />
         </Card>
       </>
     );

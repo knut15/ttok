@@ -52,8 +52,8 @@ function DayToggles({
               on
                 ? "bg-coral text-white"
                 : dis
-                  ? "bg-black/[0.03] text-black/20"
-                  : `bg-black/[0.04] ${weekendText || "text-muted"}`
+                  ? "bg-foreground/[0.03] text-foreground/20"
+                  : `bg-foreground/[0.04] ${weekendText || "text-muted"}`
             }`}
           >
             {label}
@@ -134,7 +134,7 @@ export function ScheduleFixedSheet({
           return (
             <li key={c.id} className="rounded-xl border border-foreground/5 px-3 py-2.5">
               <div className="flex items-center gap-2 pb-2">
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-sm font-bold">
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
                   {c.avatarInitial}
                 </span>
                 <span className="flex flex-1 items-center gap-1.5 font-semibold">
@@ -184,7 +184,7 @@ export function ScheduleFixedSheet({
                           <button
                             type="button"
                             onClick={() => setEditId(null)}
-                            className="shrink-0 rounded-full bg-black/[0.06] px-3 py-1.5 text-xs font-semibold text-muted"
+                            className="shrink-0 rounded-full bg-foreground/[0.06] px-3 py-1.5 text-xs font-semibold text-muted"
                           >
                             취소
                           </button>
@@ -202,7 +202,7 @@ export function ScheduleFixedSheet({
                           type="button"
                           disabled={busy}
                           onClick={() => beginEdit(b)}
-                          className="rounded-full bg-black/[0.06] px-2.5 py-1 text-xs font-semibold text-foreground disabled:opacity-50"
+                          className="rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-semibold text-foreground disabled:opacity-50"
                         >
                           편집
                         </button>
@@ -211,7 +211,7 @@ export function ScheduleFixedSheet({
                           disabled={busy}
                           onClick={() => onRemove(b.id)}
                           aria-label={`${c.name} ${weekdaysLabel(b.weekdays)} 블록 삭제`}
-                          className="rounded-full bg-black/[0.06] px-2.5 py-1 text-xs font-semibold text-muted disabled:opacity-50"
+                          className="rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-semibold text-muted disabled:opacity-50"
                         >
                           삭제
                         </button>

@@ -111,7 +111,7 @@ export function Payslip({
 
       {/* 근무내역 */}
       <SectionTitle>근무내역</SectionTitle>
-      <ul className="divide-y divide-black/5">
+      <ul className="divide-y divide-foreground/5">
         {records.map((r) => (
           <li key={r.date} className="flex items-center justify-between py-3">
             <div>

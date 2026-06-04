@@ -71,7 +71,7 @@ export function ScheduleGrid({
             <tr key={c.id}>
               <th className="sticky left-0 z-10 bg-surface px-2 py-3 text-left text-xs font-semibold">
                 <span className="flex items-center gap-1">
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-black/[0.06] text-[9px] font-bold">
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-foreground/[0.06] text-[9px] font-bold">
                     {c.avatarInitial}
                   </span>
                   <span className="whitespace-nowrap">{c.name}</span>

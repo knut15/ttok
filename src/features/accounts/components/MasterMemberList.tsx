@@ -46,7 +46,7 @@ export function MasterMemberList() {
               key={c.crewId}
               className="flex items-center gap-3 rounded-3xl border border-foreground/5 bg-surface px-4 py-3"
             >
-              <span className="relative grid h-10 w-10 place-items-center rounded-full bg-black/[0.06] font-bold">
+              <span className="relative grid h-10 w-10 place-items-center rounded-full bg-foreground/[0.06] font-bold">
                 {c.avatarInitial}
                 {c.isManager && (
                   <span
@@ -72,7 +72,7 @@ export function MasterMemberList() {
                 onClick={() => void toggleManager(c.crewId, !c.isManager)}
                 aria-pressed={c.isManager}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  c.isManager ? "bg-amber-500 text-white" : "bg-black/[0.06] text-muted"
+                  c.isManager ? "bg-amber-500 text-white" : "bg-foreground/[0.06] text-muted"
                 }`}
               >
                 {c.isManager ? "매니저 해제" : "매니저 지정"}

@@ -9,10 +9,10 @@ import type { StoreInvite } from "@/types";
 
 /** 표시용 상태: 대기 코드가 만료시각을 지났으면 "만료". */
 function displayStatus(inv: StoreInvite): { label: string; tone: string } {
-  if (inv.status === "사용") return { label: "사용됨", tone: "bg-black/[0.06] text-muted" };
-  if (inv.status === "회수") return { label: "회수됨", tone: "bg-black/[0.06] text-muted" };
+  if (inv.status === "사용") return { label: "사용됨", tone: "bg-foreground/[0.06] text-muted" };
+  if (inv.status === "회수") return { label: "회수됨", tone: "bg-foreground/[0.06] text-muted" };
   if (inv.expiresAt && new Date(inv.expiresAt).getTime() < Date.now())
-    return { label: "만료", tone: "bg-black/[0.06] text-muted" };
+    return { label: "만료", tone: "bg-foreground/[0.06] text-muted" };
   return { label: "대기", tone: "bg-coral/10 text-coral" };
 }
 
@@ -123,7 +123,7 @@ export function InvitePanel() {
                     <button
                       type="button"
                       onClick={() => void revoke(inv.code)}
-                      className="shrink-0 rounded-full bg-black/[0.06] px-3 py-1 text-xs font-semibold text-muted"
+                      className="shrink-0 rounded-full bg-foreground/[0.06] px-3 py-1 text-xs font-semibold text-muted"
                     >
                       회수
                     </button>

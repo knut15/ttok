@@ -42,7 +42,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
             aria-label={`${c.name} 근무 상세 보기`}
             className="flex flex-1 items-center gap-3 px-4 py-3 transition active:scale-[0.99]"
           >
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.06] font-bold">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[0.06] font-bold">
               {c.avatarInitial}
               {c.isManager ? (
                 <span
@@ -78,7 +78,7 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
                 c.isManager
                   ? "bg-amber-500 text-white"
-                  : "bg-black/[0.06] text-muted"
+                  : "bg-foreground/[0.06] text-muted"
               }`}
             >
               {c.isManager ? "매니저 해제" : "매니저 지정"}

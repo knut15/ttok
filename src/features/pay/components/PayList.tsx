@@ -39,7 +39,7 @@ export function PayList({ month }: { month: string }) {
         <StabilityRadar axes={data.stats.stability} />
       </div>
 
-      <ul className="mt-2 divide-y divide-black/5">
+      <ul className="mt-2 divide-y divide-foreground/5">
         {data.items.map((item, i) => {
           const ot = overtimeLabel(item.overtimeMinutes);
           const row = (

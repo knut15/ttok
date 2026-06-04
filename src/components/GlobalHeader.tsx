@@ -46,7 +46,7 @@ export function GlobalHeader() {
             type="button"
             aria-label="이전"
             onClick={() => router.back()}
-            className="grid h-8 w-8 place-items-center rounded-full text-2xl leading-none text-foreground hover:bg-black/5"
+            className="grid h-8 w-8 place-items-center rounded-full text-2xl leading-none text-foreground hover:bg-foreground/5"
           >
             ‹
           </button>

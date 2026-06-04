@@ -22,7 +22,7 @@ function diffMin(a: string | null, b: string): number | null {
 function Chip({ text, tone }: { text: string; tone: "green" | "gray" | "coral" }) {
   const cls = {
     green: "bg-statusgreen/15 text-statusgreen",
-    gray: "bg-black/[0.06] text-muted",
+    gray: "bg-foreground/[0.06] text-muted",
     coral: "bg-coral/15 text-coral",
   }[tone];
   return <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>;
