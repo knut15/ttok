@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { nowHHMM, todayDate } from "@/lib/date";
 import { useTodayClock } from "@/features/attendance/hooks/useAttendance";
+import { isSettledStatus } from "@/features/attendance/domain";
 import { clockOutConfirmMessage } from "./clockFabConfirm";
 
 // 마운트 여부 구독(HomeToday/BottomNav 동일 패턴). 서버/첫CSR false → mount 전 미렌더.
@@ -31,9 +32,12 @@ export function ClockFab({ onRegistered }: { onRegistered?: () => void }) {
 
 // mount 확정 후에만 마운트 → todayDate()/useTodayClock 을 client 에서만 실행.
 function ClockFabInner({ onRegistered }: { onRegistered?: () => void }) {
-  const { phase, busy, clockIn, clockOut } = useTodayClock(todayDate());
+  const { record, phase, busy, clockIn, clockOut } = useTodayClock(todayDate());
+  // 결근/휴가로 정산 종료된 날 → 출근·퇴근 모두 불가(0원 불변식 보호). phase 보다 우선.
+  const settled = isSettledStatus(record?.status);
 
   async function handleClick() {
+    if (settled) return; // 정산 종료(결근/휴가) — 동작 없음(버튼도 비활성).
     if (phase === "before") {
       // 출근은 즉시(확인 없음, T12 AC-3 / T11 회귀 0).
       const res = await clockIn();
@@ -49,9 +53,14 @@ function ClockFabInner({ onRegistered }: { onRegistered?: () => void }) {
     if (res) onRegistered?.();
   }
 
-  const label =
-    phase === "before" ? "출근" : phase === "working" ? "퇴근" : "마감";
-  const disabled = phase === "done" || busy;
+  const label = settled
+    ? "마감"
+    : phase === "before"
+      ? "출근"
+      : phase === "working"
+        ? "퇴근"
+        : "마감";
+  const disabled = settled || phase === "done" || busy;
 
   return (
     <button

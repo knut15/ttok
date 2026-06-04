@@ -42,6 +42,15 @@ export function clockPhase(record: AttendanceRecord | null): ClockPhase {
 }
 
 /**
+ * 정산 종료 상태(결근·휴가): 더 이상 출근/퇴근 진행이 없는 확정 상태.
+ * 그날은 0원 처리(attendance-rules) + 퇴근 버튼 비활성 + 홈 히어로에 상태 표기.
+ * phase(시각 기반)와 독립 — 결근이어도 clockIn 시각은 남아 있어 phase 만으로는 구분 불가하므로 status 로 판정.
+ */
+export function isSettledStatus(status: WorkStatus | null | undefined): boolean {
+  return status === "결근" || status === "휴가";
+}
+
+/**
  * 홈 진행바 우측 % 라벨 노출 여부.
  *  - done(퇴근 완료) → true
  *  - before / working → false(미출근·근무중에는 % 숨김)
