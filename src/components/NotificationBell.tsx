@@ -44,7 +44,7 @@ export function NotificationBell() {
               {items.map((n) => (
                 <li
                   key={n.id}
-                  className="rounded-xl bg-white px-3 py-2.5"
+                  className="rounded-xl bg-coral-soft px-3 py-2.5"
                 >
                   <p className="text-sm font-medium">{n.message}</p>
                   <p className="pt-0.5 text-xs text-muted">{timeLabel(n.createdAt)}</p>

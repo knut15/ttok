@@ -105,7 +105,7 @@ export function MasterCrewDetail({
           {sorted.map((r) => (
             <li
               key={r.date}
-              className="flex items-center justify-between rounded-3xl border border-foreground/5 bg-surface px-4 py-3"
+              className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3"
             >
               <div>
                 <p className="font-semibold">

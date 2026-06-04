@@ -80,7 +80,7 @@ export function ScheduleGrid({
               {dates.map((d) => {
                 const e = byKey.get(`${d}|${c.id}`);
                 return (
-                  <td key={d} className="min-w-[34px] border-b border-foreground/5 px-0.5 py-1.5">
+                  <td key={d} className="min-w-[34px] border-b border-border px-0.5 py-1.5">
                     <button
                       type="button"
                       onClick={() => onSelectDate(d)}

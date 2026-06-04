@@ -60,10 +60,10 @@ export function PaySummaryCard({
       </div>
 
       {(stats.lateCount > 0 || stats.earlyLeaveCount > 0 || stats.absentCount > 0) && (
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-foreground/5 pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
           <span className="text-xs text-muted">근태</span>
           <Chip label="지각" count={stats.lateCount} tone="bg-coral/10 text-coral" />
-          <Chip label="조퇴" count={stats.earlyLeaveCount} tone="bg-amber-100 text-amber-700" />
+          <Chip label="조퇴" count={stats.earlyLeaveCount} tone="bg-coral-soft text-coral" />
           <Chip label="결근" count={stats.absentCount} tone="bg-foreground/[0.06] text-muted" />
         </div>
       )}

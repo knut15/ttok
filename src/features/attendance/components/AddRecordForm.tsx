@@ -37,7 +37,7 @@ export function AddRecordForm({
         기록이 누락된 날의 근무를 직접 입력해 추가요청합니다.
       </p>
 
-      <div className="space-y-3 rounded-3xl border border-foreground/10 bg-surface p-4">
+      <div className="space-y-3 rounded-2xl border border-foreground/10 bg-surface p-4">
         <fieldset>
           <legend className="mb-1 text-sm text-muted">출근상태</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -80,7 +80,7 @@ export function AddRecordForm({
         </label>
       </div>
 
-      <div className="mt-3 rounded-3xl border border-foreground/10 bg-surface p-3">
+      <div className="mt-3 rounded-2xl border border-foreground/10 bg-surface p-3">
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value.slice(0, MAX))}

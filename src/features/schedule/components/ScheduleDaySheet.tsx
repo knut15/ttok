@@ -18,10 +18,10 @@ interface Draft {
 
 type ChipKind = "고정" | "시간변경" | "대타" | "승인대기";
 const CHIP_CLS: Record<ChipKind, string> = {
-  고정: "bg-neutral-200 text-neutral-600",
+  고정: "bg-foreground/[0.06] text-muted",
   시간변경: "bg-statusblue/15 text-statusblue",
-  대타: "bg-emerald-100 text-emerald-700",
-  승인대기: "bg-amber-100 text-amber-700",
+  대타: "bg-greensoft text-statusgreen",
+  승인대기: "bg-coral-soft text-coral",
 };
 
 /**
@@ -147,7 +147,7 @@ export function ScheduleDaySheet({
               return (
                 <li
                   key={c.id}
-                  className={`flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 ${working ? "" : "opacity-60"}`}
+                  className={`flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5 ${working ? "" : "opacity-60"}`}
                 >
                   <span className="relative grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
                     {c.avatarInitial}
@@ -161,7 +161,7 @@ export function ScheduleDaySheet({
                   <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                     {c.name}
                     {c.isManager ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      <span className="rounded-full bg-coral-soft px-2 py-0.5 text-[10px] font-semibold text-coral">
                         멤버(매니저)
                       </span>
                     ) : null}
@@ -192,7 +192,7 @@ export function ScheduleDaySheet({
           const st = stateOf(existing); // 현재 저장 상태(근무/비번/휴무)
           const working = st === "근무";
           return (
-            <li key={c.id} className="rounded-xl border border-foreground/5 px-3 py-2.5">
+            <li key={c.id} className="rounded-xl border border-border px-3 py-2.5">
               {/* 비근무자(비번/휴무)는 이름 영역을 흐리게 — 컨트롤은 정상 */}
               <div className={`flex items-center gap-2 ${working ? "" : "opacity-60"}`}>
                 <span className="relative grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
@@ -207,7 +207,7 @@ export function ScheduleDaySheet({
                 <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold">
                   {c.name}
                   {c.isManager ? (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                    <span className="rounded-full bg-coral-soft px-2 py-0.5 text-[10px] font-semibold text-coral">
                       멤버(매니저)
                     </span>
                   ) : null}

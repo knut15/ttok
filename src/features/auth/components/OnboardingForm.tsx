@@ -43,7 +43,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
       <h1 className="mb-1 text-2xl font-bold text-foreground">시작하기</h1>
       <p className="mb-6 text-sm text-muted">매장을 만들거나 초대받은 매장에 합류하세요.</p>
 
-      <div className="mb-5 flex rounded-3xl bg-foreground/[0.04] p-1">
+      <div className="mb-5 flex rounded-2xl bg-foreground/[0.04] p-1">
         <button
           type="button"
           onClick={() => setTab("create")}
@@ -68,7 +68,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="예) 매머드커피 마석점"
-              className="mt-1 w-full rounded-3xl border border-foreground/10 bg-surface px-4 py-3"
+              className="mt-1 w-full rounded-2xl border border-foreground/10 bg-surface px-4 py-3"
             />
           </label>
           <label className="block text-sm font-medium">
@@ -77,14 +77,14 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
               value={bizNumber}
               onChange={(e) => setBizNumber(e.target.value)}
               placeholder="000-00-00000"
-              className="mt-1 w-full rounded-3xl border border-foreground/10 bg-surface px-4 py-3 tracking-wider"
+              className="mt-1 w-full rounded-2xl border border-foreground/10 bg-surface px-4 py-3 tracking-wider"
             />
           </label>
           <button
             type="button"
             disabled={busy || !storeName.trim() || !bizNumber.trim()}
             onClick={() => submit("/api/onboarding/store", { storeName, bizNumber })}
-            className="w-full rounded-3xl bg-coral px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="w-full rounded-2xl bg-coral px-4 py-3 font-semibold text-white disabled:opacity-50"
           >
             {busy ? "생성 중…" : "매장 만들고 시작하기"}
           </button>
@@ -97,14 +97,14 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="초대 코드 입력"
-              className="mt-1 w-full rounded-3xl border border-foreground/10 bg-surface px-4 py-3 tracking-widest"
+              className="mt-1 w-full rounded-2xl border border-foreground/10 bg-surface px-4 py-3 tracking-widest"
             />
           </label>
           <button
             type="button"
             disabled={busy || code.trim().length === 0}
             onClick={() => submit("/api/onboarding/join", { code })}
-            className="w-full rounded-3xl bg-coral px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="w-full rounded-2xl bg-coral px-4 py-3 font-semibold text-white disabled:opacity-50"
           >
             {busy ? "합류 중…" : "합류하기"}
           </button>

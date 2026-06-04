@@ -52,7 +52,7 @@ function DayToggles({
               on
                 ? "bg-coral text-white"
                 : dis
-                  ? "bg-white text-foreground/20"
+                  ? "bg-surface text-foreground/20"
                   : `bg-foreground/[0.04] ${weekendText || "text-muted"}`
             }`}
           >
@@ -132,7 +132,7 @@ export function ScheduleFixedSheet({
           const used = new Set(blocks.flatMap((b) => b.weekdays));
           const d = drafts[c.id];
           return (
-            <li key={c.id} className="rounded-xl border border-foreground/5 px-3 py-2.5">
+            <li key={c.id} className="rounded-xl border border-border px-3 py-2.5">
               <div className="flex items-center gap-2 pb-2">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
                   {c.avatarInitial}
@@ -140,7 +140,7 @@ export function ScheduleFixedSheet({
                 <span className="flex flex-1 items-center gap-1.5 font-semibold">
                   {c.name}
                   {c.isManager ? (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                    <span className="rounded-full bg-coral-soft px-2 py-0.5 text-[10px] font-semibold text-coral">
                       멤버(매니저)
                     </span>
                   ) : null}

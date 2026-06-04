@@ -135,7 +135,7 @@ export function MasterView() {
           {substitutes.length > 0 ? (
             <span
               aria-label={`대타 ${substitutes.length}건`}
-              className="grid h-6 min-w-6 place-items-center rounded-full bg-emerald-500 px-1.5 text-xs font-bold text-white"
+              className="grid h-6 min-w-6 place-items-center rounded-full bg-statusgreen px-1.5 text-xs font-bold text-white"
             >
               {substitutes.length}
             </span>
@@ -150,15 +150,15 @@ export function MasterView() {
             {substitutes.map((s) => (
               <li
                 key={s.id}
-                className="flex items-center gap-3 rounded-3xl border border-foreground/5 bg-surface px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3"
               >
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-greensoft text-sm font-bold text-statusgreen">
                   {s.crewName.slice(0, 1)}
                 </span>
                 <div className="flex-1">
                   <p className="font-semibold">
                     {s.crewName}
-                    <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    <span className="ml-2 rounded bg-greensoft px-1.5 py-0.5 text-[10px] font-semibold text-statusgreen">
                       대타
                     </span>
                   </p>

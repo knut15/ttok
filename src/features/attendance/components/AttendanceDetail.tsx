@@ -36,7 +36,7 @@ function Row({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-3xl bg-white px-4 py-4">
+    <div className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-4">
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted">{label}</span>
         <span className="text-lg font-bold">{value}</span>

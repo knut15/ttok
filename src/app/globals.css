@@ -3,7 +3,7 @@
 :root {
   /* Premium Monotone 팔레트 (DESIGN.md §2) — 아이보리 종이 위 잉크, 의도적 흑백감.
      토큰 이름은 유지, 값만 교체 → 의미 클래스(bg-coral/text-muted/border-border)로 전체 전파. */
-  --background: #faf6ef; /* 아이보리 종이 — 채도 낮춰 정제 */
+  --background: #fcfbf7; /* 거의 흰색에 가까운 아이보리(미세한 웜) — 카드 경계는 border로 분리 */
   --surface: #ffffff; /* 카드/시트 표면 = 순백 */
   --foreground: #1c1814; /* 본문 — 잉크에 가깝게(대비 강화) */
   --muted: #8b8178; /* 보조 텍스트 — 뉴트럴 토프 */

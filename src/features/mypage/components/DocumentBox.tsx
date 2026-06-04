@@ -1,8 +1,9 @@
 // 문서함 카드 3개(카운트 0) placeholder (AC-9d/AC-11).
+// Premium Monotone: 문서 종류는 아이콘으로 구분, 타일 톤은 통일(크림 위 잉크).
 const DOCUMENTS = [
-  { icon: "₩", label: "급여명세서", request: "확인요청", tone: "bg-green-100 text-green-600" },
-  { icon: "✎", label: "근로계약서", request: "서명요청", tone: "bg-yellow-100 text-yellow-600" },
-  { icon: "≡", label: "기타문서", request: "등록요청", tone: "bg-gray-100 text-gray-500" },
+  { icon: "₩", label: "급여명세서", request: "확인요청", tone: "bg-coral-soft text-foreground" },
+  { icon: "✎", label: "근로계약서", request: "서명요청", tone: "bg-coral-soft text-foreground" },
+  { icon: "≡", label: "기타문서", request: "등록요청", tone: "bg-coral-soft text-foreground" },
 ] as const;
 
 export function DocumentBox() {
@@ -14,7 +15,7 @@ export function DocumentBox() {
           <button
             key={doc.label}
             type="button"
-            className="rounded-3xl border border-foreground/5 p-3 text-left"
+            className="rounded-2xl border border-border bg-surface p-3 text-left"
           >
             <span
               aria-hidden

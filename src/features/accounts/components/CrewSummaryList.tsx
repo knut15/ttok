@@ -51,7 +51,7 @@ export function CrewSummaryList({
       {crews.map((c) => (
         <li
           key={c.crewId}
-          className="overflow-hidden rounded-3xl border border-foreground/5 bg-surface shadow-[0_2px_16px_rgba(82,60,40,0.06)]"
+          className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_2px_16px_rgba(82,60,40,0.06)]"
         >
           {/* 상단: 신원(드릴다운) + 매니저 토글(형제) */}
           <div className="flex items-center justify-between gap-2 px-4 pt-4">
@@ -66,7 +66,7 @@ export function CrewSummaryList({
                   <span
                     aria-hidden
                     title="매니저"
-                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white"
+                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-coral text-[9px] font-bold text-white"
                   >
                     M
                   </span>
@@ -75,7 +75,7 @@ export function CrewSummaryList({
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-semibold">{c.name}</span>
                 {c.isManager ? (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                  <span className="rounded-full bg-coral-soft px-2 py-0.5 text-xs font-semibold text-coral">
                     멤버(매니저)
                   </span>
                 ) : null}
@@ -89,7 +89,7 @@ export function CrewSummaryList({
                 aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
                   c.isManager
-                    ? "bg-amber-500 text-white"
+                    ? "bg-coral text-white"
                     : "bg-foreground/[0.06] text-muted"
                 }`}
               >
@@ -105,7 +105,7 @@ export function CrewSummaryList({
             aria-hidden
             className="mt-3 block px-4 pb-4"
           >
-            <div className="grid grid-cols-3 divide-x divide-foreground/5 rounded-2xl bg-white py-3 text-center">
+            <div className="grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-surface py-3 text-center">
               <Metric label="근무" value={minutesLabel(c.workMinutes)} />
               <Metric label="연장" value={minutesLabel(c.overtimeMinutes)} />
               <Metric label="휴일" value={`${c.vacationDays}일`} />

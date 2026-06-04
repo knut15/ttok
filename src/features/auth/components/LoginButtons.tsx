@@ -35,7 +35,7 @@ export function LoginButtons({
       <button
         type="button"
         onClick={() => signIn("kakao", { redirectTo: dest })}
-        className="flex w-full items-center justify-center gap-2 rounded-3xl bg-[#FEE500] px-4 py-3 font-semibold text-[#191600]"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] px-4 py-3 font-semibold text-[#191600]"
       >
         <span className="text-lg">K</span> 카카오로 로그인
       </button>
@@ -43,13 +43,13 @@ export function LoginButtons({
       <button
         type="button"
         onClick={() => signIn("google", { redirectTo: dest })}
-        className="flex w-full items-center justify-center gap-2 rounded-3xl border border-foreground/10 bg-surface px-4 py-3 font-semibold text-foreground"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-foreground/10 bg-surface px-4 py-3 font-semibold text-foreground"
       >
         <span className="text-lg">G</span> 구글로 로그인
       </button>
 
       {devEnabled && (
-        <section className="mt-2 rounded-3xl border border-dashed border-foreground/15 p-4">
+        <section className="mt-2 rounded-2xl border border-dashed border-foreground/15 p-4">
           <h2 className="mb-2 text-sm font-bold text-muted">개발용 로그인 (loc/dev)</h2>
           <ul className="mb-3 space-y-2">
             {DEMO_PERSONAS.map((p) => (

@@ -36,7 +36,7 @@ export function MasterMemberList() {
       {loading ? (
         <p className="py-4 text-center text-sm text-muted">불러오는 중…</p>
       ) : crews.length === 0 ? (
-        <p className="rounded-3xl border border-dashed border-foreground/10 px-4 py-6 text-center text-sm text-muted">
+        <p className="rounded-2xl border border-dashed border-foreground/10 px-4 py-6 text-center text-sm text-muted">
           아직 합류한 멤버가 없습니다. 초대 코드를 공유하세요.
         </p>
       ) : (
@@ -44,14 +44,14 @@ export function MasterMemberList() {
           {crews.map((c) => (
             <li
               key={c.crewId}
-              className="flex items-center gap-3 rounded-3xl border border-foreground/5 bg-surface px-4 py-3"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3"
             >
               <span className="relative grid h-10 w-10 place-items-center rounded-full bg-foreground/[0.06] font-bold">
                 {c.avatarInitial}
                 {c.isManager && (
                   <span
                     aria-hidden
-                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white"
+                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-coral text-[9px] font-bold text-white"
                   >
                     M
                   </span>
@@ -61,7 +61,7 @@ export function MasterMemberList() {
                 <p className="font-semibold">
                   {c.name}
                   {c.isManager && (
-                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    <span className="ml-2 rounded-full bg-coral-soft px-2 py-0.5 text-xs font-semibold text-coral">
                       매니저
                     </span>
                   )}
@@ -72,7 +72,7 @@ export function MasterMemberList() {
                 onClick={() => void toggleManager(c.crewId, !c.isManager)}
                 aria-pressed={c.isManager}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  c.isManager ? "bg-amber-500 text-white" : "bg-foreground/[0.06] text-muted"
+                  c.isManager ? "bg-coral text-white" : "bg-foreground/[0.06] text-muted"
                 }`}
               >
                 {c.isManager ? "매니저 해제" : "매니저 지정"}

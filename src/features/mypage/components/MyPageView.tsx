@@ -39,7 +39,7 @@ export function MyPageView() {
             <section className="px-5 pt-8">
               <Link
                 href="/master"
-                className="block rounded-3xl bg-coral px-4 py-3 text-center font-semibold text-white"
+                className="block rounded-2xl bg-coral px-4 py-3 text-center font-semibold text-white"
               >
                 마스터 집계 보기
               </Link>
@@ -52,7 +52,7 @@ export function MyPageView() {
             <button
               type="button"
               onClick={() => signOut({ redirectTo: "/login" })}
-              className="w-full rounded-3xl border border-foreground/10 px-4 py-3 font-semibold text-muted"
+              className="w-full rounded-2xl border border-foreground/10 px-4 py-3 font-semibold text-muted"
             >
               로그아웃
             </button>

@@ -27,7 +27,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
       {
         label: "근무(시간)",
         data: crews.map((c) => toHours(c.workMinutes)),
-        backgroundColor: "rgba(255,107,90,0.85)", // coral
+        backgroundColor: "rgba(21,17,13,0.85)", // 잉크(--coral)
         borderRadius: 4,
         // 좁은 막대 + 근무/연장 막대 사이 간격(barPercentage<1 로 간격 확보).
         categoryPercentage: 0.55,
@@ -36,7 +36,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
       {
         label: "연장(시간)",
         data: crews.map((c) => toHours(c.overtimeMinutes)),
-        backgroundColor: "rgba(245,158,11,0.85)", // amber
+        backgroundColor: "rgba(91,122,99,0.85)", // 저채도 세이지(--green, 연장 의미 일치)
         borderRadius: 4,
         categoryPercentage: 0.55,
         barPercentage: 0.8,
@@ -62,7 +62,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
   };
 
   return (
-    <div className="mx-5 mb-4 rounded-3xl border border-foreground/5 bg-surface p-4">
+    <div className="mx-5 mb-4 rounded-2xl border border-border bg-surface p-4">
       <h3 className="pb-2 text-sm font-bold">멤버별 근무시간</h3>
       <div className="h-56">
         <Bar data={data} options={options} />

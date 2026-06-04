@@ -39,7 +39,7 @@ function InputCard({ children }: { children: React.ReactNode }) {
   return (
     <section
       data-print-hide
-      className="mx-5 mb-2 rounded-3xl border border-foreground/5 bg-surface p-4 print:hidden"
+      className="mx-5 mb-2 rounded-2xl border border-border bg-surface p-4 print:hidden"
     >
       {children}
     </section>

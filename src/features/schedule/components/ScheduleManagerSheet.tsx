@@ -29,14 +29,14 @@ export function ScheduleManagerSheet({
         {crewList.map((c) => (
           <li
             key={c.id}
-            className="flex items-center gap-3 rounded-xl border border-foreground/5 px-3 py-2.5"
+            className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5"
           >
             <span className="relative grid h-9 w-9 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
               {c.avatarInitial}
               {c.isManager ? (
                 <span
                   aria-hidden
-                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white"
+                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-coral text-[9px] font-bold text-white"
                 >
                   M
                 </span>
@@ -45,7 +45,7 @@ export function ScheduleManagerSheet({
             <span className="flex-1 font-semibold">
               {c.name}
               {c.isManager ? (
-                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                <span className="ml-2 rounded-full bg-coral-soft px-2 py-0.5 text-xs font-semibold text-coral">
                   멤버(매니저)
                 </span>
               ) : null}
@@ -57,7 +57,7 @@ export function ScheduleManagerSheet({
               aria-pressed={c.isManager}
               aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 disabled:opacity-50 ${
-                c.isManager ? "bg-amber-500 text-white" : "bg-foreground/[0.06] text-muted"
+                c.isManager ? "bg-coral text-white" : "bg-foreground/[0.06] text-muted"
               }`}
             >
               {c.isManager ? "해제" : "지정"}

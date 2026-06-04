@@ -4,16 +4,16 @@ const ITEMS = ["공지사항", "자주 하는 질문", "문의 · 제안"] as co
 export function ServiceMenu() {
   return (
     <section className="px-5 pb-8 pt-10">
-      <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-foreground">
+      <h2 className="mb-1 flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
         <span
           aria-hidden
-          className="grid h-5 w-5 place-items-center rounded bg-blue-500 text-xs text-white"
+          className="grid h-5 w-5 place-items-center rounded bg-coral text-xs text-white"
         >
           i
         </span>
         서비스 안내 · 문의
       </h2>
-      <ul>
+      <ul className="divide-y divide-border">
         {ITEMS.map((item) => (
           <li key={item}>
             <button

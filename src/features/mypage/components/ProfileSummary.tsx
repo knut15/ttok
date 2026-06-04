@@ -10,8 +10,11 @@ export function ProfileSummary({
   avatarInitial: string;
   roleLabel?: string | null; // "마스터" | "매니저" | null
 }) {
+  // 권한 위계: 마스터(잉크 틴트) > 매니저(중립 그레이). Premium Monotone.
   const roleTone =
-    roleLabel === "마스터" ? "bg-coral/15 text-coral" : "bg-amber-100 text-amber-700";
+    roleLabel === "마스터"
+      ? "bg-coral/15 text-coral"
+      : "bg-foreground/[0.06] text-muted";
   return (
     <div className="flex items-center gap-4 px-5 pt-2">
       <span

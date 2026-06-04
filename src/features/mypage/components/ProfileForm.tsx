@@ -47,7 +47,7 @@ export function ProfileForm() {
           <button
             type="button"
             aria-label="사진 변경"
-            className="absolute bottom-1 right-1 grid h-8 w-8 place-items-center rounded-full bg-gray-200 text-sm"
+            className="absolute bottom-1 right-1 grid h-8 w-8 place-items-center rounded-full border border-border bg-coral-soft text-sm"
           >
             📷
           </button>
@@ -76,7 +76,7 @@ export function ProfileForm() {
         />
       </div>
 
-      <div className="mx-5 mt-6 rounded-3xl bg-surface p-5 text-center">
+      <div className="mx-5 mt-6 rounded-2xl bg-surface p-5 text-center">
         <p className="text-base font-semibold text-foreground">
           이름, 생년월일을 변경하려면 본인인증을 해주세요
         </p>
