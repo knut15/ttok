@@ -33,7 +33,7 @@ export function PaySummaryCard({
   rangeLabel: string;
 }) {
   return (
-    <Card className="bg-coral-soft/40">
+    <Card>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-muted">

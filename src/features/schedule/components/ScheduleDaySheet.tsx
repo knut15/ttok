@@ -147,7 +147,7 @@ export function ScheduleDaySheet({
               return (
                 <li
                   key={c.id}
-                  className={`flex items-center gap-3 rounded-xl bg-foreground/[0.03] px-3 py-2.5 ${working ? "" : "opacity-60"}`}
+                  className={`flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 ${working ? "" : "opacity-60"}`}
                 >
                   <span className="relative grid h-8 w-8 place-items-center rounded-full bg-foreground/[0.06] text-sm font-bold">
                     {c.avatarInitial}

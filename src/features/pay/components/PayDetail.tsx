@@ -43,7 +43,7 @@ export function PayDetail({ date }: { date: string }) {
 
   return (
     <div className="flex min-h-[70dvh] flex-col px-5">
-      <div className="grid grid-cols-2 gap-3 rounded-3xl bg-foreground/[0.03] p-4 text-center">
+      <div className="grid grid-cols-2 gap-3 rounded-3xl bg-white p-4 text-center">
         <div>
           <p className="text-sm text-muted">출근</p>
           <p className="mt-1 text-xl font-bold">{detail.clockIn ?? "-"}</p>

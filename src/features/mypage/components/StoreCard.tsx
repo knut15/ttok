@@ -19,7 +19,7 @@ export function StoreCard({ store }: { store: StoreInfo }) {
           매장 등록하기 <span aria-hidden>+</span>
         </button>
       </div>
-      <Card className="bg-coral-soft/40">
+      <Card>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 text-base font-bold text-foreground">
             <span aria-hidden>☕</span>

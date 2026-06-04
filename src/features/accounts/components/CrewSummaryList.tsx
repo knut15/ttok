@@ -105,7 +105,7 @@ export function CrewSummaryList({
             aria-hidden
             className="mt-3 block px-4 pb-4"
           >
-            <div className="grid grid-cols-3 divide-x divide-foreground/5 rounded-2xl bg-foreground/[0.03] py-3 text-center">
+            <div className="grid grid-cols-3 divide-x divide-foreground/5 rounded-2xl bg-white py-3 text-center">
               <Metric label="근무" value={minutesLabel(c.workMinutes)} />
               <Metric label="연장" value={minutesLabel(c.overtimeMinutes)} />
               <Metric label="휴일" value={`${c.vacationDays}일`} />

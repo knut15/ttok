@@ -52,7 +52,7 @@ function DayToggles({
               on
                 ? "bg-coral text-white"
                 : dis
-                  ? "bg-foreground/[0.03] text-foreground/20"
+                  ? "bg-white text-foreground/20"
                   : `bg-foreground/[0.04] ${weekendText || "text-muted"}`
             }`}
           >
