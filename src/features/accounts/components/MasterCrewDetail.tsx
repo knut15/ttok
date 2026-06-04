@@ -81,7 +81,7 @@ export function MasterCrewDetail({
         <p className="text-sm text-muted">멤버 근무·휴일 상세 (읽기)</p>
         <Link
           href={`/pay/statement?crewId=${crewId}&month=${month}`}
-          className="rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
+          className="rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
         >
           급여명세서 작성
         </Link>

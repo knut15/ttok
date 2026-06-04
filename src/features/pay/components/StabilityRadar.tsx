@@ -17,7 +17,6 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip);
 
 export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
   if (axes.length === 0) return null;
-  const overall = Math.round(axes.reduce((s, a) => s + a.score, 0) / axes.length);
 
   const data = {
     labels: axes.map((a) => a.label),
@@ -61,9 +60,8 @@ export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="mb-1 flex items-baseline justify-between">
+      <div className="mb-1">
         <h3 className="text-sm font-bold">근무 안정성</h3>
-        <span className="text-sm font-bold text-coral">{overall}점</span>
       </div>
       <div className="relative h-56">
         <Radar data={data} options={options} />
