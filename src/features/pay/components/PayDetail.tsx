@@ -25,7 +25,7 @@ function DetailRow({
   );
 }
 
-// 급여 일별 상세(AC-18): 출/퇴근·시급·급여인정시간·휴게·차감·연장 + 확인.
+// 급여 일별 상세(AC-18): 출/퇴근·시급·급여인정시간·휴게·연장 + 확인.
 export function PayDetail({ date }: { date: string }) {
   const { detail, loading } = useDayPay(date);
   const router = useRouter();
@@ -69,7 +69,6 @@ export function PayDetail({ date }: { date: string }) {
           value={`${detail.breakMinutes}분`}
           sub={detail.breakRange ? `(${detail.breakRange.replace("~", " ~ ")})` : undefined}
         />
-        <DetailRow label="급여차감시간" value={`${detail.deductMinutes}분`} />
         <DetailRow
           label="연장근무시간"
           value={detail.overtimeMinutes > 0 ? durationLabel(detail.overtimeMinutes) : "0분"}
