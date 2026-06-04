@@ -1,6 +1,7 @@
-// 마스터 집계 행 목록(presentational, T8-5). 멤버별 근무합계·연장·휴일수.
+// 마스터 집계 카드 목록(presentational, T8-5). 멤버별 근무합계·연장·휴일수.
 // 빈 멤버는 0 으로 graceful 표기(E-5, NaN/crash 방어).
-// REWORK v2 / P1-2 / AC-11: 각 행을 /master/[crewId] 드릴다운 링크로 → 해당 멤버 근무/휴일 상세.
+// 각 멤버를 카드로 표기: 상단 신원(아바타·이름·매니저), 하단 근무/연장/휴일 3열 지표 그리드.
+// 카드 전체가 /master/[crewId] 드릴다운(REWORK v2 / P1-2 / AC-11). 매니저 토글은 Link 바깥 형제(중첩 인터랙티브 방지).
 import Link from "next/link";
 import type { CrewSummary } from "@/types";
 
@@ -20,6 +21,16 @@ interface CrewSummaryListProps {
   onToggleManager?: (crewId: string, on: boolean) => void;
 }
 
+/** 카드 하단 지표 1칸. */
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="px-1">
+      <p className="text-[11px] font-medium text-muted">{label}</p>
+      <p className="mt-1 text-sm font-bold leading-tight tabular-nums">{value}</p>
+    </div>
+  );
+}
+
 export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps) {
   if (crews.length === 0) {
     return (
@@ -30,60 +41,70 @@ export function CrewSummaryList({ crews, onToggleManager }: CrewSummaryListProps
   }
 
   return (
-    <ul className="space-y-2 px-5">
+    <ul className="space-y-3 px-5">
       {crews.map((c) => (
-        // 토글 버튼은 Link 바깥 형제로 배치(중첩 인터랙티브 방지).
         <li
           key={c.crewId}
-          className="flex items-center gap-2 rounded-3xl border border-foreground/5 bg-surface pr-3"
+          className="overflow-hidden rounded-3xl border border-foreground/5 bg-surface shadow-[0_2px_16px_rgba(82,60,40,0.06)]"
         >
-          <Link
-            href={`/master/${c.crewId}`}
-            aria-label={`${c.name} 근무 상세 보기`}
-            className="flex flex-1 items-center gap-3 px-4 py-3 transition active:scale-[0.99]"
-          >
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[0.06] font-bold">
-              {c.avatarInitial}
-              {c.isManager ? (
-                <span
-                  aria-hidden
-                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white"
-                  title="매니저"
-                >
-                  M
-                </span>
-              ) : null}
-            </span>
-            <div className="flex-1">
-              <p className="font-semibold">
-                {c.name}
+          {/* 상단: 신원(드릴다운) + 매니저 토글(형제) */}
+          <div className="flex items-center justify-between gap-2 px-4 pt-4">
+            <Link
+              href={`/master/${c.crewId}`}
+              aria-label={`${c.name} 근무 상세 보기`}
+              className="flex flex-1 items-center gap-3 transition active:scale-[0.99]"
+            >
+              <span className="relative grid h-11 w-11 place-items-center rounded-full bg-foreground/[0.06] font-bold">
+                {c.avatarInitial}
                 {c.isManager ? (
-                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                  <span
+                    aria-hidden
+                    title="매니저"
+                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white"
+                  >
+                    M
+                  </span>
+                ) : null}
+              </span>
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-semibold">{c.name}</span>
+                {c.isManager ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                     멤버(매니저)
                   </span>
                 ) : null}
-              </p>
-              <p className="text-sm text-muted">
-                근무 {minutesLabel(c.workMinutes)} · 연장{" "}
-                {minutesLabel(c.overtimeMinutes)} · 휴일 {c.vacationDays}일
-              </p>
+              </span>
+            </Link>
+            {onToggleManager ? (
+              <button
+                type="button"
+                onClick={() => onToggleManager(c.crewId, !c.isManager)}
+                aria-pressed={c.isManager}
+                aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                  c.isManager
+                    ? "bg-amber-500 text-white"
+                    : "bg-foreground/[0.06] text-muted"
+                }`}
+              >
+                {c.isManager ? "매니저 해제" : "매니저 지정"}
+              </button>
+            ) : null}
+          </div>
+
+          {/* 하단: 근무/연장/휴일 3열 지표 그리드(드릴다운) */}
+          <Link
+            href={`/master/${c.crewId}`}
+            tabIndex={-1}
+            aria-hidden
+            className="mt-3 block px-4 pb-4"
+          >
+            <div className="grid grid-cols-3 divide-x divide-foreground/5 rounded-2xl bg-foreground/[0.03] py-3 text-center">
+              <Metric label="근무" value={minutesLabel(c.workMinutes)} />
+              <Metric label="연장" value={minutesLabel(c.overtimeMinutes)} />
+              <Metric label="휴일" value={`${c.vacationDays}일`} />
             </div>
           </Link>
-          {onToggleManager ? (
-            <button
-              type="button"
-              onClick={() => onToggleManager(c.crewId, !c.isManager)}
-              aria-pressed={c.isManager}
-              aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
-                c.isManager
-                  ? "bg-amber-500 text-white"
-                  : "bg-foreground/[0.06] text-muted"
-              }`}
-            >
-              {c.isManager ? "매니저 해제" : "매니저 지정"}
-            </button>
-          ) : null}
         </li>
       ))}
     </ul>
