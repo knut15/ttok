@@ -7,7 +7,7 @@ import { HomeToday } from "@/features/attendance/components/HomeToday";
 export default function HomePage() {
   return (
     <div>
-      <div className="space-y-6 px-5 pt-4">
+      <div className="space-y-7 px-5">
         <HomeToday />
 
         <Link href="#" className="block">
@@ -23,7 +23,7 @@ export default function HomePage() {
         </Link>
 
         <section>
-          <h2 className="mb-4 text-base font-bold text-foreground">
+          <h2 className="mb-3 text-lg font-bold tracking-tight text-foreground">
             확인해 주세요!
           </h2>
           <Link href="/pay">
@@ -49,7 +49,9 @@ export default function HomePage() {
 
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold text-foreground">매장공지</h2>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">
+              매장공지
+            </h2>
             <span className="text-muted">›</span>
           </div>
           <Card className="flex items-center gap-2">

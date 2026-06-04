@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm Soft 팔레트 (DESIGN.md §2). 토큰 이름은 유지, 값만 웜 톤으로 교체 → 전체 전파. */
-  --background: #fdfaf4; /* 밝은 아이보리 */
-  --surface: #ffffff; /* 카드/박스 내부 = 순백 */
-  --foreground: #2a2320; /* 웜 다크브라운(순흑 회피) */
-  --muted: #9a8c82; /* 웜 토프 */
-  /* 메인 강조 = 블랙(이름은 coral 유지, 시맨틱 라벨). near-black 으로 화면 부담 완화. */
-  --coral: #1a1a1a;
-  --coral-soft: #ece7e0; /* 웜 그레이(중성화) — 크림+블랙 모노톤 */
-  --green: #5e9a6b; /* 세이지 그린(상태: 정상/정규) */
-  --green-soft: #e7efe2;
-  --blue: #4f7ca8; /* 더스티 블루(상태: 연장/주휴) */
-  --gray-badge: #8a7c72; /* 웜 그레이 */
+  /* Premium Monotone 팔레트 (DESIGN.md §2) — 아이보리 종이 위 잉크, 의도적 흑백감.
+     토큰 이름은 유지, 값만 교체 → 의미 클래스(bg-coral/text-muted/border-border)로 전체 전파. */
+  --background: #faf6ef; /* 아이보리 종이 — 채도 낮춰 정제 */
+  --surface: #ffffff; /* 카드/시트 표면 = 순백 */
+  --foreground: #1c1814; /* 본문 — 잉크에 가깝게(대비 강화) */
+  --muted: #8b8178; /* 보조 텍스트 — 뉴트럴 토프 */
+  --border: #e8e1d4; /* 헤어라인 — 보이는 경계(카드 윤곽·구획선) */
+  /* 메인 강조(이름은 coral 유지, 시맨틱 라벨) = 잉크 near-black. CTA·선택·브랜드. */
+  --coral: #15110d;
+  --coral-soft: #f1ece2; /* 미세 채움 — 칩·비활성·소프트 배경 */
+  /* 상태색 — 무채도 지향(저채도). 캘린더 +연장 그린 / 일반 그레이 의미 구분은 유지. */
+  --green: #5b7a63; /* 저채도 세이지(상태: 정상/연장+) */
+  --green-soft: #eaeee8;
+  --blue: #4a5a6e; /* 저채도 슬레이트(상태: 연장/주휴) */
+  --gray-badge: #6f6760; /* 무채 다크그레이 */
 }
 
 @theme inline {
@@ -20,6 +23,7 @@
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-border: var(--border);
   --color-coral: var(--coral);
   --color-coral-soft: var(--coral-soft);
   --color-statusgreen: var(--green);

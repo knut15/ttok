@@ -44,7 +44,7 @@ export function HomeToday() {
     <>
       <Link
         href="/attendance"
-        className="flex items-center justify-between text-base font-bold text-foreground"
+        className="flex items-center justify-between text-lg font-bold tracking-tight text-foreground"
       >
         <span>{formatDotDate(today)}</span>
         <span className="text-muted">›</span>
