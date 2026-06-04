@@ -3,7 +3,7 @@
 :root {
   /* Warm Soft 팔레트 (DESIGN.md §2). 토큰 이름은 유지, 값만 웜 톤으로 교체 → 전체 전파. */
   --background: #fdfaf4; /* 밝은 아이보리 */
-  --surface: #fffcf7; /* 웜 화이트 */
+  --surface: #ffffff; /* 카드/박스 내부 = 순백 */
   --foreground: #2a2320; /* 웜 다크브라운(순흑 회피) */
   --muted: #9a8c82; /* 웜 토프 */
   /* 메인 강조 = 블랙(이름은 coral 유지, 시맨틱 라벨). near-black 으로 화면 부담 완화. */
