@@ -186,7 +186,11 @@ export async function upsertTodayClock(
 
   const next: AttendanceRecord = { ...prev, [field]: time };
   if (prev.status === "휴가" || prev.status === "결근") {
+    // 휴가/결근 날 출퇴근 기록 시 정상 근무로 전환(버그1). status 뿐 아니라 독립 출/퇴근 상태도
+    // 함께 정상화해야 정합 — 안 그러면 status=정상 인데 clockInStatus=결근 으로 남아 연장이 결근에 붙는다.
     next.status = "정상";
+    next.clockInStatus = "정상";
+    next.clockOutStatus = "정상";
     next.breakMinutes = DEFAULT_BREAK_MINUTES;
     next.deductMinutes = 0;
   }
