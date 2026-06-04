@@ -4,6 +4,7 @@
 // session-scope 브리지가 이를 읽어 인메모리 store 의 crewId 로 매핑.
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Kakao from "next-auth/providers/kakao";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
@@ -20,6 +21,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    // 카카오 — 카카오톡 인앱 브라우저 안에서도 로그인 동작(구글은 인앱브라우저에서 차단됨).
+    // 같은 email 이면 구글 계정과 자동 링크(allowDangerousEmailAccountLinking). 단 카카오는
+    // email 동의항목이 선택이라 미제공일 수 있음 → 그 경우 별도 User 로 생성된다.
+    Kakao({
+      clientId: process.env.KAKAO_CLIENT_ID,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
     }),
     ...(devLoginEnabled

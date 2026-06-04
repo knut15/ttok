@@ -31,6 +31,15 @@ export function LoginButtons({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* 카카오 — 한국 인앱 브라우저(카톡/네이버 등)에서도 동작. 인앱브라우저 사용자의 기본 수단. */}
+      <button
+        type="button"
+        onClick={() => signIn("kakao", { redirectTo: dest })}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] px-4 py-3 font-semibold text-[#191600]"
+      >
+        <span className="text-lg">K</span> 카카오로 로그인
+      </button>
+
       <button
         type="button"
         onClick={() => signIn("google", { redirectTo: dest })}
