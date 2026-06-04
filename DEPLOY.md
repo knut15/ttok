@@ -1,5 +1,8 @@
 # 배포 가이드 — Vercel + Neon(Postgres) + Google·Kakao 로그인
 
+> **프로덕션 URL: https://ttok-nine.vercel.app** (Vercel 프로젝트 `ttok`).
+> `main` 브랜치 push → Vercel 자동 배포.
+
 이 문서대로 하면 GitHub(`knut15/ttok`) → Vercel 자동 배포 + Neon Postgres 연결이 끝난다.
 
 ## 0. 사전 준비
@@ -42,7 +45,7 @@
 2. **Credentials → Create Credentials → OAuth client ID → Web application**.
 3. **Authorized redirect URIs** 에 prod 콜백 추가:
    ```
-   https://<your-app>.vercel.app/api/auth/callback/google
+   https://ttok-nine.vercel.app/api/auth/callback/google
    ```
    (커스텀 도메인 쓰면 그 도메인도 추가. Preview 배포는 URL이 매번 바뀌어 OAuth가 안 되므로 프로덕션 도메인 기준.)
 4. 발급된 ID/Secret 을 3단계 `GOOGLE_CLIENT_ID/SECRET` 에 입력.
@@ -60,7 +63,7 @@
 3. **[카카오 로그인] → [Redirect URI]** 에 등록(로컬·prod 둘 다):
    ```
    http://localhost:3000/api/auth/callback/kakao
-   https://<your-app>.vercel.app/api/auth/callback/kakao
+   https://ttok-nine.vercel.app/api/auth/callback/kakao
    ```
 4. **[동의항목] → 카카오계정(이메일) → 필수 동의**(구글 계정과 email 기준 자동 링크에 필요).
    필수 동의는 **비즈앱 전환**([앱 설정] → [비즈니스], 사업자등록번호) 필요. 미설정 시 email이 null → 별도 계정 생성.
@@ -68,7 +71,7 @@
 ## 5. 배포
 - 환경변수 저장 후 **Deployments → Redeploy**(또는 `main` 에 새 커밋 push).
 - 빌드 로그에서 `prisma migrate deploy` 가 마이그레이션 5개(+ payslip_input) 적용하는지 확인.
-- 완료 후 `https://<your-app>.vercel.app` 접속 → `/login` → **Google·Kakao 로그인** → 멤버십이 없으면 `/onboarding`(매장 생성)으로 이동.
+- 완료 후 `https://ttok-nine.vercel.app` 접속 → `/login` → **Google·Kakao 로그인** → 멤버십이 없으면 `/onboarding`(매장 생성)으로 이동.
 - 키 적용은 순서 주의: Vercel 환경변수 저장 → **그 다음** 재배포(빈 커밋/Redeploy)해야 빌드가 값을 집어간다. 키 넣기 전에 재배포하면 그 provider만 prod에서 실패한다.
 
 ## 6. (선택) 데모 데이터 시드
