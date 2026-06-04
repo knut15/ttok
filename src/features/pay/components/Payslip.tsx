@@ -6,7 +6,7 @@ import { formatBirthDate, formatDotDate, formatPayRowDate } from "@/lib/date";
 /** 섹션 제목 + 하단 보더. */
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-6 border-b border-foreground/10 pb-2 text-base font-bold">{children}</h2>
+    <h2 className="mt-6 border-b border-foreground/10 pb-4 text-base font-bold">{children}</h2>
   );
 }
 

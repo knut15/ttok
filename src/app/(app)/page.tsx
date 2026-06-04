@@ -23,7 +23,7 @@ export default function HomePage() {
         </Link>
 
         <section>
-          <h2 className="mb-3 text-base font-bold text-foreground">
+          <h2 className="mb-4 text-base font-bold text-foreground">
             확인해 주세요!
           </h2>
           <Link href="/pay">

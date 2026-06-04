@@ -51,7 +51,7 @@ export function InvitePanel() {
 
   return (
     <section className="px-5 pt-8">
-      <h2 className="mb-3 text-lg font-bold">멤버 초대</h2>
+      <h2 className="mb-4 text-lg font-bold">멤버 초대</h2>
       <button
         type="button"
         onClick={() => void createInvite()}

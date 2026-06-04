@@ -18,7 +18,7 @@ export function EditRequestList({
 
   return (
     <section className="px-5 pt-8">
-      <h2 className="mb-3 text-lg font-bold">근무기록 수정 요청내역</h2>
+      <h2 className="mb-4 text-lg font-bold">근무기록 수정 요청내역</h2>
       <ul className="space-y-3">
         {requests.map((req) => (
           <li

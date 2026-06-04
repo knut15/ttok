@@ -8,7 +8,7 @@ const DOCUMENTS = [
 export function DocumentBox() {
   return (
     <section className="px-5 pt-8">
-      <h2 className="mb-3 text-lg font-bold text-foreground">문서함</h2>
+      <h2 className="mb-4 text-lg font-bold text-foreground">문서함</h2>
       <div className="grid grid-cols-3 gap-3">
         {DOCUMENTS.map((doc) => (
           <button

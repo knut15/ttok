@@ -96,7 +96,7 @@ export function MasterView() {
 
       {/* FR-2: 마스터 수정요청 컨펌 섹션(가드 하위). 전체 멤버 요청 조회·수락. */}
       <section className="pt-8">
-        <h2 className="flex items-center gap-2 px-5 pb-3 text-lg font-bold">
+        <h2 className="flex items-center gap-2 px-5 pb-4 text-lg font-bold">
           수정요청 컨펌
           {pendingCount > 0 ? (
             <span
@@ -123,7 +123,7 @@ export function MasterView() {
 
       {/* 대타 승인: 매니저가 등록한 대타(고정 요일 아님) 근무를 마스터가 승인. */}
       <section className="pt-8">
-        <h2 className="flex items-center gap-2 px-5 pb-3 text-lg font-bold">
+        <h2 className="flex items-center gap-2 px-5 pb-4 text-lg font-bold">
           대타 승인
           {substitutes.length > 0 ? (
             <span

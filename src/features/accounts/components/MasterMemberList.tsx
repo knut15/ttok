@@ -32,7 +32,7 @@ export function MasterMemberList() {
 
   return (
     <section className="px-5 pt-8">
-      <h2 className="mb-3 text-lg font-bold">멤버 ({crews.length})</h2>
+      <h2 className="mb-4 text-lg font-bold">멤버 ({crews.length})</h2>
       {loading ? (
         <p className="py-4 text-center text-sm text-muted">불러오는 중…</p>
       ) : crews.length === 0 ? (

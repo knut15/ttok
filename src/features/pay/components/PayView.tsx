@@ -42,7 +42,7 @@ export function PayView() {
           </Link>
         }
       />
-      <div className="flex items-center gap-2 px-5 pb-3 text-base font-bold">
+      <div className="flex items-center gap-2 px-5 pb-4 text-base font-bold">
         <span aria-hidden>🏪</span>
         <span className="truncate">{STORE_NAME}</span>
       </div>
