@@ -36,7 +36,7 @@ export function MasterMemberList() {
       {loading ? (
         <p className="py-4 text-center text-sm text-muted">불러오는 중…</p>
       ) : crews.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-black/10 px-4 py-6 text-center text-sm text-muted">
+        <p className="rounded-3xl border border-dashed border-black/10 px-4 py-6 text-center text-sm text-muted">
           아직 합류한 멤버가 없습니다. 초대 코드를 공유하세요.
         </p>
       ) : (
@@ -44,7 +44,7 @@ export function MasterMemberList() {
           {crews.map((c) => (
             <li
               key={c.crewId}
-              className="flex items-center gap-3 rounded-2xl border border-black/5 bg-surface px-4 py-3"
+              className="flex items-center gap-3 rounded-3xl border border-black/5 bg-surface px-4 py-3"
             >
               <span className="relative grid h-10 w-10 place-items-center rounded-full bg-black/[0.06] font-bold">
                 {c.avatarInitial}

@@ -60,7 +60,7 @@ export function StabilityRadar({ axes }: { axes: StabilityAxis[] }) {
   } as const;
 
   return (
-    <div className="rounded-2xl border border-black/5 bg-surface p-4">
+    <div className="rounded-3xl border border-black/5 bg-surface p-4">
       <div className="mb-1 flex items-baseline justify-between">
         <h3 className="text-sm font-bold">근무 안정성</h3>
         <span className="text-sm font-bold text-coral">{overall}점</span>

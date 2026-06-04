@@ -14,7 +14,7 @@ export function DocumentBox() {
           <button
             key={doc.label}
             type="button"
-            className="rounded-2xl border border-black/5 p-3 text-left"
+            className="rounded-3xl border border-black/5 p-3 text-left"
           >
             <span
               aria-hidden

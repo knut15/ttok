@@ -62,7 +62,7 @@ export function CrewWorkChart({ crews }: { crews: CrewSummary[] }) {
   };
 
   return (
-    <div className="mx-5 mb-4 rounded-2xl border border-black/5 bg-surface p-4">
+    <div className="mx-5 mb-4 rounded-3xl border border-black/5 bg-surface p-4">
       <h3 className="pb-2 text-sm font-bold">멤버별 근무시간</h3>
       <div className="h-56">
         <Bar data={data} options={options} />

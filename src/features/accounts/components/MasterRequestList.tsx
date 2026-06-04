@@ -26,7 +26,7 @@ export function MasterRequestList({
       {requests.map((req) => (
         <li
           key={req.id}
-          className="rounded-2xl border border-black/5 bg-surface p-4"
+          className="rounded-3xl border border-black/5 bg-surface p-4"
         >
           <div className="flex items-center gap-2">
             <span className="font-bold">{req.crewName}</span>

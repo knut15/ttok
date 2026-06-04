@@ -76,7 +76,7 @@ export function ProfileForm() {
         />
       </div>
 
-      <div className="mx-5 mt-6 rounded-2xl bg-surface p-5 text-center">
+      <div className="mx-5 mt-6 rounded-3xl bg-surface p-5 text-center">
         <p className="text-base font-semibold text-foreground">
           이름, 생년월일을 변경하려면 본인인증을 해주세요
         </p>

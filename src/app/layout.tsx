@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProviderClient } from "@/features/auth/components/SessionProviderClient";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Pretendard Variable(자체 호스팅) — 한글 친근감의 핵심(DESIGN.md §3). weight 축 45~920.
+const pretendard = localFont({
+  src: "./fonts/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  weight: "45 920",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -24,7 +28,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="ko" className={`${pretendard.variable} ${geistMono.variable}`}>
       <body className="bg-background">
         <SessionProviderClient>{children}</SessionProviderClient>
       </body>

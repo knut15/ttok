@@ -56,13 +56,13 @@ export function InvitePanel() {
         type="button"
         onClick={() => void createInvite()}
         disabled={loading}
-        className="w-full rounded-2xl bg-coral px-4 py-3 font-semibold text-white disabled:opacity-50"
+        className="w-full rounded-3xl bg-coral px-4 py-3 font-semibold text-white disabled:opacity-50"
       >
         {loading ? "발급 중…" : "초대 코드 생성"}
       </button>
 
       {createdCode && (
-        <div className="mt-3 space-y-3 rounded-2xl border border-black/5 bg-surface p-4">
+        <div className="mt-3 space-y-3 rounded-3xl border border-black/5 bg-surface p-4">
           <div className="text-center">
             <span className="block text-sm text-muted">새 초대 코드 (7일 후 만료)</span>
             <span className="block text-2xl font-bold tracking-widest text-coral">{createdCode}</span>
@@ -107,7 +107,7 @@ export function InvitePanel() {
               return (
                 <li
                   key={inv.code}
-                  className="flex items-center gap-2 rounded-2xl border border-black/5 bg-surface px-4 py-2.5"
+                  className="flex items-center gap-2 rounded-3xl border border-black/5 bg-surface px-4 py-2.5"
                 >
                   <span className="font-bold tracking-widest">{inv.code}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${st.tone}`}>
