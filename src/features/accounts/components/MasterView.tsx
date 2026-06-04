@@ -52,8 +52,10 @@ export function MasterView() {
     loading: requestsLoading,
     approve,
   } = useMasterRequests();
-  // 대기(미승인) 수정요청 = 멤버 근태변경 승인 알림 건수.
-  const pendingCount = requests.filter((r) => r.status === "대기").length;
+  // 선택 월의 수정요청만 노출(date "YYYY-MM-DD" 가 month "YYYY-MM" 으로 시작). 월 변경 시 해당 월만.
+  const monthRequests = requests.filter((r) => r.date.startsWith(month));
+  // 대기(미승인) 수정요청 = 멤버 근태변경 승인 알림 건수(해당 월 기준).
+  const pendingCount = monthRequests.filter((r) => r.status === "대기").length;
   // 대타 승인 대기.
   const {
     substitutes,
@@ -115,7 +117,7 @@ export function MasterView() {
             수정요청 불러오는 중…
           </p>
         ) : (
-          <MasterRequestList requests={requests} onApprove={approve} />
+          <MasterRequestList requests={monthRequests} onApprove={approve} />
         )}
       </section>
 
