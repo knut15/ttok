@@ -43,18 +43,50 @@ export function MasterView() {
   const month = picked ?? (mounted ? todayMonth() : SEED_MONTH);
   const { crews, loading, reload } = useMasterSummary(month);
 
-  // 매니저 지정/해제(마스터 전용). PATCH 후 집계 재로드로 토글 상태 반영.
+  // perf/UX: 매니저 토글 낙관적 반영 — 탭 즉시 pill 반전(서버 왕복 동안 "멈춘 느낌" 제거),
+  //   실패 시 롤백, 서버 재조회(crews 갱신) 시 override 초기화로 서버 truth 화해.
+  const [managerOverride, setManagerOverride] = useState<Record<string, boolean>>({});
+  const [managerBusyId, setManagerBusyId] = useState<string | null>(null);
+  // 새 집계가 도착하면 낙관 override 폐기(서버 값이 진실).
+  useEffect(() => {
+    setManagerOverride({});
+  }, [crews]);
+
   const toggleManager = useCallback(
     async (crewId: string, on: boolean) => {
-      const res = await fetch(`/api/master/crews/${crewId}/manager`, {
-        method: "PATCH",
-        cache: "no-store",
-        headers: { ...authHeaders(user), "Content-Type": "application/json" },
-        body: JSON.stringify({ on }),
-      });
-      if (res.ok) reload();
+      setManagerOverride((o) => ({ ...o, [crewId]: on })); // 즉시 반영
+      setManagerBusyId(crewId);
+      try {
+        const res = await fetch(`/api/master/crews/${crewId}/manager`, {
+          method: "PATCH",
+          cache: "no-store",
+          headers: { ...authHeaders(user), "Content-Type": "application/json" },
+          body: JSON.stringify({ on }),
+        });
+        if (res.ok) {
+          reload(); // 성공 → 재집계(도착 시 override 초기화)
+        } else {
+          setManagerOverride((o) => {
+            const n = { ...o };
+            delete n[crewId];
+            return n;
+          }); // 실패 롤백
+        }
+      } catch {
+        setManagerOverride((o) => {
+          const n = { ...o };
+          delete n[crewId];
+          return n;
+        });
+      } finally {
+        setManagerBusyId(null);
+      }
     },
     [user, reload],
+  );
+  // 낙관 override 를 입힌 표시용 목록.
+  const crewsView = crews.map((c) =>
+    c.crewId in managerOverride ? { ...c, isManager: managerOverride[c.crewId] } : c,
   );
   const {
     requests,
@@ -100,9 +132,10 @@ export function MasterView() {
         <>
           <CrewWorkChart crews={crews} />
           <CrewSummaryList
-            crews={crews}
+            crews={crewsView}
             month={month}
             onToggleManager={toggleManager}
+            busyCrewId={managerBusyId}
           />
         </>
       )}

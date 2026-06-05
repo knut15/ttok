@@ -21,6 +21,8 @@ interface CrewSummaryListProps {
   month: string;
   /** 매니저 지정/해제(마스터 전용). 미지정 시 토글 버튼 숨김. */
   onToggleManager?: (crewId: string, on: boolean) => void;
+  /** PATCH 진행 중인 crewId(낙관 토글 busy). 해당 버튼만 비활성. */
+  busyCrewId?: string | null;
 }
 
 /** 카드 하단 지표 1칸. */
@@ -37,6 +39,7 @@ export function CrewSummaryList({
   crews,
   month,
   onToggleManager,
+  busyCrewId,
 }: CrewSummaryListProps) {
   if (crews.length === 0) {
     return (
@@ -84,10 +87,11 @@ export function CrewSummaryList({
             {onToggleManager ? (
               <button
                 type="button"
+                disabled={busyCrewId === c.crewId}
                 onClick={() => onToggleManager(c.crewId, !c.isManager)}
                 aria-pressed={c.isManager}
                 aria-label={`${c.name} 매니저 ${c.isManager ? "해제" : "지정"}`}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 disabled:opacity-60 ${
                   c.isManager
                     ? "bg-coral text-white"
                     : "bg-foreground/[0.06] text-muted"

@@ -1,6 +1,9 @@
+"use client";
+
 // 마스터 수정요청 목록(FR-2, presentational): 멤버명 · 날짜 · 대기/수락 배지 · 수락 버튼.
 // 대기 요청에만 수락 버튼(approveRequest 멱등이나 UI에서 재수락 노출 안 함, E-3).
 // 0건이면 빈 상태(E-2). props 는 types 만 의존(store/route 비접근).
+import { useEffect, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPayRowDate } from "@/lib/date";
 import { requestKindLabel } from "@/features/attendance/domain";
@@ -13,6 +16,12 @@ export function MasterRequestList({
   requests: MasterRequestRow[];
   onApprove: (id: string) => void;
 }) {
+  // perf/UX: 수락 PATCH 왕복 동안 버튼 비활성(중복 탭 방지). 목록 갱신(수락 반영) 시 자동 해제.
+  const [busyId, setBusyId] = useState<string | null>(null);
+  useEffect(() => {
+    setBusyId(null);
+  }, [requests]);
+
   if (requests.length === 0) {
     return (
       <p className="px-5 pt-6 text-center text-sm text-muted">
@@ -44,10 +53,14 @@ export function MasterRequestList({
             {req.status === "대기" && (
               <button
                 type="button"
-                onClick={() => onApprove(req.id)}
-                className="ml-auto rounded-lg bg-coral px-3 py-1.5 text-sm font-semibold text-white"
+                disabled={busyId === req.id}
+                onClick={() => {
+                  setBusyId(req.id);
+                  onApprove(req.id);
+                }}
+                className="ml-auto rounded-lg bg-coral px-3 py-1.5 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-60"
               >
-                수락
+                {busyId === req.id ? "수락 중…" : "수락"}
               </button>
             )}
           </div>

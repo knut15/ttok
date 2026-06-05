@@ -22,6 +22,8 @@ export function StatusChangeSheet({
   onChange: (status: string) => void | Promise<void>;
 }) {
   const [selected, setSelected] = useState<string>(current);
+  // perf/UX: 변경 PATCH 왕복 동안 버튼 비활성 + 라벨 변경 → "멈춘 느낌" 제거(중복 탭 방지).
+  const [busy, setBusy] = useState(false);
 
   return (
     <BottomSheet open={open} onClose={onClose} title={title}>
@@ -44,13 +46,19 @@ export function StatusChangeSheet({
       </ul>
       <button
         type="button"
+        disabled={busy}
         onClick={async () => {
-          await onChange(selected);
-          onClose();
+          setBusy(true);
+          try {
+            await onChange(selected);
+            onClose();
+          } finally {
+            setBusy(false);
+          }
         }}
-        className="mt-3 w-full rounded-xl bg-coral py-3 font-bold text-white"
+        className="mt-3 w-full rounded-xl bg-coral py-3 font-bold text-white transition active:scale-[0.99] disabled:opacity-60"
       >
-        변경
+        {busy ? "변경 중…" : "변경"}
       </button>
     </BottomSheet>
   );
