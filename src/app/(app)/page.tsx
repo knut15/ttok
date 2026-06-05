@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { HomeToday } from "@/features/attendance/components/HomeToday";
-import { requireMembership } from "@/lib/guard";
+import { auth } from "@/auth";
 
 export default async function HomePage() {
-  // role 진실원 = 멤버십 DB(guard). 마스터 → 대시보드(/master). 홈 비노출, BottomNav 에도 홈 탭 없음.
-  const { membership } = await requireMembership();
-  if (membership.role === "master") redirect("/master");
+  // 멤버십 존재/온보딩 가드는 (app)/layout 의 requireMembership 이 이미 수행.
+  // 여기선 role 만 필요 → auth()(캐시된 JWT 클레임, TTL 내 DB 0)로 마스터만 대시보드로 리다이렉트.
+  // perf: 홈마다 중복 requireMembership(DB 조회) 제거(rank 10).
+  const session = await auth();
+  if (session?.role === "master") redirect("/master");
 
   return (
     <div>
