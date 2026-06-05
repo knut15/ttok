@@ -13,8 +13,11 @@ import {
   authHeaders,
   useCurrentUser,
 } from "@/features/accounts/hooks/useCurrentUser";
+import { cachedJSON, invalidateCache } from "@/lib/client-cache";
 
 const NO_STORE: RequestInit = { cache: "no-store" };
+const SCHED_PREFIX = "sched|"; // 월간 스케쥴 캐시(crewId|month)
+const CREWS_KEY = "crews|all"; // 매장 근무자 메타(전원 공통, 비scope)
 
 export interface SaveScheduleInput {
   date: string;
@@ -46,19 +49,23 @@ export function useSchedule(month: string) {
   const [canWrite, setCanWrite] = useState(false);
   const [crews, setCrews] = useState<Crew[]>([]);
   const [loading, setLoading] = useState(true);
+  const schedKey = `${SCHED_PREFIX}${crewId}|${month}`;
   const [tick, setTick] = useState(0);
-  const reload = useCallback(() => setTick((t) => t + 1), []);
+  const reload = useCallback(() => {
+    invalidateCache(`${SCHED_PREFIX}${crewId}`); // 스케쥴 변경 → 해당 사용자 월 캐시 무효화
+    invalidateCache(CREWS_KEY); // 근무자 메타도 함께 갱신(매니저/명단 변동 대비)
+    setTick((t) => t + 1);
+  }, [crewId]);
 
   useEffect(() => {
     let active = true;
+    // perf: 두 GET 을 공유 캐시로 dedup(같은 페이지 다중 호출/재진입 → 단일 fetch). crews 는 전원 공통 key.
     Promise.all([
-      fetch(`/api/schedule?month=${month}`, {
+      cachedJSON<ScheduleResponse>(schedKey, `/api/schedule?month=${month}`, {
         ...NO_STORE,
         headers: authHeaders(user),
-      }).then((r) => (r.ok ? (r.json() as Promise<ScheduleResponse>) : null)),
-      fetch(`/api/crews`, NO_STORE).then((r) =>
-        r.ok ? (r.json() as Promise<Crew[]>) : null,
-      ),
+      }),
+      cachedJSON<Crew[]>(CREWS_KEY, `/api/crews`, NO_STORE),
     ]).then(([sch, cr]) => {
       if (!active) return;
       setEntries(sch?.entries ?? []);
