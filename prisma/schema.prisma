@@ -97,6 +97,10 @@ model Membership {
   store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, storeId])
+  // perf: identity-repo 의 핫 조회 findFirst({ OR:[{operationalId},{id}] }) — operationalId 브랜치 인덱스.
+  // (id 브랜치는 PK 로 이미 커버.) 매 출퇴근/급여/스케줄/매니저토글 경로에서 호출.
+  @@index([operationalId])
+  @@index([userId, active])
 }
 
 model Invite {

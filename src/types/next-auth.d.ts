@@ -21,5 +21,6 @@ declare module "next-auth/jwt" {
     membershipId?: string | null;
     operationalId?: string | null;
     isManager?: boolean;
+    claimsAt?: number; // 클레임 갱신 시각(ms) — TTL 캐싱(perf, auth.ts jwt 콜백)
   }
 }

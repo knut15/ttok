@@ -4,6 +4,11 @@ import { PrismaClient } from "@prisma/client";
 
 const g = globalThis as unknown as { __prisma?: PrismaClient };
 
-export const prisma = g.__prisma ?? new PrismaClient();
+export const prisma =
+  g.__prisma ??
+  new PrismaClient({
+    // perf/observability: prod 는 error 만(로그 I/O 최소화), dev 는 warn+error.
+    log: process.env.NODE_ENV === "production" ? ["error"] : ["warn", "error"],
+  });
 
 if (process.env.NODE_ENV !== "production") g.__prisma = prisma;

@@ -53,11 +53,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user?.id) token.sub = user.id;
-      // 멤버십 클레임을 매 요청 갱신 — 온보딩 완료/매니저 승격이 재로그인 없이 즉시 반영.
-      // (앱 규모상 요청당 1쿼리 허용. 캐시 시 매니저 토글이 멤버에게 지연 반영되는 문제 방지.)
-      if (token.sub) {
+      // 멤버십 클레임 캐싱(perf): 매 요청 DB 조회 대신 토큰에 캐시하고 TTL(60s)마다만 갱신.
+      //   jwt 콜백은 모든 auth() 호출(=모든 API 라우트 resolveScope + 세션 조회)마다 발화하므로
+      //   "매 요청 갱신"은 요청당 Neon 왕복 1회를 강제 → prod 지연의 주범. TTL 로 그 세금을 제거.
+      //   refresh 조건: 최초 로그인(user) · 명시적 update() · 클레임 미보유 · TTL 경과.
+      //   온보딩 완료/매니저 승격은 최대 60s 지연 — 보호 페이지 진입은 guard.ts 가 멤버십을 직접 조회하므로
+      //   라우팅·권한 게이트는 즉시 반영(클레임 표시값만 지연). 즉시 갱신 필요 시 update() 트리거.
+      const REFRESH_MS = 60_000;
+      const claimsAt = Number(token.claimsAt ?? 0);
+      const stale = Date.now() - claimsAt > REFRESH_MS;
+      const needsRefresh =
+        Boolean(user?.id) || trigger === "update" || token.claimsAt == null || stale;
+      if (token.sub && needsRefresh) {
         const m = await prisma.membership.findFirst({
           where: { userId: token.sub, active: true },
           orderBy: { createdAt: "asc" },
@@ -67,6 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.membershipId = m?.id ?? null;
         token.operationalId = m?.operationalId ?? null;
         token.isManager = m?.isManager ?? false;
+        token.claimsAt = Date.now();
       }
       return token;
     },
