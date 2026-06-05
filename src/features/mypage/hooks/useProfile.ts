@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ProfileResponse, ProfilePatch } from "@/types";
 import {
   authHeaders,
   useCurrentUser,
 } from "@/features/accounts/hooks/useCurrentUser";
-import { cachedJSON, primeCache } from "@/lib/client-cache";
 
 const NO_STORE: RequestInit = { cache: "no-store" };
 const PROFILE_PREFIX = "profile|";
@@ -21,36 +21,19 @@ const PROFILE_PREFIX = "profile|";
 export function useProfile(targetCrewId?: string) {
   const { user } = useCurrentUser();
   const crewId = user.crewId ?? user.id;
-  const [data, setData] = useState<ProfileResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const scopeKey = `${crewId}|${targetCrewId ?? "self"}`;
-  const cacheKey = `${PROFILE_PREFIX}${scopeKey}`;
-  const prevScope = useRef(scopeKey);
-
-  useEffect(() => {
-    let active = true;
-    // E-3: 사용자 전환 시에만 즉시 리셋(타인 프로필 1프레임 노출 0).
-    if (prevScope.current !== scopeKey) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setData(null);
-      prevScope.current = scopeKey;
-    }
-    setLoading(true);
-    // 마스터가 멤버 명세서 조회 시 ?crewId 타겟(멤버는 서버가 본인 강제).
-    const url = targetCrewId ? `/api/profile?crewId=${targetCrewId}` : "/api/profile";
-    cachedJSON<ProfileResponse>(cacheKey, url, {
-      ...NO_STORE,
-      headers: authHeaders(user),
-    }).then((json) => {
-      if (!active) return;
-      setData(json);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crewId, targetCrewId]);
+  const query = useQuery({
+    queryKey: [PROFILE_PREFIX, scopeKey],
+    queryFn: async () => {
+      const url = targetCrewId ? `/api/profile?crewId=${targetCrewId}` : "/api/profile";
+      const res = await fetch(url, {
+        ...NO_STORE,
+        headers: authHeaders(user),
+      });
+      return res.ok ? ((await res.json()) as ProfileResponse) : null;
+    },
+  });
 
   const update = useCallback(
     async (patch: ProfilePatch) => {
@@ -67,13 +50,11 @@ export function useProfile(targetCrewId?: string) {
         throw new Error(err?.error ?? "저장에 실패했습니다.");
       }
       const json = (await res.json()) as ProfileResponse;
-      setData(json);
-      // 본인 프로필 수정 → 본인 캐시 즉시 갱신(targetCrewId 없는 self key).
-      primeCache(`${PROFILE_PREFIX}${crewId}|self`, json);
+      queryClient.setQueryData([PROFILE_PREFIX, `${crewId}|self`], json);
       return json;
     },
-    [user, crewId],
+    [user, crewId, queryClient],
   );
 
-  return { data, loading, update };
+  return { data: query.data ?? null, loading: query.isLoading, update };
 }
