@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { getMonthRecords, getProfile, listStoreCrews } from "./store";
+import { getMonthRecords } from "./attendance-store";
+import { getProfile } from "./profile-store";
+import { listStoreCrews } from "./identity-repo";
 import { getStoreCrewSummaries } from "./master-summary";
 import { resetDb } from "./db-seed";
 import { buildSeedRecords } from "./seed";

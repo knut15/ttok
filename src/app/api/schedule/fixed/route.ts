@@ -2,15 +2,14 @@
 // 배정 대상 crewId 는 요청자 매장의 멤버(crew)여야 함.
 import { NextResponse } from "next/server";
 import {
-  canWriteSchedule,
   listFixedShifts,
   addFixedShift,
   removeFixedShift,
   updateFixedShift,
   crewFixedWeekdays,
-} from "@/lib/store";
+} from "@/lib/schedule-store";
 import { resolveScope } from "@/lib/session-scope";
-import { resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
+import { canWriteSchedule, resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
 import { parseHHMM } from "@/lib/time";
 
 const NO_STORE = { "Cache-Control": "no-store" };

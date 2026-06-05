@@ -3,7 +3,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { POST as submitRequest } from "./route";
 import { POST as approveRequestRoute } from "./approve/route";
-import { getRecord, getMonthRecords } from "@/lib/store";
+import { getRecord, getMonthRecords } from "@/lib/attendance-store";
 import { resetDb } from "@/lib/db-seed";
 
 const CREW2 = { "x-crew-id": "crew-2", "x-role": "crew" } as const;

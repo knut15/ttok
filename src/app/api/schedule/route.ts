@@ -4,13 +4,12 @@
 //   배정 대상 crewId 는 요청자 매장의 멤버(crew)여야 함(실 멤버 배정 가능).
 import { NextResponse } from "next/server";
 import {
-  canWriteSchedule,
   getMonthScheduleView,
   listFixedShifts,
   upsertSchedule,
-} from "@/lib/store";
+} from "@/lib/schedule-store";
 import { resolveScope } from "@/lib/session-scope";
-import { resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
+import { canWriteSchedule, resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
 import { isValidDateString } from "@/lib/date";
 import { parseHHMM } from "@/lib/time";
 import { SEED_MONTH } from "@/lib/constants";

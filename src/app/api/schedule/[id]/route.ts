@@ -1,7 +1,8 @@
 // DELETE /api/schedule/[id] (T18) — 스케쥴 배정 삭제.
 // canWriteSchedule(master/매니저)만 가능, 아니면 403. 없는 id → 404. client 는 route 경유.
 import { NextResponse } from "next/server";
-import { canWriteSchedule, removeSchedule } from "@/lib/store";
+import { removeSchedule } from "@/lib/schedule-store";
+import { canWriteSchedule } from "@/lib/identity-repo";
 import { resolveScope } from "@/lib/session-scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };

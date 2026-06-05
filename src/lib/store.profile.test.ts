@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { getProfile, updateProfile } from "./store";
+import { getProfile, updateProfile } from "./profile-store";
 import { resetDb } from "./db-seed";
 
 beforeEach(async () => {

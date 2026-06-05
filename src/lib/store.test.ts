@@ -5,7 +5,7 @@ import {
   upsertTodayClock,
   addRequest,
   approveRequest,
-} from "./store";
+} from "./attendance-store";
 import { resetDb } from "./db-seed";
 import { calcPaidMinutes, calcDailyPay } from "./pay";
 import { HOURLY_WAGE, DEFAULT_BREAK_MINUTES, REGULAR_MINUTES } from "./constants";

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { POST, PATCH, DELETE } from "./route";
-import { listFixedShifts } from "@/lib/store";
+import { listFixedShifts } from "@/lib/schedule-store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 

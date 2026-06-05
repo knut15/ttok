@@ -2,7 +2,7 @@
 // 마스터 전용: role≠master → 403 (AC-8, api/master/crews 게이트 복제).
 // listRequests()(전체) ⨝ listCrews()(crewId→name Map) 서버 조인 → crewName(폴백 crewId).
 import { NextResponse } from "next/server";
-import { listRequestsForCrews } from "@/lib/store";
+import { listRequestsForCrews } from "@/lib/attendance-store";
 import { resolveScope } from "@/lib/session-scope";
 import { getStoreCrewIds, getStoreMembers, resolveStoreId } from "@/lib/identity-repo";
 import { DEFAULT_CREW_ID } from "@/lib/constants";

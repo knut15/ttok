@@ -4,6 +4,7 @@
 import { SessionProvider } from "next-auth/react";
 import type { ReactNode } from "react";
 import { QueryProviderClient } from "@/features/auth/components/QueryProviderClient";
+import { CurrentUserSync } from "@/features/auth/components/CurrentUserSync";
 
 export function SessionProviderClient({ children }: { children: ReactNode }) {
   // perf: 기본값(포커스 시 refetch + 주기 polling)은 모바일 웹에서 잦은 탭 포커스마다
@@ -11,6 +12,7 @@ export function SessionProviderClient({ children }: { children: ReactNode }) {
   //   포커스 refetch 끄고 5분 주기만 유지(매니저 승격 등 열린 탭 반영).
   return (
     <SessionProvider refetchOnWindowFocus={false} refetchInterval={300}>
+      <CurrentUserSync />
       <QueryProviderClient>{children}</QueryProviderClient>
     </SessionProvider>
   );

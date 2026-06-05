@@ -1,7 +1,7 @@
 // GET 프로필+매장 / PATCH 휴대폰·이메일만 반영. architect §2.3.
 // 검증 우선순위: 형식(400) → 화이트리스트(name/birthDate 무시) → 머지(200).
 import { NextResponse } from "next/server";
-import { getProfile, updateProfile } from "@/lib/store";
+import { getProfile, updateProfile } from "@/lib/profile-store";
 import { isValidEmail, isValidPhone } from "@/features/mypage/domain";
 import { enforceReadScope } from "@/lib/scope";
 import { resolveScope, type SessionScope } from "@/lib/session-scope";

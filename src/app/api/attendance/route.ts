@@ -6,7 +6,7 @@ import {
   setClockInStatus,
   setClockOutStatus,
   upsertTodayClock,
-} from "@/lib/store";
+} from "@/lib/attendance-store";
 import type { ClockInStatus, ClockOutStatus, WorkStatus } from "@/types";
 import { WORK_STATUSES } from "@/lib/constants";
 

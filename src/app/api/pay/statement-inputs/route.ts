@@ -2,7 +2,7 @@
 // body: { month, crewId, incentiveEnabled, monthlySales, incomeTax, nightPay }.
 // 멤버는 저장 불가(403) — 완성본 조회만. 조회는 GET /api/pay 의 statementInputs 로 제공.
 import { NextResponse } from "next/server";
-import { savePayslipInput } from "@/lib/store";
+import { savePayslipInput } from "@/lib/payslip-input-store";
 import { resolveScope } from "@/lib/session-scope";
 import type { PayslipInputs } from "@/types";
 

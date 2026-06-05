@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { GET, POST as READ } from "./route";
 import { POST as APPROVE } from "../master/substitutes/approve/route";
 import { POST as CREATE } from "../schedule/route";
-import { getDaySchedules } from "@/lib/store";
+import { getDaySchedules } from "@/lib/schedule-store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 

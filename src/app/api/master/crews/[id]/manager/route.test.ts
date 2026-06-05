@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { PATCH } from "./route";
-import { canWriteSchedule } from "@/lib/store";
+import { canWriteSchedule } from "@/lib/identity-repo";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID } from "@/lib/constants";
 

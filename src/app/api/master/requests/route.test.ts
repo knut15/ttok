@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET } from "./route";
-import { addRequest } from "@/lib/store";
+import { addRequest } from "@/lib/attendance-store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID } from "@/lib/constants";
 import type { MasterRequestsResponse } from "@/types";

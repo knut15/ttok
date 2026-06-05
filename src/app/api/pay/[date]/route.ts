@@ -1,6 +1,6 @@
 // GET 일별 급여 상세(AC-18 데이터). amount = 급여인정시간 × 시급 검산.
 import { NextResponse } from "next/server";
-import { getRecord } from "@/lib/store";
+import { getRecord } from "@/lib/attendance-store";
 import { calcPaidMinutes, calcDailyPay } from "@/lib/pay";
 import { HOURLY_WAGE, DEFAULT_BREAK_RANGE } from "@/lib/constants";
 import { enforceReadScope } from "@/lib/scope";

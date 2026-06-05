@@ -6,7 +6,7 @@ import {
   crewFixedWeekdays,
   getMonthScheduleView,
   upsertSchedule,
-} from "./store";
+} from "./schedule-store";
 import { resetDb } from "./db-seed";
 import { DEFAULT_CREW_ID, MASTER_ID } from "./constants";
 import { getWeekdayIndex } from "./schedule";

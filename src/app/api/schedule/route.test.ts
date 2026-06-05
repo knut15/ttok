@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, POST } from "./route";
 import { DELETE } from "./[id]/route";
-import { getDaySchedules } from "@/lib/store";
+import { getDaySchedules } from "@/lib/schedule-store";
 import { resetDb } from "@/lib/db-seed";
 import { MASTER_ID, DEFAULT_CREW_ID, SEED_MONTH } from "@/lib/constants";
 

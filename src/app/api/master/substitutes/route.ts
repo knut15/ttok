@@ -1,7 +1,7 @@
 // GET /api/master/substitutes → 200 MasterSubstitutesResponse (대타 승인 대기 목록).
 // 마스터 전용: role≠master → 403. listPendingSubstitutes ⨝ listCrews(crewId→name).
 import { NextResponse } from "next/server";
-import { listPendingSubstitutes } from "@/lib/store";
+import { listPendingSubstitutes } from "@/lib/schedule-store";
 import { resolveScope } from "@/lib/session-scope";
 import { resolveStoreId, getStoreMembers } from "@/lib/identity-repo";
 import type { MasterSubstituteRow, MasterSubstitutesResponse } from "@/types";

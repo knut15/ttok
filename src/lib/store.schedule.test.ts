@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  canWriteSchedule,
   getDaySchedules,
   getMonthSchedules,
   removeSchedule,
   upsertSchedule,
-} from "./store";
-import { setMembershipManager } from "./identity-repo";
+} from "./schedule-store";
+import { canWriteSchedule, setMembershipManager } from "./identity-repo";
 import { resetDb } from "./db-seed";
 import { DEFAULT_CREW_ID, MASTER_ID, SEED_MONTH } from "./constants";
 

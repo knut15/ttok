@@ -1,7 +1,7 @@
 // /api/notifications — 현재 사용자(멤버) 알림.
 // GET → { items, unread }. POST(read) → 전부 읽음 처리. scope.crewId 기준.
 import { NextResponse } from "next/server";
-import { listNotifications, unreadNotificationCount, markNotificationsRead } from "@/lib/store";
+import { listNotifications, unreadNotificationCount, markNotificationsRead } from "@/lib/schedule-store";
 import { resolveScope } from "@/lib/session-scope";
 import type { NotificationsResponse } from "@/types";
 

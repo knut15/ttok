@@ -1,7 +1,7 @@
 // GET 단일일 상세(AC-7). T12(AC-2): 유효 날짜·기록 없음 → 200 + null(빈 상태).
 //   잘못된 날짜 형식(2026-05-99 등)만 404 유지(엣지#5, 런타임 크래시 금지).
 import { NextResponse } from "next/server";
-import { getRecord } from "@/lib/store";
+import { getRecord } from "@/lib/attendance-store";
 import { isValidDateString } from "@/lib/date";
 import { enforceReadScope } from "@/lib/scope";
 import { resolveScope } from "@/lib/session-scope";

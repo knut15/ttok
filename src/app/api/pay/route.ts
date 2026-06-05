@@ -1,6 +1,7 @@
 // GET 월간 급여(AC-10): {summary, items}. totalPay === Σ items.amount 불변식.
 import { NextResponse } from "next/server";
-import { getMonthRecords, getPayslipInput } from "@/lib/store";
+import { getMonthRecords } from "@/lib/attendance-store";
+import { getPayslipInput } from "@/lib/payslip-input-store";
 import { buildPayItems } from "@/lib/seed";
 import { buildPaySummary, buildMonthStats } from "@/lib/pay";
 import { enforceReadScope } from "@/lib/scope";

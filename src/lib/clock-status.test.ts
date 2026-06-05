@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { getRecord, setClockInStatus, setClockOutStatus } from "./store";
+import { getRecord, setClockInStatus, setClockOutStatus } from "./attendance-store";
 import { resetDb } from "./db-seed";
 import { deriveStatus } from "./attendance-rules";
 

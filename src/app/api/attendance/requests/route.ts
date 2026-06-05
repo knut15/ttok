@@ -1,6 +1,6 @@
 // GET 수정요청 내역 / POST 수정요청 생성(AC-9). 빈 사유 400(엣지#6).
 import { NextResponse } from "next/server";
-import { addRequest, listRequests } from "@/lib/store";
+import { addRequest, listRequests } from "@/lib/attendance-store";
 import { DEFAULT_CREW_ID } from "@/lib/constants";
 import { WORK_STATUSES } from "@/lib/constants";
 import { parseHHMM } from "@/lib/time";

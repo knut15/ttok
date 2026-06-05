@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { POST } from "./route";
-import { addRequest, getRecord } from "@/lib/store";
+import { addRequest, getRecord } from "@/lib/attendance-store";
 import { resetDb } from "@/lib/db-seed";
 
 function post(body: unknown, headers?: Record<string, string>) {

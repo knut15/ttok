@@ -1,7 +1,7 @@
 // POST /api/master/substitutes/approve { id } → 대타 승인(approval="수락").
 // 마스터 전용: role≠master → 403. 없는 id → 404.
 import { NextResponse } from "next/server";
-import { approveSubstitute } from "@/lib/store";
+import { approveSubstitute } from "@/lib/schedule-store";
 import { resolveScope } from "@/lib/session-scope";
 
 const NO_STORE = { "Cache-Control": "no-store" };
