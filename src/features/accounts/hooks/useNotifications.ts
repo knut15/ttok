@@ -8,7 +8,7 @@ import {
   useCurrentUser,
 } from "@/features/accounts/hooks/useCurrentUser";
 
-const POLL_MS = 10000;
+const POLL_MS = 30000;
 
 export function useNotifications() {
   const { user } = useCurrentUser();
@@ -29,10 +29,16 @@ export function useNotifications() {
           setUnread(json.unread);
         });
     load();
-    const timer = setInterval(load, POLL_MS);
+    // perf: 백그라운드 탭에선 폴링 생략(보이지 않으면 0 요청), 복귀 시 1회 즉시 갱신.
+    const onTick = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    const timer = setInterval(onTick, POLL_MS);
+    document.addEventListener("visibilitychange", onTick);
     return () => {
       active = false;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", onTick);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crewId, user.role, tick]);

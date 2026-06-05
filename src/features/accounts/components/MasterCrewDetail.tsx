@@ -8,11 +8,17 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { MonthBar } from "@/components/MonthBar";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { useMonthAttendance } from "@/features/attendance/hooks/useAttendance";
 import { useMonthPay } from "@/features/pay/hooks/usePay";
-import { StabilityRadar } from "@/features/pay/components/StabilityRadar";
+
+// perf: chart.js 레이더를 지연 로드(ssr:false) — 크루는 다운로드 안 함, 상세 진입 시만.
+const StabilityRadar = dynamic(
+  () => import("@/features/pay/components/StabilityRadar").then((m) => m.StabilityRadar),
+  { ssr: false, loading: () => <div className="h-[420px] rounded-2xl border border-border bg-surface" /> },
+);
 import {
   longWorkLabel,
   statusTone,

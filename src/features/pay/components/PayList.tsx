@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useMonthPay } from "@/features/pay/hooks/usePay";
 import {
   formatWon,
@@ -10,7 +11,12 @@ import {
 import { formatPayRowDate, shortMonthLabel, payPeriodLabel } from "@/lib/date";
 import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { PaySummaryCard } from "./PaySummaryCard";
-import { StabilityRadar } from "./StabilityRadar";
+
+// perf: chart.js 레이더 지연 로드(ssr:false) — 레이더 표시 권한(canSeeRadar)일 때만 청크 로드.
+const StabilityRadar = dynamic(
+  () => import("./StabilityRadar").then((m) => m.StabilityRadar),
+  { ssr: false, loading: () => <div className="h-[420px] rounded-2xl border border-border bg-surface" /> },
+);
 
 // 급여 메인 리스트(AC-17): 요약카드 + 일별 행(휴가0원/연장표기/주휴 블루행).
 export function PayList({ month }: { month: string }) {

@@ -5,6 +5,7 @@
 // 하이드레이션 안전: mount 전(localStorage 복원 전)에는 섣부른 리다이렉트 금지(로딩 가드).
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { MonthBar } from "@/components/MonthBar";
 import {
   authHeaders,
@@ -14,8 +15,13 @@ import { useMasterSummary } from "@/features/accounts/hooks/useMasterSummary";
 import { useMasterRequests } from "@/features/accounts/hooks/useMasterRequests";
 import { useMasterSubstitutes } from "@/features/accounts/hooks/useMasterSubstitutes";
 import { CrewSummaryList } from "./CrewSummaryList";
-import { CrewWorkChart } from "./CrewWorkChart";
 import { MasterRequestList } from "./MasterRequestList";
+
+// perf: chart.js(~67KB gz)를 대시보드에서만 지연 로드 — 공유 번들에서 분리(ssr:false).
+const CrewWorkChart = dynamic(
+  () => import("./CrewWorkChart").then((m) => m.CrewWorkChart),
+  { ssr: false, loading: () => <div className="mx-5 mb-4 h-[300px] rounded-2xl border border-border bg-surface" /> },
+);
 import { formatPayRowDate, todayMonth } from "@/lib/date";
 import { SEED_MONTH } from "@/lib/constants";
 
