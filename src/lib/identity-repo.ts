@@ -49,6 +49,23 @@ export function findActiveMembership(userId: string) {
   });
 }
 
+/** 세션 user 실존 여부와 활성 멤버십을 한 번의 DB 왕복으로 확인한다. */
+export async function getUserWithActiveMembership(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      memberships: {
+        where: { active: true },
+        orderBy: { createdAt: "asc" },
+        take: 1,
+      },
+    },
+  });
+  if (!user) return null;
+  return { userId: user.id, membership: user.memberships[0] ?? null };
+}
+
 /**
  * 매장 소속 전원의 운영 crewId 집합(operationalId ?? membership.id). master 포함.
  * 인메모리 운영데이터(스케줄 등)를 매장 단위로 필터링하는 데 사용 — 실매장은 데모 시드 미포함.

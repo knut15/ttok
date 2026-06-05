@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getMonthRecords, getProfile, listStoreCrews } from "./store";
 import { getStoreCrewSummaries } from "./master-summary";
 import { resetDb } from "./db-seed";
 import { buildSeedRecords } from "./seed";
 import { DEFAULT_CREW_ID, MASTER_ID, SEED_MONTH } from "./constants";
+import { prisma } from "./prisma";
 
 let storeId: string;
 beforeEach(async () => {
@@ -67,5 +68,13 @@ describe("getStoreCrewSummaries — 마스터 집계(Prisma)", () => {
       expect(s.overtimeMinutes).toBe(0);
       expect(s.vacationDays).toBe(0);
     }
+  });
+
+  it("멤버 수와 무관하게 출퇴근 집계 쿼리를 한 번만 실행한다", async () => {
+    const spy = vi.spyOn(prisma.attendanceRecord, "groupBy");
+    const summaries = await getStoreCrewSummaries(storeId, SEED_MONTH);
+
+    expect(summaries).toHaveLength(4);
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,7 +2,7 @@
 // Next 16(proxy.ts)에서는 Auth.js authorized 콜백이 발화하지 않으므로 서버 가드를 진실원으로 둔다.
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { findActiveMembership, userExists } from "@/lib/identity-repo";
+import { getUserWithActiveMembership } from "@/lib/identity-repo";
 
 /** 로그인 세션의 user 반환(없으면 null). */
 export async function getSessionUser() {
@@ -18,8 +18,8 @@ export async function requireMembership() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   // 유령/만료 세션(쿠키는 있으나 DB에 user 없음) → 재로그인 유도(자가 치유).
-  if (!(await userExists(session.user.id))) redirect("/login");
-  const membership = await findActiveMembership(session.user.id);
-  if (!membership) redirect("/onboarding");
-  return { userId: session.user.id, membership };
+  const result = await getUserWithActiveMembership(session.user.id);
+  if (!result) redirect("/login");
+  if (!result.membership) redirect("/onboarding");
+  return { userId: result.userId, membership: result.membership };
 }
