@@ -4,6 +4,7 @@
 // 권한: 마스터만 입력값 편집·저장(PayslipInputs), 멤버는 완성본 조회만(읽기 전용).
 // 입력값은 서버 영속(PayslipInput) — 마스터가 저장하면 해당 멤버가 완성본을 본다.
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { MonthBar } from "@/components/MonthBar";
 import { useMonthPay } from "@/features/pay/hooks/usePay";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
@@ -150,6 +151,29 @@ export function StatementView({
       ) : (
         <Payslip slip={slip} records={pay.records} hourlyWage={pay.stats.hourlyWage} />
       )}
+
+      {/* 급여 탭 복귀 플로팅 버튼 — 하단 중앙, 바텀탭 위로 띄움. 인쇄 시 숨김.
+          멤버는 /pay(급여 탭), 마스터가 멤버 명세서를 보는 중이면 해당 멤버 상세로 복귀. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-40 flex justify-center print:hidden">
+        <Link
+          href={crewId ? `/master/${crewId}` : "/pay"}
+          aria-label="급여 탭으로 돌아가기"
+          className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full bg-coral text-white shadow-lg transition-transform active:scale-95"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden
+          >
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </Link>
+      </div>
     </div>
   );
 }

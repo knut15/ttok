@@ -26,7 +26,7 @@ import {
   STORE_NAME,
 } from "./constants";
 import { calcPaidMinutes, calcDailyPay, calcWeeklyHolidayPay, weeklyHolidayPaidMinutes } from "./pay";
-import { weekStartMonday } from "./date";
+import { shiftDay, weekStartMonday } from "./date";
 
 interface SeedRow {
   day: string; // "DD"
@@ -354,20 +354,23 @@ export function buildPayItems(records: AttendanceRecord[], hourlyWage: number = 
 
   // 주휴수당: 1주 총 근로시간 기준으로 주 단위 산정(주 월요일 기준 그룹).
   // 주 15시간 미만 → 미발생. 15~40h → (시간/40)×8h, 40h↑ → 8h 상한. 시급 곱해 금액.
-  const weekly = new Map<string, { workMinutes: number; lastDate: string }>();
+  const weekly = new Map<string, number>();
   for (const r of records) {
     if (r.status === "휴가" || r.workMinutes <= 0) continue;
     const key = weekStartMonday(r.date);
-    const acc = weekly.get(key) ?? { workMinutes: 0, lastDate: r.date };
-    acc.workMinutes += r.workMinutes;
-    if (r.date > acc.lastDate) acc.lastDate = r.date;
-    weekly.set(key, acc);
+    weekly.set(key, (weekly.get(key) ?? 0) + r.workMinutes);
   }
-  for (const { workMinutes, lastDate } of weekly.values()) {
+  // 표기일 = 그 주의 일요일(주 마지막 날)로 통일. 월 경계 주(일요일이 다음 달)는
+  // 현재 월 리스트에 남도록 해당 월 말일로 클램프. records 는 단일 월(getMonthRecords).
+  const ym = records[0].date.slice(0, 7);
+  const [yy, mn] = ym.split("-").map(Number);
+  const monthEnd = `${ym}-${String(new Date(yy, mn, 0).getDate()).padStart(2, "0")}`;
+  for (const [weekStart, workMinutes] of weekly) {
     const amount = calcWeeklyHolidayPay({ weeklyWorkMinutes: workMinutes, hourlyWage });
     if (amount <= 0) continue; // 주 15시간 미만 → 주휴 없음
+    const sunday = shiftDay(weekStart, 6);
     items.push({
-      date: lastDate, // 해당 주의 마지막 근무일에 주휴행 표기(월 범위 내)
+      date: sunday <= monthEnd ? sunday : monthEnd, // 주 마지막 일요일(월 경계 주는 월말 클램프)
       kind: "weekly_holiday",
       label: `주휴수당 ${minutesLabel(weeklyHolidayPaidMinutes(workMinutes))}`,
       amount,

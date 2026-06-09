@@ -67,6 +67,9 @@ export function PayList({ month }: { month: string }) {
                 >
                   {item.label}
                 </p>
+                {item.isWeeklyHoliday && (
+                  <p className="text-xs text-muted">*매주 마지막 일요일에 정산</p>
+                )}
                 {ot && <p className="text-sm text-statusblue">{ot}</p>}
               </div>
               <span
