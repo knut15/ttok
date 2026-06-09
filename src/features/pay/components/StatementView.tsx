@@ -4,7 +4,6 @@
 // 권한: 마스터만 입력값 편집·저장(PayslipInputs), 멤버는 완성본 조회만(읽기 전용).
 // 입력값은 서버 영속(PayslipInput) — 마스터가 저장하면 해당 멤버가 완성본을 본다.
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { MonthBar } from "@/components/MonthBar";
 import { useMonthPay } from "@/features/pay/hooks/usePay";
 import { useProfile } from "@/features/mypage/hooks/useProfile";
@@ -107,16 +106,11 @@ export function StatementView({
     });
   }, [pay, profile, effectiveInputs, month]);
 
-  const backHref = crewId ? `/master/${crewId}` : "/pay";
-
   return (
     <div>
       {/* chrome — 인쇄 시 숨김 */}
       <div className="print:hidden" data-print-hide>
-        <div className="flex items-center justify-between px-5 pt-3">
-          <Link href={backHref} className="text-sm text-muted">
-            ‹ 뒤로
-          </Link>
+        <div className="flex items-center justify-end px-5 pt-3">
           <button
             type="button"
             onClick={() => window.print()}
