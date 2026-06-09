@@ -23,9 +23,12 @@ import {
   longWorkLabel,
   statusTone,
 } from "@/features/attendance/domain";
+import { useSchedule } from "@/features/schedule/hooks/useSchedule";
 import { SEED_MONTH } from "@/lib/constants";
 import type { Tone } from "@/lib/constants";
-import { formatDotDate, weekdayKo, todayMonth } from "@/lib/date";
+import { formatDotDate, weekdayKo, weekdayOf, todayMonth } from "@/lib/date";
+import { parseHHMM } from "@/lib/time";
+import type { AttendanceRecord, FixedShift } from "@/types";
 
 const emptySubscribe = () => () => {};
 
@@ -37,6 +40,24 @@ const TONE_TEXT: Record<Tone, string> = {
   gray: "text-muted",
   neutral: "text-foreground",
 };
+
+/**
+ * 일별 상태별 시간 라벨(예정 근무시간 FixedShift 기준).
+ *  - 지각: 실제출근 − 예정출근, 조퇴: 예정퇴근 − 실제퇴근, 연장: overtimeMinutes, 정상: 근무시간.
+ *  - 결근/휴가: null(상태명만).
+ */
+function detailLabel(r: AttendanceRecord, shifts: FixedShift[]): string | null {
+  if (r.status === "휴가" || r.status === "결근") return null;
+  if (r.status === "연장") return longWorkLabel(r.overtimeMinutes);
+  const shift = shifts.find((f) => f.weekdays.includes(weekdayOf(r.date)));
+  if (shift && r.clockIn && r.status === "지각") {
+    return longWorkLabel(Math.max(0, parseHHMM(r.clockIn) - parseHHMM(shift.startTime)));
+  }
+  if (shift && r.clockOut && r.status === "조퇴") {
+    return longWorkLabel(Math.max(0, parseHHMM(shift.endTime) - parseHHMM(r.clockOut)));
+  }
+  return longWorkLabel(r.workMinutes);
+}
 
 export function MasterCrewDetail({
   crewId,
@@ -58,6 +79,8 @@ export function MasterCrewDetail({
   const month = picked ?? (mounted ? todayMonth() : SEED_MONTH);
   // 마스터일 때만 대상 멤버 fetch. 멤버(가드 진행 중)는 빈 인자로 호출 안 함.
   const { records, loading } = useMonthAttendance(month, crewId);
+  const { fixedShifts } = useSchedule(month);
+  const crewShifts = fixedShifts.filter((f) => f.crewId === crewId);
   // 안정성 레이더용 대상 멤버 급여 stats(마스터 스코프 ?crewId=). 마스터 전용 페이지이므로 노출 허용.
   const { data: pay } = useMonthPay(month, crewId);
   const stability = pay?.stats.stability;
@@ -108,35 +131,36 @@ export function MasterCrewDetail({
         </p>
       ) : (
         <ul className="space-y-2 px-5">
-          {sorted.map((r) => (
-            <li
-              key={r.date}
-              className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3"
-            >
-              <div>
-                <p className="font-semibold">
-                  {formatDotDate(r.date)} ({weekdayKo(r.date)})
-                </p>
-                <p className="text-sm text-muted">
-                  {r.clockIn && r.clockOut
-                    ? `${r.clockIn} ~ ${r.clockOut}`
-                    : "기록 없음"}
-                </p>
-              </div>
-              <div className="text-right">
-                <p
-                  className={`text-sm font-semibold ${TONE_TEXT[statusTone(r.status)]}`}
-                >
-                  {r.status}
-                </p>
-                {r.status !== "휴가" && (
-                  <p className="text-sm text-muted">
-                    {longWorkLabel(r.workMinutes)}
+          {sorted.map((r) => {
+            const detail = detailLabel(r, crewShifts);
+            return (
+              <li
+                key={r.date}
+                className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3"
+              >
+                <div>
+                  <p className="font-semibold">
+                    {formatDotDate(r.date)} ({weekdayKo(r.date)})
                   </p>
-                )}
-              </div>
-            </li>
-          ))}
+                  <p className="text-sm text-muted">
+                    {r.clockIn && r.clockOut
+                      ? `${r.clockIn} ~ ${r.clockOut}`
+                      : "기록 없음"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p
+                    className={`text-sm font-semibold ${r.status === "대타" ? "text-violet-400" : TONE_TEXT[statusTone(r.status)]}`}
+                  >
+                    {r.status}
+                  </p>
+                  {detail !== null && (
+                    <p className="text-sm text-muted">{detail}</p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

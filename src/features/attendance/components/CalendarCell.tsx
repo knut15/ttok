@@ -1,20 +1,14 @@
 // 캘린더 셀 1칸(presentational). 배지 +0분 숨김 규칙은 domain.formatBadge 가 적용.
 import Link from "next/link";
-import type { Tone } from "@/lib/constants";
 
 export interface CellView {
   date: string;
   dayNum: number;
-  workLabel: string | null; // "7h" / null
-  badge: { text: string; tone: Extract<Tone, "green" | "gray"> } | null;
-  vacation: boolean;
-  dotTone: Tone | null;
+  clockIn: string | null; // 정상 근무 출근시각 "08:00"
+  clockOut: string | null; // 퇴근시각 "15:00"(근무중이면 null)
+  statusLabel: string | null; // 지각/결근/휴가/조퇴/연장 → 상태명
+  statusColor: string | null; // 상태 라벨 색(tailwind text-*)
 }
-
-const BADGE_BG: Record<"green" | "gray", string> = {
-  green: "bg-statusgreen text-white",
-  gray: "bg-graybadge text-white",
-};
 
 export function CalendarCell({
   view,
@@ -38,19 +32,17 @@ export function CalendarCell({
       className="flex aspect-[3/4] flex-col items-center gap-1 rounded-lg px-0.5 py-1 hover:bg-foreground/5"
     >
       <span className={`text-sm font-semibold ${numColor}`}>{view.dayNum}</span>
-      {view.badge && (
+      {view.clockIn ? (
+        <span className="text-[9px] leading-tight text-muted">
+          {view.clockIn}~{view.clockOut ?? ""}
+        </span>
+      ) : null}
+      {view.statusLabel ? (
         <span
-          className={`rounded-md px-1 text-[9px] font-bold leading-tight ${BADGE_BG[view.badge.tone]}`}
+          className={`rounded-md bg-foreground/5 px-1 text-[10px] font-semibold ${view.statusColor ?? "text-muted"}`}
         >
-          {view.badge.text}
+          {view.statusLabel}
         </span>
-      )}
-      {view.vacation ? (
-        <span className="rounded-md bg-foreground/5 px-1 text-[10px] font-semibold text-muted">
-          휴가
-        </span>
-      ) : view.workLabel ? (
-        <span className="text-[10px] text-muted">{view.workLabel}</span>
       ) : null}
     </Link>
   );

@@ -2,16 +2,22 @@
 
 import { useEffect, useMemo } from "react";
 import { useMonthAttendance } from "@/features/attendance/hooks/useAttendance";
-import {
-  formatBadge,
-  shortWorkLabel,
-  statusTone,
-} from "@/features/attendance/domain";
 import { buildMonthGrid } from "@/lib/date";
 import { CalendarCell, type CellView } from "./CalendarCell";
 import type { AttendanceRecord } from "@/types";
 
 const WEEK_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 근무 있는 상태(정상/지각/조퇴/연장) → 출/퇴 시각 + 상태명. 결근·휴가 → 상태명만.
+const STATUS_STYLE: Record<string, string> = {
+  지각: "text-orange-400",
+  결근: "text-red-400",
+  휴가: "text-gray-400",
+  조퇴: "text-yellow-400",
+  연장: "text-teal-400",
+  대타: "text-violet-400",
+};
+const WORKED_STATUSES: readonly string[] = ["정상", "지각", "조퇴", "연장", "대타"];
 
 // 월간 캘린더(AC-13, AC-14): 그리드 셀 + 날짜 탭→상세 라우트.
 // T11 ST-3(AC-6): reloadKey 증가 시 현재 월 useMonthAttendance.reload 재호출(FAB 등록 반영).
@@ -42,22 +48,19 @@ export function MonthlyCalendar({
     const dayNum = Number(date.slice(-2));
     const rec = byDate.get(date);
     if (!rec) {
-      return {
-        date,
-        dayNum,
-        workLabel: null,
-        badge: null,
-        vacation: false,
-        dotTone: null,
-      };
+      return { date, dayNum, clockIn: null, clockOut: null, statusLabel: null, statusColor: null };
     }
+    // 근무 있는 상태(정상/지각/조퇴/연장) → 출/퇴 시각. 비정상은 그 하단에 상태명+색.
+    // 결근·휴가(무근무) → 시각 없이 상태명만.
+    const statusColor = STATUS_STYLE[rec.status] ?? null;
+    const worked = WORKED_STATUSES.includes(rec.status);
     return {
       date,
       dayNum,
-      workLabel: rec.status === "휴가" ? null : shortWorkLabel(rec.workMinutes),
-      badge: formatBadge(rec),
-      vacation: rec.status === "휴가",
-      dotTone: statusTone(rec.status),
+      clockIn: worked ? rec.clockIn : null,
+      clockOut: worked ? rec.clockOut : null,
+      statusLabel: statusColor ? rec.status : null,
+      statusColor,
     };
   });
 

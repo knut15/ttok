@@ -10,6 +10,7 @@ import { useCurrentUser } from "@/features/accounts/hooks/useCurrentUser";
 import { statusTone } from "@/features/attendance/domain";
 import { DEFAULT_BREAK_RANGE } from "@/lib/constants";
 import { todayDate } from "@/lib/date";
+import { parseHHMM } from "@/lib/time";
 import type { ClockInStatus, ClockOutStatus, WorkStatus } from "@/types";
 import { StatusChangeSheet } from "./StatusChangeSheet";
 import { BreakChangeSheet } from "./BreakChangeSheet";
@@ -117,6 +118,12 @@ export function AttendanceDetail({ date }: { date: string }) {
     record.breakStart && record.breakEnd
       ? `${record.breakStart}~${record.breakEnd}`
       : DEFAULT_BREAK_RANGE;
+  // 4시간 미만 근무 → 법정 휴게 0 → 휴게 변경 비활성 + 00:00 표기.
+  const breakGross =
+    record.clockIn && record.clockOut
+      ? parseHHMM(record.clockOut) - parseHHMM(record.clockIn)
+      : 0;
+  const noBreak = breakGross > 0 && breakGross < 240;
 
   return (
     <div>
@@ -173,12 +180,13 @@ export function AttendanceDetail({ date }: { date: string }) {
         />
         <Row
           label="휴게"
-          value={record.breakMinutes > 0 ? breakRangeLabel : "-"}
+          value={noBreak ? "00:00" : record.breakMinutes > 0 ? breakRangeLabel : "-"}
           action={
             <button
               type="button"
+              disabled={noBreak}
               onClick={() => setBreakSheetOpen(true)}
-              className="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm font-semibold"
+              className="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
             >
               시간변경
             </button>
