@@ -15,13 +15,13 @@ function Avatar({ a }: { a: ScheduleAssignee }) {
   // 무채도 명도 사다리(Premium Monotone): 매니저(잉크) > 일반(다크그레이) > 대타(저채도 세이지) > 고정(옅은회색) > 휴무(흰색).
   // 색은 대타 세이지 하나만 — 나머지는 명도로 구분.
   const tone = a.off
-    ? "border border-border bg-surface text-muted"
+    ? "border border-dotted border-border bg-surface text-muted" // 휴무 = 흰색 + 점선 보더
     : a.substitute
       ? "bg-violet-400 text-white" // 대타 = violet
       : a.manager
         ? "bg-coral text-white" // 매니저 = 잉크(가장 중요)
         : a.fixed
-          ? "bg-foreground/15 text-foreground" // 고정 = 옅은 회색
+          ? "bg-stone-300 text-foreground" // 고정 = 옅은 회색(솔리드)
           : "bg-graybadge text-white"; // 일반 = 무채 다크그레이
   const note = a.off
     ? " (휴무)"

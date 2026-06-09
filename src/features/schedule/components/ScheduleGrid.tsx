@@ -87,7 +87,9 @@ export function ScheduleGrid({
                       aria-label={`${c.name} ${Number(d.slice(-2))}일 스케쥴`}
                       className={`flex h-12 w-full flex-col items-center justify-center rounded text-[9px] leading-tight ${
                         e && !e.off
-                          ? "bg-coral/10 font-semibold text-coral"
+                          ? e.substitute
+                            ? "bg-violet-100 font-semibold text-violet-700" // 대타 = violet(달력과 일관)
+                            : "bg-coral/10 font-semibold text-coral"
                           : "text-muted opacity-60 hover:opacity-100" // 비근무(비번/휴무) 흐리게
                       }`}
                     >
