@@ -5,9 +5,10 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { MonthBar } from "@/components/MonthBar";
+import { StoreBar } from "@/components/StoreBar";
 import { MonthPickerSheet } from "@/components/MonthPickerSheet";
 import { PayList } from "./PayList";
-import { STORE_NAME, SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
+import { SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
 import { todayMonth } from "@/lib/date";
 
 // 마운트 여부 구독(HomeToday/AttendanceCalendarView 동일 패턴).
@@ -29,20 +30,21 @@ export function PayView() {
 
   return (
     <div>
+      <StoreBar
+        right={
+          <Link
+            href={`/pay/statement?month=${month}`}
+            className="rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
+          >
+            급여명세서
+          </Link>
+        }
+      />
       <MonthBar
         month={month}
         onChange={setMonth}
         onPick={() => setPickerOpen(true)}
       />
-      <div className="flex items-center justify-between px-5 pb-4 text-base font-bold">
-        <div className="flex items-center gap-2">
-          <span aria-hidden>🏪</span>
-          <span className="truncate">{STORE_NAME}</span>
-        </div>
-        <Link href={`/pay/statement?month=${month}`} className="ml-2 rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold">
-          급여명세서
-        </Link>
-      </div>
       <PayList month={month} />
       <MonthPickerSheet
         open={pickerOpen}

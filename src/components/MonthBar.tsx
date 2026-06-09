@@ -14,7 +14,7 @@ export function MonthBar({
   onPick?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-3 px-5 pb-2 pt-3">
+    <div className="flex items-center justify-center gap-3 px-5 pb-8 pt-3">
       <button
         type="button"
         aria-label="이전 달"

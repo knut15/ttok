@@ -4,6 +4,7 @@
 // 읽기는 전원, 작성(추가/수정/삭제)은 canWrite(master/매니저)만 — 시트가 분기 처리.
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { MonthBar } from "@/components/MonthBar";
+import { StoreBar } from "@/components/StoreBar";
 import { useSchedule } from "@/features/schedule/hooks/useSchedule";
 import {
   authHeaders,
@@ -110,28 +111,37 @@ export function ScheduleView() {
 
   return (
     <div className="pb-24">
-      <MonthBar month={month} onChange={setMonth} />
-      <div className="flex items-center justify-between px-5 pb-3">
-        <p className="text-sm text-muted">
-          근무 스케쥴{canWrite ? " · 탭하여 근무자 배정" : ""}
-        </p>
-        {/* 달력 / 표 보기 토글(요구사항 3: 둘 다). */}
-        <div className="flex rounded-full bg-foreground/[0.06] p-0.5 text-xs font-semibold">
-          {(["calendar", "grid"] as const).map((m) => (
+      <StoreBar
+        right={
+          /* 달력/표 보기 스위치 */
+          <div className="flex items-center gap-2 text-xs font-semibold">
+            <span>
+              <span className={view === "calendar" ? "text-foreground" : "text-muted"}>
+                달력
+              </span>
+              <span className="text-muted">/</span>
+              <span className={view === "grid" ? "text-foreground" : "text-muted"}>표</span>
+            </span>
             <button
-              key={m}
               type="button"
-              onClick={() => setView(m)}
-              aria-pressed={view === m}
-              className={`rounded-full px-3 py-1 transition ${
-                view === m ? "bg-surface text-foreground shadow-sm" : "text-muted"
+              role="switch"
+              aria-checked={view === "grid"}
+              aria-label="달력/표 보기 전환"
+              onClick={() => setView(view === "calendar" ? "grid" : "calendar")}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                view === "grid" ? "bg-coral" : "bg-foreground/15"
               }`}
             >
-              {m === "calendar" ? "달력" : "표"}
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-all ${
+                  view === "grid" ? "left-[22px]" : "left-0.5"
+                }`}
+              />
             </button>
-          ))}
-        </div>
-      </div>
+          </div>
+        }
+      />
+      <MonthBar month={month} onChange={setMonth} />
       {canWrite ? (
         <div className="flex items-center justify-end gap-2 px-5 pb-3">
           <button

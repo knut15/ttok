@@ -4,10 +4,11 @@
 // page(RSC) 셸은 보존하고 월 상태를 이 경계로 지역화(architect §2.3).
 import { useState, useSyncExternalStore } from "react";
 import { MonthBar } from "@/components/MonthBar";
+import { StoreBar } from "@/components/StoreBar";
 import { MonthlyCalendar } from "./MonthlyCalendar";
 import { ClockFab } from "./ClockFab";
 import { MonthPickerSheet } from "@/components/MonthPickerSheet";
-import { STORE_NAME, SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
+import { SEED_MONTH, SEED_JOIN_DATE } from "@/lib/constants";
 import { todayMonth } from "@/lib/date";
 
 // 마운트 여부 구독(HomeToday 동일 패턴, AC-T6-7). 서버/첫CSR 스냅샷 false →
@@ -32,11 +33,8 @@ export function AttendanceCalendarView() {
 
   return (
     <div>
+      <StoreBar />
       <MonthBar month={month} onChange={setMonth} onPick={() => setPickerOpen(true)} />
-      <div className="flex items-center gap-2 px-5 pb-3 text-sm font-semibold">
-        <span aria-hidden>🏪</span>
-        <span className="truncate">{STORE_NAME}</span>
-      </div>
       <MonthlyCalendar month={month} reloadKey={reloadKey} />
       <ClockFab onRegistered={() => setReloadKey((k) => k + 1)} />
       <MonthPickerSheet
