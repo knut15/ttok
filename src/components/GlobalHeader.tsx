@@ -27,6 +27,13 @@ function titleFor(path: string): string {
   return "Crewmon";
 }
 
+// 일부 상세 화면은 뒤로가기 시 히스토리(back) 대신 고정 부모로 이동.
+// 근무 상세는 항상 출퇴근 달력에서만 진입 → /attendance 로 고정(요구).
+function backTargetFor(path: string): string | null {
+  if (path.startsWith("/attendance/")) return "/attendance";
+  return null;
+}
+
 const emptySubscribe = () => () => {};
 
 export function GlobalHeader() {
@@ -37,6 +44,7 @@ export function GlobalHeader() {
 
   const showBack = !TOP_LEVEL.has(pathname);
   const title = titleFor(pathname);
+  const backTarget = backTargetFor(pathname);
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-border bg-surface px-3 py-3 print:hidden">
@@ -45,7 +53,7 @@ export function GlobalHeader() {
           <button
             type="button"
             aria-label="이전"
-            onClick={() => router.back()}
+            onClick={() => (backTarget ? router.push(backTarget) : router.back())}
             className="grid h-8 w-8 place-items-center rounded-full text-2xl leading-none text-foreground hover:bg-foreground/5"
           >
             ‹
