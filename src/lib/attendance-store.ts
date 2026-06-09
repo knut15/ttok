@@ -17,12 +17,15 @@ import {
   applyClockInStatus,
   applyClockOutStatus,
   applyStatusPolicy,
+  deriveScheduledClock,
   emptyRecord,
   isAfterValid,
   newRecordFrom,
   subStatusesFromStatus,
+  type ScheduledShift,
 } from "./attendance-rules";
-import { calcWorkMinutes, calcOvertimeByClock } from "./time";
+import { parseHHMM } from "./time";
+import { weekdayOf } from "./date";
 import { DEFAULT_BREAK_MINUTES, DEFAULT_CREW_ID } from "./constants";
 
 type RecordRow = Prisma.AttendanceRecordGetPayload<object>;
@@ -85,6 +88,32 @@ async function requireStoreId(crewId: string): Promise<string> {
   const storeId = await storeIdForCrew(crewId);
   if (!storeId) throw new Error(`storeId not found for crewId=${crewId}`);
   return storeId;
+}
+
+/**
+ * 멤버의 그날 예정 근무시간(FixedShift, 요일 매칭).
+ * offDay: 예정이 등록된 멤버인데(존재) 그날이 근무 요일이 아님(비번=대타 대상). 예정 미설정 멤버는 false.
+ */
+async function scheduledFor(
+  crewId: string,
+  date: string,
+): Promise<{ sched: ScheduledShift | null; offDay: boolean }> {
+  // 1. 스케줄표 명시 배정(ScheduleEntry) 우선 — 그날 실제 예정/휴무의 진실원.
+  const entry = await prisma.scheduleEntry.findFirst({ where: { crewId, date } });
+  if (entry) {
+    if (entry.off) return { sched: null, offDay: true }; // 명시 휴무 = 비번(출근 시 대타)
+    return {
+      sched: { startMin: parseHHMM(entry.startTime), endMin: parseHHMM(entry.endTime) },
+      offDay: false,
+    };
+  }
+  // 2. 고정 근무(FixedShift) 요일 매칭. 예정 등록 멤버인데 그날 근무 요일이 아니면 비번.
+  const all = await prisma.fixedShift.findMany({ where: { crewId } });
+  const fs = all.find((f) => f.weekdays.includes(weekdayOf(date)));
+  const sched = fs
+    ? { startMin: parseHHMM(fs.startTime), endMin: parseHHMM(fs.endTime) }
+    : null;
+  return { sched, offDay: !sched && all.length > 0 };
 }
 
 // === 출퇴근 ===
@@ -194,14 +223,20 @@ export async function upsertTodayClock(
     next.breakMinutes = DEFAULT_BREAK_MINUTES;
     next.deductMinutes = 0;
   }
-  if (next.clockIn && next.clockOut) {
-    next.workMinutes = calcWorkMinutes({
-      clockIn: next.clockIn,
-      clockOut: next.clockOut,
-      breakMinutes: next.breakMinutes,
-    });
-    next.overtimeMinutes = calcOvertimeByClock({ clockOut: next.clockOut });
-  }
+  // 예정 근무시간(FixedShift) 기준 지각/조퇴/연장 자동 판정 + work/overtime.
+  const { sched, offDay } = await scheduledFor(crewId, date);
+  const derived = deriveScheduledClock({
+    clockIn: next.clockIn,
+    clockOut: next.clockOut,
+    sched,
+    offDay,
+  });
+  next.workMinutes = derived.workMinutes;
+  next.overtimeMinutes = derived.overtimeMinutes;
+  next.breakMinutes = derived.breakMinutes;
+  next.clockInStatus = derived.clockInStatus;
+  next.clockOutStatus = derived.clockOutStatus;
+  next.status = derived.status;
 
   const storeId = await requireStoreId(crewId);
   await prisma.attendanceRecord.upsert({

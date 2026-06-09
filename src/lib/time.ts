@@ -66,3 +66,13 @@ export function calcOvertimeByClock(i: { clockOut: string | null }): number {
   if (Number.isNaN(end)) return 0;
   return Math.max(0, end - REGULAR_END_MINUTES);
 }
+
+/**
+ * 법정 휴게(분) — 재실시간(grossMinutes = 퇴근−출근, 휴게 전) 기준.
+ * 근로기준법: 4시간 미만 휴게 0, 4~8시간 미만 30분, 8시간 이상 60분.
+ */
+export function legalBreakMinutes(grossMinutes: number): number {
+  if (grossMinutes >= 480) return 60;
+  if (grossMinutes >= 240) return 30;
+  return 0;
+}

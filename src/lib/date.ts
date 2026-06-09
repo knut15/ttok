@@ -17,6 +17,12 @@ export function weekdayKo(date: string): string {
   return WEEKDAY_KO[new Date(y, m - 1, d).getDay()];
 }
 
+/** 요일 숫자(0=일 … 6=토). FixedShift.weekdays 매칭용. */
+export function weekdayOf(date: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
 /** "2026-05-29" → "2026.05.29 금" (홈 헤더 형식, AC-11). */
 export function formatDotDate(date: string): string {
   const [y, m, d] = date.split("-");

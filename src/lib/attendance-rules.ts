@@ -7,7 +7,7 @@ import type {
   EditRequestChange,
   WorkStatus,
 } from "@/types";
-import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes } from "./time";
+import { calcWorkMinutes, calcOvertimeByClock, calcBreakMinutes, parseHHMM, legalBreakMinutes } from "./time";
 import { DEFAULT_BREAK_MINUTES, REGULAR_MINUTES, WORK_STATUSES } from "./constants";
 
 // === 출근/퇴근 상태 분리(독립) ↔ 단일 status 파생 ===
@@ -30,6 +30,7 @@ export function subStatusesFromStatus(status: WorkStatus): {
   if (status === "휴가") return { clockInStatus: "휴가", clockOutStatus: "정상" };
   if (status === "연장") return { clockInStatus: "정상", clockOutStatus: "연장" };
   if (status === "조퇴") return { clockInStatus: "정상", clockOutStatus: "조퇴" };
+  if (status === "대타") return { clockInStatus: "정상", clockOutStatus: "정상" };
   if (status === "지각") return { clockInStatus: "지각", clockOutStatus: "정상" };
   return { clockInStatus: "정상", clockOutStatus: "정상" };
 }
@@ -76,7 +77,10 @@ export function applyClockOutStatus(rec: AttendanceRecord, co: ClockOutStatus): 
   if (ci === "결근" || ci === "휴가") {
     return { ...rec, clockOutStatus: "정상", status: ci };
   }
-  return { ...rec, clockOutStatus: co, clockInStatus: ci, status: deriveStatus(ci, co) };
+  // co 반영 후 clock 재계산 — 조퇴→연장 0, 연장/정상→퇴근 15:00 초과분(라벨↔연장시간 정합).
+  const next: AttendanceRecord = { ...rec, clockOutStatus: co, clockInStatus: ci };
+  const recalced = next.clockIn && next.clockOut ? recalcClockFields(next) : next;
+  return { ...recalced, status: deriveStatus(ci, co) };
 }
 
 /**
@@ -91,11 +95,13 @@ export function recalcClockFields(rec: AttendanceRecord): AttendanceRecord {
       : rec.breakMinutes === 0
         ? DEFAULT_BREAK_MINUTES
         : rec.breakMinutes;
+    // 조퇴는 일찍 퇴근 — 연장(15:00 초과)을 인정하지 않음(라벨↔연장시간 정합).
+    const isEarlyLeave = rec.status === "조퇴" || rec.clockOutStatus === "조퇴";
     return {
       ...rec,
       breakMinutes,
       workMinutes: calcWorkMinutes({ clockIn: rec.clockIn, clockOut: rec.clockOut, breakMinutes }),
-      overtimeMinutes: calcOvertimeByClock({ clockOut: rec.clockOut }),
+      overtimeMinutes: isEarlyLeave ? 0 : calcOvertimeByClock({ clockOut: rec.clockOut }),
     };
   }
   return { ...rec, workMinutes: 0, overtimeMinutes: 0 };
@@ -185,4 +191,66 @@ export function applyAfter(base: AttendanceRecord, after: EditRequestChange): At
     ...recalcClockFields(merged),
     deductMinutes: after.status === "지각" ? base.deductMinutes : 0,
   };
+}
+
+// === 예정 근무시간(FixedShift) 기준 자동 판정 — 멤버별 근무시간 반영 ===
+
+/** 멤버의 그날 예정 근무시간(분). FixedShift(요일 매칭) → 시작/종료 분. */
+export interface ScheduledShift {
+  startMin: number;
+  endMin: number;
+}
+
+/**
+ * 예정 근무시간 기준 출퇴근 자동 판정. 실제 출퇴근 시각 + 예정(sched) → 지각/조퇴/연장 + work/overtime.
+ *  - 지각: 실제출근 > 예정출근(startMin)
+ *  - 조퇴: 실제퇴근 < 예정퇴근(endMin)
+ *  - 연장: 실제퇴근 > 예정퇴근 → 초과분(overtimeMinutes)
+ *  - 예정 없음(비번, sched=null): 라벨 정상·연장 0 (대타 분류는 별도 단계).
+ */
+export function deriveScheduledClock(i: {
+  clockIn: string | null;
+  clockOut: string | null;
+  sched: ScheduledShift | null;
+  /** 예정이 등록된 멤버인데 그날이 근무 요일이 아님(비번). 예정 미설정 멤버는 false. */
+  offDay: boolean;
+}): {
+  clockInStatus: ClockInStatus;
+  clockOutStatus: ClockOutStatus;
+  status: WorkStatus;
+  workMinutes: number;
+  overtimeMinutes: number;
+  breakMinutes: number;
+} {
+  const { clockIn, clockOut, sched } = i;
+  const inM = clockIn ? parseHHMM(clockIn) : NaN;
+  const outM = clockOut ? parseHHMM(clockOut) : NaN;
+
+  const clockInStatus: ClockInStatus =
+    sched && !Number.isNaN(inM) && inM > sched.startMin ? "지각" : "정상";
+
+  let clockOutStatus: ClockOutStatus = "정상";
+  let overtimeMinutes = 0;
+  if (sched && !Number.isNaN(outM)) {
+    if (outM > sched.endMin) {
+      clockOutStatus = "연장";
+      overtimeMinutes = outM - sched.endMin;
+    } else if (outM < sched.endMin) {
+      clockOutStatus = "조퇴";
+    }
+  }
+
+  // 휴게: 재실시간(gross=퇴근−출근) 기준 법정 자동(4h 미만 0, 8h 미만 30, 이상 60). work = gross − 휴게.
+  const gross =
+    clockIn && clockOut && !Number.isNaN(inM) && !Number.isNaN(outM)
+      ? Math.max(0, outM - inM)
+      : 0;
+  const breakMinutes = legalBreakMinutes(gross);
+  const workMinutes = Math.max(0, gross - breakMinutes);
+
+  // 비번(예정 있는 멤버의 근무 요일 아님)에 출근 = 대타. 예정 미설정(offDay=false)은 정상.
+  const status: WorkStatus =
+    i.offDay && Boolean(clockIn) ? "대타" : deriveStatus(clockInStatus, clockOutStatus);
+
+  return { clockInStatus, clockOutStatus, status, workMinutes, overtimeMinutes, breakMinutes };
 }

@@ -22,7 +22,7 @@ describe("upsertTodayClock — 휴가일 토글(버그1)", () => {
     await upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
     const rec = await upsertTodayClock(VACATION_DATE, "clockOut", "15:00");
 
-    expect(rec.status).toBe("정상");
+    expect(rec.status).not.toBe("휴가"); // 출근 → 휴가 해제(예정 근무일=정상, 비번=대타)
     expect(rec.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
     expect(rec.workMinutes).toBe(390);
     expect(rec.deductMinutes).toBe(0);
@@ -36,10 +36,11 @@ describe("upsertTodayClock — 휴가일 토글(버그1)", () => {
     expect(pay).toBeGreaterThan(0);
   });
 
-  it("clockIn 기록만으로도 휴가 status가 '정상'으로 전환되고 휴게가 정상화된다", async () => {
+  it("clockIn 기록만으로도 휴가 status가 '정상'으로 전환된다(휴게는 퇴근 후 자동 산정)", async () => {
     const rec = await upsertTodayClock(VACATION_DATE, "clockIn", "08:00");
-    expect(rec.status).toBe("정상");
-    expect(rec.breakMinutes).toBe(DEFAULT_BREAK_MINUTES);
+    expect(rec.status).not.toBe("휴가"); // 출근 → 휴가 해제(예정 근무일=정상, 비번=대타)
+    // 자동 휴게(legalBreakMinutes): clockIn만(근무 미완·gross 0)이면 0, 퇴근 후 재실시간 기준 산정.
+    expect(rec.breakMinutes).toBe(0);
   });
 });
 
