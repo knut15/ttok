@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { SessionProviderClient } from "@/features/auth/components/SessionProviderClient";
 import { auth } from "@/auth";
+import type { Session } from "next-auth";
 
 // Pretendard Variable(자체 호스팅) — 한글 친근감의 핵심(DESIGN.md §3). weight 축 45~920.
 const pretendard = localFont({
@@ -22,9 +23,15 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // 세션을 서버에서 읽어 클라에 주입 → 첫 렌더부터 status 확정.
-  // AppAuthGate 의 "불러오는 중"(클라 /api/auth/session 왕복 대기)을 제거한다.
-  const session = await auth();
+  // 세션을 서버에서 읽어 클라에 주입 → 첫 렌더부터 status 확정(AppAuthGate "불러오는 중" 제거).
+  // auth() 는 쿠키 복호화 실패(AUTH_SECRET 불일치/만료) 시 throw → 루트 레이아웃 전체가 깨지므로
+  // 클라 useSession 과 동일하게 무세션으로 graceful 폴백(session-scope 패턴) → AppAuthGate 가 /login 유도.
+  let session: Session | null = null;
+  try {
+    session = await auth();
+  } catch {
+    session = null;
+  }
   return (
     <html lang="ko" className={pretendard.variable}>
       <body className="bg-background">
