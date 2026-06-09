@@ -3,6 +3,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { storeIdForCrew } from "./identity-repo";
+import { upsertSchedule } from "./schedule-store";
 import type {
   ApproveResult,
   AttendanceRecord,
@@ -244,6 +245,17 @@ export async function upsertTodayClock(
     create: { storeId, crewId, ...toData(next) },
     update: toData(next),
   });
+  // 비번(예정 없는 날) 출근 = 대타 → 스케줄표에도 반영(ScheduleEntry substitute, 자동 수락). 양방향 동기화.
+  if (offDay && next.clockIn && next.clockOut) {
+    await upsertSchedule({
+      date,
+      crewId,
+      startTime: next.clockIn,
+      endTime: next.clockOut,
+      createdBy: crewId,
+      autoApprove: true,
+    });
+  }
   return next;
 }
 

@@ -17,7 +17,7 @@ function Avatar({ a }: { a: ScheduleAssignee }) {
   const tone = a.off
     ? "border border-border bg-surface text-muted"
     : a.substitute
-      ? "bg-statusgreen text-white" // 대타 = 저채도 세이지(유일한 색 포인트)
+      ? "bg-violet-400 text-white" // 대타 = violet
       : a.manager
         ? "bg-coral text-white" // 매니저 = 잉크(가장 중요)
         : a.fixed
