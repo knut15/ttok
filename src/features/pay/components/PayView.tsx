@@ -33,18 +33,15 @@ export function PayView() {
         month={month}
         onChange={setMonth}
         onPick={() => setPickerOpen(true)}
-        right={
-          <Link
-            href={`/pay/statement?month=${month}`}
-            className="ml-2 rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold"
-          >
-            급여명세서
-          </Link>
-        }
       />
-      <div className="flex items-center gap-2 px-5 pb-4 text-base font-bold">
-        <span aria-hidden>🏪</span>
-        <span className="truncate">{STORE_NAME}</span>
+      <div className="flex items-center justify-between px-5 pb-4 text-base font-bold">
+        <div className="flex items-center gap-2">
+          <span aria-hidden>🏪</span>
+          <span className="truncate">{STORE_NAME}</span>
+        </div>
+        <Link href={`/pay/statement?month=${month}`} className="ml-2 rounded-lg border border-foreground/10 px-3 py-1.5 text-xs font-semibold">
+          급여명세서
+        </Link>
       </div>
       <PayList month={month} />
       <MonthPickerSheet
