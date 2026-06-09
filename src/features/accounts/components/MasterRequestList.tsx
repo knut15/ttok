@@ -3,7 +3,7 @@
 // 마스터 수정요청 목록(FR-2, presentational): 멤버명 · 날짜 · 대기/수락 배지 · 수락 버튼.
 // 대기 요청에만 수락 버튼(approveRequest 멱등이나 UI에서 재수락 노출 안 함, E-3).
 // 0건이면 빈 상태(E-2). props 는 types 만 의존(store/route 비접근).
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPayRowDate } from "@/lib/date";
 import { requestKindLabel } from "@/features/attendance/domain";
@@ -18,12 +18,12 @@ export function MasterRequestList({
 }) {
   // perf/UX: 수락 PATCH 왕복 동안 버튼 비활성(중복 탭 방지). 목록 갱신(수락 반영) 시 자동 해제.
   const [busyId, setBusyId] = useState<string | null>(null);
-  // 목록(requests 새 참조) 갱신 시 busy 해제 — 렌더 중 조정(effect 불필요).
-  const [prevRequests, setPrevRequests] = useState(requests);
-  if (requests !== prevRequests) {
-    setPrevRequests(requests);
+  // 목록 갱신(수락 반영) 시 busy 해제. requests 는 부모의 filter 결과(매 렌더 새 참조)라
+  // 렌더 중 조정은 무한 리렌더 → effect 로 처리(setBusyId(null) 은 이미 null이면 React bail-out).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBusyId(null);
-  }
+  }, [requests]);
 
   if (requests.length === 0) {
     return (

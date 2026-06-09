@@ -42,6 +42,7 @@ export function useMonthAttendance(month: string, targetCrewId?: string) {
     () => [ATT_PREFIX, "month", scopeKey, month] as const,
     [month, scopeKey],
   );
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const queryResult = useQuery({
     queryKey,
     queryFn: async () => {
@@ -51,13 +52,14 @@ export function useMonthAttendance(month: string, targetCrewId?: string) {
       });
       return res.ok ? ((await res.json()) as AttendanceRecord[]) : [];
     },
+    enabled,
   });
 
   const reload = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey });
   }, [queryClient, queryKey]);
 
-  return { records: queryResult.data ?? [], loading: queryResult.isLoading, reload };
+  return { records: queryResult.data ?? [], loading: queryResult.isLoading || !enabled, reload };
 }
 
 /** 단일일 상세 fetch + 상태변경 PATCH. T8-4: authHeaders + crewId 의존성. */
@@ -69,6 +71,7 @@ export function useDayAttendance(date: string) {
     () => [ATT_PREFIX, "day", crewId, date] as const,
     [crewId, date],
   );
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const queryResult = useQuery({
     queryKey,
     queryFn: async () => {
@@ -78,6 +81,7 @@ export function useDayAttendance(date: string) {
       });
       return res.ok ? ((await res.json()) as AttendanceRecord | null) : null;
     },
+    enabled,
   });
 
   // mutation 후 공유 캐시 무효화 — 같은 날을 보는 다른 컴포넌트/월 집계가 다음 read 시 fresh.
@@ -132,7 +136,7 @@ export function useDayAttendance(date: string) {
 
   return {
     record: queryResult.data ?? null,
-    loading: queryResult.isLoading,
+    loading: queryResult.isLoading || !enabled,
     reload,
     changeStatus,
     changeClockInStatus,
@@ -164,6 +168,7 @@ export function useTodayClock(date: string): UseTodayClock {
     () => [ATT_PREFIX, "day", crewId, date] as const,
     [crewId, date],
   );
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const queryResult = useQuery({
     queryKey,
     queryFn: async () => {
@@ -173,6 +178,7 @@ export function useTodayClock(date: string): UseTodayClock {
       });
       return res.ok ? ((await res.json()) as AttendanceRecord | null) : null;
     },
+    enabled,
   });
   const record = queryResult.data ?? null;
 
@@ -228,6 +234,7 @@ export function useEditRequests() {
     // E-3(REWORK v2 P1-3): 전환 시 이전 사용자 요청목록 즉시 리셋 후 fetch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRequests([]);
+    if (crewId === "guest") return; // 세션 확정 전(guest) 헛조회 방지
     fetch("/api/attendance/requests", {
       ...NO_STORE,
       headers: authHeaders(user),

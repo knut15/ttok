@@ -40,6 +40,7 @@ export function useSchedule(month: string) {
   const { user } = useCurrentUser();
   const crewId = user.crewId ?? user.id;
   const queryClient = useQueryClient();
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const scheduleQuery = useQuery({
     queryKey: [SCHED_QUERY, crewId, user.role, month],
     queryFn: async () => {
@@ -51,6 +52,7 @@ export function useSchedule(month: string) {
         ? ((await res.json()) as ScheduleResponse)
         : { month, entries: [], fixedShifts: [], canWrite: false };
     },
+    enabled,
   });
   const crewsQuery = useQuery({
     queryKey: [CREWS_QUERY, crewId, user.role],
@@ -58,6 +60,7 @@ export function useSchedule(month: string) {
       const res = await fetch("/api/crews", NO_STORE);
       return res.ok ? ((await res.json()) as Crew[]) : [];
     },
+    enabled,
   });
   const reload = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [SCHED_QUERY, crewId] });
@@ -133,12 +136,14 @@ export function useSchedule(month: string) {
     [user, reload],
   );
 
+  // crews(근무자 메타) 로딩 중이면 entries 노출 보류 → ScheduleCalendar 조인 실패 시 아바타 '?' 방지.
+  const crewsReady = !crewsQuery.isLoading && enabled;
   return {
-    entries: scheduleQuery.data?.entries ?? [],
+    entries: crewsReady ? (scheduleQuery.data?.entries ?? []) : [],
     fixedShifts: scheduleQuery.data?.fixedShifts ?? [],
     canWrite: scheduleQuery.data?.canWrite ?? false,
     crews: crewsQuery.data ?? [],
-    loading: scheduleQuery.isLoading || crewsQuery.isLoading,
+    loading: scheduleQuery.isLoading || crewsQuery.isLoading || !enabled,
     reload,
     save,
     remove,

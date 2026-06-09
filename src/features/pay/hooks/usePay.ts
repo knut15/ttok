@@ -23,6 +23,7 @@ export function useMonthPay(month: string, targetCrewId?: string) {
   const crewId = user.crewId ?? user.id;
   const queryClient = useQueryClient();
   const scopeKey = `${crewId}|${targetCrewId ?? "self"}`;
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const query = useQuery({
     queryKey: [PAY_PREFIX, "month", scopeKey, month],
     queryFn: async () => {
@@ -33,17 +34,19 @@ export function useMonthPay(month: string, targetCrewId?: string) {
       });
       return res.ok ? ((await res.json()) as PayResponse) : null;
     },
+    enabled,
   });
   const reload = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [PAY_PREFIX, "month", scopeKey] });
   }, [queryClient, scopeKey]);
 
-  return { data: query.data ?? null, loading: query.isLoading, reload };
+  return { data: query.data ?? null, loading: query.isLoading || !enabled, reload };
 }
 
 export function useDayPay(date: string) {
   const { user } = useCurrentUser();
   const crewId = user.crewId ?? user.id;
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const query = useQuery({
     queryKey: [PAY_PREFIX, "day", crewId, date],
     queryFn: async () => {
@@ -53,7 +56,8 @@ export function useDayPay(date: string) {
       });
       return res.ok ? ((await res.json()) as PayDetail) : null;
     },
+    enabled,
   });
 
-  return { detail: query.data ?? null, loading: query.isLoading };
+  return { detail: query.data ?? null, loading: query.isLoading || !enabled };
 }

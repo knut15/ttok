@@ -25,13 +25,16 @@ export function useCurrentUserSync(): void {
   const sessName = data?.user?.name ?? null;
   const sessRole = data?.role ?? null;
   const sessOpId = data?.operationalId ?? null;
+  const sessMembershipId = data?.membershipId ?? null;
   const sessIsManager = data?.isManager ?? false;
 
   const user = useMemo<User>(() => {
     if (!id) return INITIAL_USER;
     const role: Role = sessRole ?? "crew";
     const name = sessName ?? "사용자";
-    const crewId = sessOpId ?? id;
+    // crewId 통일: 서버 resolveScope(operationalId ?? membershipId ?? userId)와 동일 체계.
+    // membershipId 폴백 누락 시 operationalId 없는 실멤버는 서버 crewId(membershipId)와 불일치 → 스케줄 등 본인 '?'.
+    const crewId = sessOpId ?? sessMembershipId ?? id;
     return {
       id,
       name,
@@ -40,7 +43,7 @@ export function useCurrentUserSync(): void {
       crewId: role === "crew" ? crewId : undefined,
       isManager: sessIsManager,
     };
-  }, [id, sessName, sessRole, sessOpId, sessIsManager]);
+  }, [id, sessName, sessRole, sessOpId, sessMembershipId, sessIsManager]);
 
   useEffect(() => {
     setUser(user);

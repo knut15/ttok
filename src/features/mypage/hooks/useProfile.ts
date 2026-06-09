@@ -23,6 +23,7 @@ export function useProfile(targetCrewId?: string) {
   const crewId = user.crewId ?? user.id;
   const queryClient = useQueryClient();
   const scopeKey = `${crewId}|${targetCrewId ?? "self"}`;
+  const enabled = user.id !== "guest"; // 세션 확정 전(guest) 헛조회 방지
   const query = useQuery({
     queryKey: [PROFILE_PREFIX, scopeKey],
     queryFn: async () => {
@@ -33,6 +34,7 @@ export function useProfile(targetCrewId?: string) {
       });
       return res.ok ? ((await res.json()) as ProfileResponse) : null;
     },
+    enabled,
   });
 
   const update = useCallback(
@@ -56,5 +58,5 @@ export function useProfile(targetCrewId?: string) {
     [user, crewId, queryClient],
   );
 
-  return { data: query.data ?? null, loading: query.isLoading, update };
+  return { data: query.data ?? null, loading: query.isLoading || !enabled, update };
 }
