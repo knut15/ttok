@@ -31,13 +31,14 @@ export const SEED_WORK_DAYS = "월 ~ 금";
 /** 근무시간 라벨. */
 export const SEED_WORK_TIME = "08:00~15:00";
 
-/** 출근상태 5종 enum (라디오 옵션 순서). */
+/** 근무상태 6종 enum (라디오 옵션 순서). 조퇴=퇴근측 상태이나 추가폼/API 통합 status 로도 선택 가능. */
 export const WORK_STATUSES: readonly WorkStatus[] = [
   "정상",
   "지각",
   "결근",
   "휴가",
   "연장",
+  "조퇴",
 ] as const;
 
 /** 표현 톤 토큰 — components 가 도메인을 모른 채 받는 색 키. */

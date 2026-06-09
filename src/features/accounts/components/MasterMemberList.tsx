@@ -2,7 +2,7 @@
 
 // 마스터 마이페이지 — 초대로 합류한 멤버 목록 + 매니저 지정/해제.
 // /api/master/crews(Prisma 멤버십 기반) 재사용. 매니저 토글은 PATCH 후 재로드.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   authHeaders,
   useCurrentUser,
@@ -18,9 +18,12 @@ export function MasterMemberList() {
   // perf/UX: 매니저 토글 낙관 반영 + busy(서버 왕복 동안 즉시 pill 반전, 실패 롤백).
   const [managerOverride, setManagerOverride] = useState<Record<string, boolean>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
-  useEffect(() => {
+  // 새 집계(crews 새 참조) 도착 시 낙관 override 폐기 — 렌더 중 조정(effect 불필요).
+  const [prevCrews, setPrevCrews] = useState(crews);
+  if (crews !== prevCrews) {
+    setPrevCrews(crews);
     setManagerOverride({});
-  }, [crews]);
+  }
 
   const toggleManager = useCallback(
     async (crewId: string, on: boolean) => {

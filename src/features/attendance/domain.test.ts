@@ -110,42 +110,58 @@ describe("shouldShowPercent (홈 진행바 우측 % 라벨: 퇴근 완료 후에
 describe("canSubmitAddRecord (T15 추가 폼 로컬 검증)", () => {
   // AC-3/E-3: 출근시각 필수 — 미입력이면 제출 불가
   it("출근시각이 비어있으면 제출 불가", () => {
-    expect(canSubmitAddRecord({ clockIn: "", clockOut: "" })).toBe(false);
-    expect(canSubmitAddRecord({ clockIn: "", clockOut: "15:00" })).toBe(false);
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "", clockOut: "" })).toBe(false);
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "", clockOut: "15:00" })).toBe(false);
   });
 
   // Q2/E-6: 출근만 입력(퇴근 빈값)은 제출 가능(퇴근 선택, null 허용)
   it("출근만 입력(퇴근 빈값)은 제출 가능", () => {
-    expect(canSubmitAddRecord({ clockIn: "08:00", clockOut: "" })).toBe(true);
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "08:00", clockOut: "" })).toBe(true);
   });
 
   // AC-11/Q5: 출근·퇴근 둘 다 있고 퇴근<=출근(역전·동일)이면 제출 불가
   it("퇴근이 출근보다 빠르면(역전) 제출 불가", () => {
-    expect(canSubmitAddRecord({ clockIn: "09:00", clockOut: "08:00" })).toBe(
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "09:00", clockOut: "08:00" })).toBe(
       false,
     );
   });
   it("퇴근이 출근과 동일하면 제출 불가", () => {
-    expect(canSubmitAddRecord({ clockIn: "09:00", clockOut: "09:00" })).toBe(
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "09:00", clockOut: "09:00" })).toBe(
       false,
     );
   });
 
   // AC-3: 출근·퇴근 둘 다 있고 퇴근>출근이면 제출 가능
   it("출근·퇴근 정상(퇴근>출근)이면 제출 가능", () => {
-    expect(canSubmitAddRecord({ clockIn: "08:00", clockOut: "15:00" })).toBe(
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "08:00", clockOut: "15:00" })).toBe(
       true,
     );
   });
 
   // E-3: 잘못된 시각 형식(NaN)은 제출 불가
   it("출근시각 형식이 올바르지 않으면 제출 불가", () => {
-    expect(canSubmitAddRecord({ clockIn: "99:99", clockOut: "" })).toBe(false);
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "99:99", clockOut: "" })).toBe(false);
   });
   it("퇴근시각 형식이 올바르지 않으면 제출 불가", () => {
-    expect(canSubmitAddRecord({ clockIn: "08:00", clockOut: "bad" })).toBe(
+    expect(canSubmitAddRecord({ status: "정상", clockIn: "08:00", clockOut: "bad" })).toBe(
       false,
     );
+  });
+
+  // 무근무(휴가/결근): 시각 입력 없이도 즉시 제출 가능(isSettledStatus 스킵)
+  it("휴가는 출퇴근 시각 없이 제출 가능", () => {
+    expect(canSubmitAddRecord({ status: "휴가", clockIn: "", clockOut: "" })).toBe(true);
+  });
+  it("결근은 출퇴근 시각 없이 제출 가능", () => {
+    expect(canSubmitAddRecord({ status: "결근", clockIn: "", clockOut: "" })).toBe(true);
+  });
+
+  // 조퇴는 무근무가 아님 — 정상과 동일하게 출근시각 필수
+  it("조퇴는 출근시각이 비어있으면 제출 불가(무근무 아님)", () => {
+    expect(canSubmitAddRecord({ status: "조퇴", clockIn: "", clockOut: "" })).toBe(false);
+  });
+  it("조퇴도 출근시각이 있으면 제출 가능", () => {
+    expect(canSubmitAddRecord({ status: "조퇴", clockIn: "08:00", clockOut: "13:00" })).toBe(true);
   });
 });
 

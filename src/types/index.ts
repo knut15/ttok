@@ -1,7 +1,7 @@
 // 공용 도메인 타입 — 계약의 단일 출처 (architect §2.2).
 // FE ↔ API ↔ store 가 모두 이 타입을 import 한다. leaf 모듈(의존 없음).
 
-export type WorkStatus = "정상" | "지각" | "결근" | "휴가" | "연장";
+export type WorkStatus = "정상" | "지각" | "결근" | "휴가" | "연장" | "조퇴";
 
 /** 출근 상태(독립): 정상/지각 + 무근무(결근/휴가). */
 export type ClockInStatus = "정상" | "지각" | "결근" | "휴가";

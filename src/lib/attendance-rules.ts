@@ -12,10 +12,11 @@ import { DEFAULT_BREAK_MINUTES, REGULAR_MINUTES, WORK_STATUSES } from "./constan
 
 // === 출근/퇴근 상태 분리(독립) ↔ 단일 status 파생 ===
 
-/** 두 독립 상태 → 단일 status(달력/배지/급여 호환). 우선순위: 결근/휴가 > 연장 > 지각 > 정상. */
+/** 두 독립 상태 → 단일 status(달력/배지/급여 호환). 우선순위: 결근/휴가 > 연장 > 조퇴 > 지각 > 정상. */
 export function deriveStatus(ci: ClockInStatus, co: ClockOutStatus): WorkStatus {
   if (ci === "결근" || ci === "휴가") return ci;
   if (co === "연장") return "연장";
+  if (co === "조퇴") return "조퇴";
   if (ci === "지각") return "지각";
   return "정상";
 }
@@ -28,6 +29,7 @@ export function subStatusesFromStatus(status: WorkStatus): {
   if (status === "결근") return { clockInStatus: "결근", clockOutStatus: "정상" };
   if (status === "휴가") return { clockInStatus: "휴가", clockOutStatus: "정상" };
   if (status === "연장") return { clockInStatus: "정상", clockOutStatus: "연장" };
+  if (status === "조퇴") return { clockInStatus: "정상", clockOutStatus: "조퇴" };
   if (status === "지각") return { clockInStatus: "지각", clockOutStatus: "정상" };
   return { clockInStatus: "정상", clockOutStatus: "정상" };
 }
@@ -121,11 +123,15 @@ export function applyStatusPolicy(rec: AttendanceRecord, status: WorkStatus): At
 
 /** after 의 status/clock 을 입힌 신규 기준 레코드(upsert 기준값). 재계산은 호출부. */
 export function newRecordFrom(date: string, after: EditRequestChange): AttendanceRecord {
+  // 통합 status 에서 출퇴근 독립상태 파생(조퇴=퇴근측 → 상세화면 퇴근 배지 일관). base 없는 추가요청 경로 단일 진입점.
+  const { clockInStatus, clockOutStatus } = subStatusesFromStatus(after.status);
   return {
     date,
     status: after.status,
     clockIn: after.clockIn,
     clockOut: after.clockOut,
+    clockInStatus,
+    clockOutStatus,
     breakMinutes: DEFAULT_BREAK_MINUTES,
     workMinutes: 0,
     overtimeMinutes: 0,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { WORK_STATUSES } from "@/lib/constants";
-import { canSubmitAddRecord } from "@/features/attendance/domain";
+import { canSubmitAddRecord, isSettledStatus } from "@/features/attendance/domain";
 import type { WorkStatus } from "@/types";
 
 const MAX = 100;
@@ -16,7 +16,7 @@ export function AddRecordForm({
 }: {
   onSubmit: (input: {
     status: WorkStatus;
-    clockIn: string;
+    clockIn: string | null;
     clockOut: string | null;
     reason: string;
   }) => void | Promise<void>;
@@ -27,8 +27,9 @@ export function AddRecordForm({
   const [reason, setReason] = useState("");
 
   const trimmed = reason.trim();
+  const noClock = isSettledStatus(status); // 휴가/결근 → 출퇴근 시각 입력 불요
   const canSubmit =
-    canSubmitAddRecord({ clockIn, clockOut }) && trimmed.length > 0;
+    canSubmitAddRecord({ status, clockIn, clockOut }) && trimmed.length > 0;
 
   return (
     <section className="px-5 pt-6">
@@ -57,13 +58,20 @@ export function AddRecordForm({
           </div>
         </fieldset>
 
+        {noClock ? (
+          <p className="text-sm text-muted">
+            휴가·결근은 출퇴근 시각 입력 없이 바로 등록할 수 있어요.
+          </p>
+        ) : null}
+
         <label className="flex items-center justify-between gap-3">
           <span className="text-sm text-muted">출근</span>
           <input
             type="time"
-            value={clockIn}
+            value={noClock ? "" : clockIn}
             onChange={(e) => setClockIn(e.target.value)}
-            className="rounded-lg border border-foreground/10 px-3 py-2 text-base"
+            disabled={noClock}
+            className="rounded-lg border border-foreground/10 px-3 py-2 text-base disabled:bg-foreground/5 disabled:text-muted"
             aria-label="출근 시각"
           />
         </label>
@@ -72,9 +80,10 @@ export function AddRecordForm({
           <span className="text-sm text-muted">퇴근</span>
           <input
             type="time"
-            value={clockOut}
+            value={noClock ? "" : clockOut}
             onChange={(e) => setClockOut(e.target.value)}
-            className="rounded-lg border border-foreground/10 px-3 py-2 text-base"
+            disabled={noClock}
+            className="rounded-lg border border-foreground/10 px-3 py-2 text-base disabled:bg-foreground/5 disabled:text-muted"
             aria-label="퇴근 시각"
           />
         </label>
@@ -103,8 +112,8 @@ export function AddRecordForm({
         onClick={async () => {
           await onSubmit({
             status,
-            clockIn,
-            clockOut: clockOut === "" ? null : clockOut,
+            clockIn: noClock || clockIn === "" ? null : clockIn,
+            clockOut: noClock || clockOut === "" ? null : clockOut,
             reason: trimmed,
           });
           setClockIn("");

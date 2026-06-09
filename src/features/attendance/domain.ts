@@ -87,6 +87,7 @@ export function statusTone(status: WorkStatus): Tone {
       return "blue";
     case "지각":
     case "결근":
+    case "조퇴":
       return "coral";
     default:
       return "neutral";
@@ -102,15 +103,18 @@ export function shortWorkLabel(workMinutes: number): string {
 
 /**
  * T15 추가 폼(AddRecordForm) 제출 가능 여부(로컬 검증, 사유 제외). 순수 O(1).
+ * - 무근무(휴가/결근): 출퇴근 시각 검증 스킵 → 시간 입력 없이 즉시 제출 가능(isSettledStatus).
  * - 출근시각(clockIn) 필수: 빈값 또는 형식불량(NaN) → 불가(AC-3/E-3).
  * - 퇴근시각(clockOut) 선택(빈값 허용, Q2). 명시되면 형식 유효 + clockOut>clockIn 이어야 함(Q5/AC-11).
  *   퇴근<=출근(역전·동일)이면 불가 — route Q5 검증과 동일 정책.
  * 사유(reason) trim 검증은 EditRequestForm 이 별도로 담당하므로 여기서 제외.
  */
 export function canSubmitAddRecord(i: {
+  status: WorkStatus;
   clockIn: string;
   clockOut: string;
 }): boolean {
+  if (isSettledStatus(i.status)) return true; // 휴가/결근 → 시간 무관 제출 가능
   if (i.clockIn === "" || Number.isNaN(parseHHMM(i.clockIn))) return false;
   if (i.clockOut === "") return true; // 퇴근 선택(null 허용)
   const out = parseHHMM(i.clockOut);

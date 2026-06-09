@@ -47,10 +47,12 @@ export function MasterView() {
   //   실패 시 롤백, 서버 재조회(crews 갱신) 시 override 초기화로 서버 truth 화해.
   const [managerOverride, setManagerOverride] = useState<Record<string, boolean>>({});
   const [managerBusyId, setManagerBusyId] = useState<string | null>(null);
-  // 새 집계가 도착하면 낙관 override 폐기(서버 값이 진실).
-  useEffect(() => {
+  // 새 집계(crews 새 참조)가 도착하면 낙관 override 폐기(서버 값이 진실) — 렌더 중 조정(effect 불필요).
+  const [prevCrews, setPrevCrews] = useState(crews);
+  if (crews !== prevCrews) {
+    setPrevCrews(crews);
     setManagerOverride({});
-  }, [crews]);
+  }
 
   const toggleManager = useCallback(
     async (crewId: string, on: boolean) => {
